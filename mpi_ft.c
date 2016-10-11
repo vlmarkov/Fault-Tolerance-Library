@@ -45,7 +45,11 @@ void make_snapshot(int value)
     MPI_Status status;
     MPI_File snapshot;
 
-    rc = MPI_File_open(MPI_COMM_WORLD, file_name, MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &snapshot);
+    rc = MPI_File_open( MPI_COMM_WORLD,
+                        file_name,
+                        MPI_MODE_CREATE|MPI_MODE_WRONLY,
+                        MPI_INFO_NULL,
+                        &snapshot);
 
     if (rc == MPI_SUCCESS) {
         char buf[256] = { 0 };
@@ -53,8 +57,10 @@ void make_snapshot(int value)
         sprintf(buf, "%d", value);
         printf("%s:%d\n", buf, strlen(buf));
 
+        MPI_File_set_view(snapshot, 0,  MPI_CHAR, buf, "native", MPI_INFO_NULL);
         MPI_File_write(snapshot, buf, strlen(buf), MPI_CHAR, &status);
         MPI_File_sync(snapshot);
+
     } else {
         printf("ERROR: Rank %d can't save in file\n", myrank);
         return;
