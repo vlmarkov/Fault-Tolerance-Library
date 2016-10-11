@@ -43,7 +43,8 @@ int count_prime_numbers_par(int a, int b)
         if (i % 2 > 0 && is_prime_number(i)) {
             nprimes++;
         }
-        sleep(1);
+        //sleep(1);
+        make_snapshot(nprimes);
     }
 
     MPI_Reduce(&nprimes, &nprimes_global, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);

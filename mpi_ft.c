@@ -57,7 +57,7 @@ void make_snapshot(int value)
         sprintf(buf, "%d", value);
         printf("%s:%d\n", buf, strlen(buf));
 
-        MPI_File_set_view(snapshot, 0,  MPI_CHAR, buf, "native", MPI_INFO_NULL);
+        //MPI_File_set_view(snapshot, 0,  MPI_CHAR, buf, "native", MPI_INFO_NULL);
         MPI_File_write(snapshot, buf, strlen(buf), MPI_CHAR, &status);
         MPI_File_sync(snapshot);
 
