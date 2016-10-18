@@ -2,9 +2,11 @@
  * Prime numbers balanced
  */
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/time.h>
+
 #include <mpi.h>
 
 const int a = 1;
@@ -194,12 +196,13 @@ int count_prime_numbers_par_(int a, int b)
 
 double run_serial()
 {
+    int n;
     double t = MPI_Wtime();
 
     if (PROCESS_OPTION != OPTION_INVALID) {
-        int n = count_prime_numbers_(a, b);
+        n = count_prime_numbers_(a, b);
     } else {
-        int n = count_prime_numbers(a, b);
+        n = count_prime_numbers(a, b);
     }
     t = MPI_Wtime() - t;
 
@@ -208,12 +211,13 @@ double run_serial()
 }
 
 double run_parallel()
-{    
+{
+    int n;
     double t = MPI_Wtime();
     if (PROCESS_OPTION != OPTION_INVALID) {
-        int n = count_prime_numbers_par_(a, b);
+        n = count_prime_numbers_par_(a, b);
     } else {
-        int n = count_prime_numbers_par(a, b);
+        n = count_prime_numbers_par(a, b);
     }
     t = MPI_Wtime() - t;
 
@@ -238,9 +242,9 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    if ((srcmp(argv[1], "checkpoint") == 0) {
+    if ((strcmp(argv[1], "checkpoint") == 0) {
         PROCESS_OPTION = OPTION_CHECKPOINT;
-    } else if ((srcmp(argv[1], "restore") == 0) {
+    } else if ((strcmp(argv[1], "restore") == 0) {
         PROCESS_OPTION = OPTION_RESTORE;
     }
 
