@@ -34,38 +34,29 @@ int count_prime_numbers_par_(int a, int b);
 double run_serial();
 double run_parallel();
 
+MPI_File snapshot;
 
-void make_snapshot(int value)
+void create_file()
 {
-    int rc;
     char file_name[256] = { 0 };
     int myrank = get_comm_rank();
 
     sprintf(file_name,"%s_%d_snapshot.txt",__FILE__, myrank);
 
+    MPI_File_open( MPI_COMM_WORLD,
+                    file_name,
+                    MPI_MODE_CREATE|MPI_MODE_WRONLY,
+                    MPI_INFO_NULL,
+                    &snapshot);
+}
+
+void make_snapshot(int value, int iter)
+{
     MPI_Status status;
-    MPI_File snapshot;
+    char buf[256] = { 0 };
+    sprintf(buf, "%d %d\n", value, iter);
 
-    rc = MPI_File_open( MPI_COMM_WORLD,
-                        file_name,
-                        MPI_MODE_CREATE|MPI_MODE_WRONLY,
-                        MPI_INFO_NULL,
-                        &snapshot);
-
-    if (rc == MPI_SUCCESS) {
-        char buf[256] = { 0 };
-
-        sprintf(buf, "%d", myrank);
-
-        MPI_File_write(snapshot, buf, strlen(buf), MPI_CHAR, &status);
-        MPI_File_sync(snapshot);
-
-    } else {
-        printf("ERROR: Rank %d can't save in file\n", myrank);
-        return;
-    }
-
-    MPI_File_close(&snapshot);
+    MPI_File_write(snapshot, buf, strlen(buf), MPI_CHAR, &status);
 }
 
 int get_comm_rank()
@@ -126,7 +117,7 @@ int count_prime_numbers(int a, int b)
 
 int count_prime_numbers_par(int a, int b)
 {
-    int nprimes        = 0;    
+    int nprimes        = 0;
     int nprimes_global = 0;
 
     /* Count '2' as a prime number */
@@ -145,47 +136,14 @@ int count_prime_numbers_par(int a, int b)
             nprimes++;
         }
     }
-
 
     MPI_Reduce(&nprimes, &nprimes_global, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     return nprimes_global;
 }
 
-int count_prime_numbers_(int a, int b)
-{
-    int nprimes = 0;
-
-    /* Count '2' as a prime number */
-    if (a <= 2) {
-        nprimes = 1;
-        a = 2;
-    }
-
-    /* Shift 'a' to odd number */
-    if (a % 2 == 0) {
-        a++;
-    }
-
-    make_snapshot(get_comm_rank());
-
-    /* Loop over odd numbers: a, a + 2, a + 4, ... , b */
-    for (int i = a; i <= b; i++) {
-        if (i % 2 > 0 && is_prime_number(i)) {
-            nprimes++;
-        }
-/*
-        if ((i % 1000) == 0) {
-            make_snapshot(nprimes);
-        }
-*/
-    }
-
-    return nprimes;
-}
-
 int count_prime_numbers_par_(int a, int b)
 {
-    int nprimes        = 0;    
+    int nprimes        = 0;
     int nprimes_global = 0;
 
     /* Count '2' as a prime number */
@@ -199,19 +157,21 @@ int count_prime_numbers_par_(int a, int b)
         }
     }
 
-    make_snapshot(get_comm_rank());
+    create_file();
 
     for (int i = a + rank; i <= b; i += commsize) {
         if (i % 2 > 0 && is_prime_number(i)) {
             nprimes++;
+
+            if ((nprimes % 50000) == 0) {
+                make_snapshot(nprimes, i);
+            }
+
         }
-/*
-        if ((i % 1000) == 0) {
-            make_snapshot(nprimes);
-        }
-*/
     }
 
+    make_snapshot(nprimes, -1);
+    MPI_File_close(&snapshot);
 
     MPI_Reduce(&nprimes, &nprimes_global, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     return nprimes_global;
@@ -220,14 +180,8 @@ int count_prime_numbers_par_(int a, int b)
 
 double run_serial()
 {
-    int n;
     double t = MPI_Wtime();
-
-    if (PROCESS_OPTION != OPTION_INVALID) {
-        n = count_prime_numbers_(a, b);
-    } else {
-        n = count_prime_numbers(a, b);
-    }
+    int n = count_prime_numbers(a, b);
     t = MPI_Wtime() - t;
 
     printf("Result (serial): %d\n", n);
