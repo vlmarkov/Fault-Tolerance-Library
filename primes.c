@@ -15,7 +15,7 @@ const int b = 10000000;
 enum {
     OPTION_INVALID    = -1,
     OPTION_CHECKPOINT = 0,
-    OPTION_RESTORE    = 1;
+    OPTION_RESTORE    = 1
 };
 
 int PROCESS_OPTION = OPTION_INVALID;
@@ -194,6 +194,7 @@ int count_prime_numbers_par_(int a, int b)
     return nprimes_global;
 }
 
+
 double run_serial()
 {
     int n;
@@ -209,6 +210,7 @@ double run_serial()
     printf("Result (serial): %d\n", n);
     return t;
 }
+
 
 double run_parallel()
 {
@@ -242,9 +244,9 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    if ((strcmp(argv[1], "checkpoint") == 0) {
+    if (strcmp(argv[1], "checkpoint") == 0) {
         PROCESS_OPTION = OPTION_CHECKPOINT;
-    } else if ((strcmp(argv[1], "restore") == 0) {
+    } else if (strcmp(argv[1], "restore") == 0) {
         PROCESS_OPTION = OPTION_RESTORE;
     }
 
