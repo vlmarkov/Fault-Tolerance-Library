@@ -1,6 +1,5 @@
-prog := mpi_test
-prog_objs := mpi_primes.o
-ft_objs := mpi_ft.o
+prog := primes
+prog_objs := primes.o
 
 CC := mpicc
 CFLAGS := -std=c99 -Wall -O2
