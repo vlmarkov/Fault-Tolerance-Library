@@ -37,18 +37,35 @@ double run_parallel();
 
 void make_snapshot(int value)
 {
+    int rc;
     char file_name[256] = { 0 };
-    char buf[256]       = { 0 };
-    int myrank = 1;
+    int myrank = get_comm_rank();
 
     sprintf(file_name,"%s_%d_snapshot.txt",__FILE__, myrank);
 
-    FILE *snapshot = fopen(file_name, "w");
+    MPI_Status status;
+    MPI_File snapshot;
 
-    sprintf(buf, "%d", value);
-    fprintf(snapshot, buf);
+    rc = MPI_File_open( MPI_COMM_WORLD,
+                        file_name,
+                        MPI_MODE_CREATE|MPI_MODE_WRONLY,
+                        MPI_INFO_NULL,
+                        &snapshot);
 
-    fclose(snapshot);
+    if (rc == MPI_SUCCESS) {
+        char buf[256] = { 0 };
+
+        sprintf(buf, "%d", myrank);
+
+        MPI_File_write(snapshot, buf, strlen(buf), MPI_CHAR, &status);
+        MPI_File_sync(snapshot);
+
+    } else {
+        printf("ERROR: Rank %d can't save in file\n", myrank);
+        return;
+    }
+
+    MPI_File_close(&snapshot);
 }
 
 int get_comm_rank()
@@ -149,15 +166,18 @@ int count_prime_numbers_(int a, int b)
         a++;
     }
 
+    make_snapshot(get_comm_rank());
+
     /* Loop over odd numbers: a, a + 2, a + 4, ... , b */
     for (int i = a; i <= b; i++) {
         if (i % 2 > 0 && is_prime_number(i)) {
             nprimes++;
         }
-
+/*
         if ((i % 1000) == 0) {
             make_snapshot(nprimes);
         }
+*/
     }
 
     return nprimes;
@@ -179,14 +199,17 @@ int count_prime_numbers_par_(int a, int b)
         }
     }
 
+    make_snapshot(get_comm_rank());
+
     for (int i = a + rank; i <= b; i += commsize) {
         if (i % 2 > 0 && is_prime_number(i)) {
             nprimes++;
         }
-
+/*
         if ((i % 1000) == 0) {
             make_snapshot(nprimes);
         }
+*/
     }
 
 
