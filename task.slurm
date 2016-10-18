@@ -5,4 +5,4 @@
 
 cd $SLURM_SUBMIT_DIR
 
-mpiexec ./primes
+mpiexec ./primes checkpoint
