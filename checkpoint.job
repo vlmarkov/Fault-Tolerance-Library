@@ -3,6 +3,5 @@
 #PBS -j oe
 
 cd $PBS_O_WORKDIR
-cat $PBS_NODEFILE
 
-mpiexec ./mpi_test
+mpiexec ./primes checkpoint

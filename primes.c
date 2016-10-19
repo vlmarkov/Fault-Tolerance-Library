@@ -5,10 +5,15 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/time.h>
 
 #include <mpi.h>
 
+
+/*****************************************************************************/
+/* Global variables                                                          */
+/*****************************************************************************/
 const int a = 1;
 const int b = 10000000;
 
@@ -18,8 +23,17 @@ enum {
     OPTION_RESTORE    = 1
 };
 
-int PROCESS_OPTION = OPTION_INVALID;
+enum {
+   CALCULATION_COMPLETE = -1
+};
 
+int PROCESS_OPTION = OPTION_INVALID;
+MPI_File snapshot;
+
+
+/*****************************************************************************/
+/* Prototypes                                                                */
+/*****************************************************************************/
 int get_comm_rank();
 int get_comm_size();
 
@@ -34,29 +48,66 @@ int count_prime_numbers_par_(int a, int b);
 double run_serial();
 double run_parallel();
 
-MPI_File snapshot;
 
 void create_file()
 {
     char file_name[256] = { 0 };
-    int myrank = get_comm_rank();
 
-    sprintf(file_name,"%s_%d_snapshot.txt",__FILE__, myrank);
+    sprintf(file_name,"%s_%d_snapshot.txt",__FILE__, get_comm_rank());
 
-    MPI_File_open( MPI_COMM_WORLD,
-                    file_name,
-                    MPI_MODE_CREATE|MPI_MODE_WRONLY,
-                    MPI_INFO_NULL,
-                    &snapshot);
+    MPI_File_open(MPI_COMM_WORLD, file_name, MPI_MODE_CREATE|MPI_MODE_WRONLY,
+                  MPI_INFO_NULL,&snapshot);
 }
 
 void make_snapshot(int value, int iter)
 {
     MPI_Status status;
     char buf[256] = { 0 };
-    sprintf(buf, "%d %d\n", value, iter);
 
+    sprintf(buf, "%d %d\n", value, iter);
     MPI_File_write(snapshot, buf, strlen(buf), MPI_CHAR, &status);
+}
+
+void get_snapshot(int *iter, int *nprimes, int a)
+{
+    int myrank          = get_comm_rank();
+    char *buf           = NULL;
+    size_t lenght       = 0;
+    char file_name[256] = { 0 };
+
+    sprintf(file_name,"%s_%d_snapshot.txt",__FILE__, myrank);
+
+    FILE *snapshot = fopen(file_name, "r");
+    if (snapshot) {
+        while ((getline(&buf, &lenght, snapshot)) != -1) {
+            // ...
+        }
+
+        // get the first token
+        char *token = strtok(buf, " ");
+        *nprimes = atoi(token);
+        // walk through other tokens
+        token = strtok(NULL, " ");
+        *iter = atoi(token);
+
+        // Iteration correction
+        if (*iter != -1) {
+            *iter += get_comm_size();
+        }
+
+        if (buf) {
+            free(buf);
+        }
+        fclose(snapshot);
+    } else {
+        // If can't obtain data from snapshot, initialize by default
+        *iter    = a + myrank;
+        if (myrank == 0) {
+           *nprimes = 1;
+        } else {
+            *nprimes = 0;
+        }
+    }
 }
 
 int get_comm_rank()
@@ -143,6 +194,7 @@ int count_prime_numbers_par(int a, int b)
 
 int count_prime_numbers_par_(int a, int b)
 {
+    int i              = 0;
     int nprimes        = 0;
     int nprimes_global = 0;
 
@@ -157,16 +209,25 @@ int count_prime_numbers_par_(int a, int b)
         }
     }
 
+    if (PROCESS_OPTION == OPTION_RESTORE) {
+        get_snapshot(&i, &nprimes, a);
+    } else {
+        i = a + rank;
+    }
+
     create_file();
 
-    for (int i = a + rank; i <= b; i += commsize) {
-        if (i % 2 > 0 && is_prime_number(i)) {
-            nprimes++;
+    if (i != CALCULATION_COMPLETE) {
+        for ( ; i <= b; i += commsize) {
+            if (i % 2 > 0 && is_prime_number(i)) {
+                nprimes++;
 
-            if ((nprimes % 50000) == 0) {
-                make_snapshot(nprimes, i);
+                if ((nprimes % 50000) == 0) {
+                    make_snapshot(nprimes, i);
+                    //MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
+                }
+
             }
-
         }
     }
 
@@ -203,7 +264,7 @@ double run_parallel()
     printf("Process %d/%d execution time: %.6f\n", get_comm_rank(), get_comm_size(), t);
 
     if (get_comm_rank() == 0) {
-        printf("Result (parallel): %d\n", n);
+        printf("Result (parallel)        : %d\n", n);
     }
 
     double tmax;
@@ -215,7 +276,7 @@ int main(int argc, char **argv)
 {
     MPI_Init(&argc, &argv);
 
-    if (argc == 1) {
+    if (argc < 2) {
         printf("usage: %s [checkpoint] [restore]\n", argv[0]);
         MPI_Finalize();
         return 0;
@@ -238,9 +299,9 @@ int main(int argc, char **argv)
 
     if (get_comm_rank() == 0) {
         printf("Count prime numbers on [%d, %d]\n", a, b);
-        printf("Execution time (serial): %.6f\n", tserial);
+        printf("Execution time (serial)  : %.6f\n", tserial);
         printf("Execution time (parallel): %.6f\n", tparallel);
-        printf("Speedup (processes %d): %.2f\n", get_comm_size(), tserial / tparallel);
+        printf("Speedup (processes %d)   : %.2f\n", get_comm_size(), tserial / tparallel);
     }
 
     MPI_Finalize();
