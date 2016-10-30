@@ -24,11 +24,22 @@ enum {
 };
 
 enum {
-   CALCULATION_COMPLETE = -1
+   STATE_1 = 1,
+   STATE_2 = 2
 };
 
 int PROCESS_OPTION = OPTION_INVALID;
 MPI_File snapshot;
+
+
+/*****************************************************************************/
+/* Control flow-macros                                                       */
+/*****************************************************************************/
+#define CHECKPOINT_INIT() create_file();
+#define CHECKPOINT_FINALIZE() MPI_File_close(&snapshot);
+
+#define CHECKPOINT_SET(name) name ## _checkpoint:
+#define CHECKPOINT_GOTO(name) goto name ## _checkpoint
 
 
 /*****************************************************************************/
@@ -59,17 +70,31 @@ void create_file()
                   MPI_INFO_NULL,&snapshot);
 }
 
-void make_snapshot(int value, int iter)
+void make_snapshot(char *data, int state)
 {
     MPI_Status status;
     char buf[256] = { 0 };
 
-    sprintf(buf, "%d %d\n", value, iter);
+    sprintf(buf, "%s:%d\n", data, state);
     MPI_File_write(snapshot, buf, strlen(buf), MPI_CHAR, &status);
 }
 
-void get_snapshot(int *iter, int *nprimes, int a)
+void argument_parse(char *data, int *nprimes, int *i)
 {
+    // get the first token
+    char *token = strtok(data, " ");
+    *nprimes = atoi(token);
+
+    // walk through other tokens
+    token = strtok(NULL, " ");
+
+    *i = atoi(token);
+    *i += get_comm_size();
+}
+
+int get_snapshot(char *data)
+{
+    int state;
     int myrank          = get_comm_rank();
     char *buf           = NULL;
     size_t lenght       = 0;
@@ -84,30 +109,21 @@ void get_snapshot(int *iter, int *nprimes, int a)
         }
 
         // get the first token
-        char *token = strtok(buf, " ");
-        *nprimes = atoi(token);
-        // walk through other tokens
-        token = strtok(NULL, " ");
-        *iter = atoi(token);
+        char *token = strtok(buf, ":");
+        strcpy(data, token);
 
-        // Iteration correction
-        if (*iter != -1) {
-            *iter += get_comm_size();
-        }
+        // walk through other tokens
+        token  = strtok(NULL, ":");
+        state = atoi(token);
 
         if (buf) {
             free(buf);
         }
         fclose(snapshot);
-    } else {
-        // If can't obtain data from snapshot, initialize by default
-        *iter    = a + myrank;
-        if (myrank == 0) {
-           *nprimes = 1;
-        } else {
-            *nprimes = 0;
-        }
+        return state;
     }
+
+    return -1;
 }
 
 int get_comm_rank()
@@ -198,6 +214,8 @@ int count_prime_numbers_par_(int a, int b)
     int nprimes        = 0;
     int nprimes_global = 0;
 
+    char checkpoint_data[256];
+
     /* Count '2' as a prime number */
     int commsize = get_comm_size();
     int rank = get_comm_rank();
@@ -209,35 +227,58 @@ int count_prime_numbers_par_(int a, int b)
         }
     }
 
+    i = a + rank;
+
+    CHECKPOINT_INIT();
+
+
     if (PROCESS_OPTION == OPTION_RESTORE) {
-        get_snapshot(&i, &nprimes, a);
-    } else {
-        i = a + rank;
+        int state = get_snapshot(checkpoint_data);
+        switch (state) 
+        {
+            case 1:
+                argument_parse(checkpoint_data, &nprimes, &i);
+                printf("state 1 rank = %d : nprimes %d i %d\n", rank, nprimes, i);
+                CHECKPOINT_GOTO(STATE_1);
+                break;
+
+            case 2:
+                argument_parse(checkpoint_data, &nprimes, &i);
+                printf("state 2 rank = %d : nprimes %d i %d\n", rank, nprimes, i);
+                CHECKPOINT_GOTO(STATE_2);
+
+                break;
+            default:
+                fprintf(stderr, "can't read checkpoint\n");
+                //exit(1);
+        }
+
     }
 
-    create_file();
+    CHECKPOINT_SET(STATE_1);
 
-    if (i != CALCULATION_COMPLETE) {
-        for ( ; i <= b; i += commsize) {
-            if (i % 2 > 0 && is_prime_number(i)) {
-                nprimes++;
+    for ( ; i <= b; i += commsize) {
+        if (i % 2 > 0 && is_prime_number(i)) {
+            nprimes++;
 
-                if ((nprimes % 50000) == 0) {
-                    make_snapshot(nprimes, i);
-                    //MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
-                }
-
+            if ((nprimes % 50000) == 0) {
+                sprintf(checkpoint_data, "%d %d", nprimes, i);
+                make_snapshot(checkpoint_data, STATE_1);
+                //MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
             }
+
         }
     }
 
-    make_snapshot(nprimes, -1);
-    MPI_File_close(&snapshot);
+    sprintf(checkpoint_data, "%d %d", nprimes, i);
+    make_snapshot(checkpoint_data, STATE_2);
+
+    CHECKPOINT_SET(STATE_2);
+    CHECKPOINT_FINALIZE();
 
     MPI_Reduce(&nprimes, &nprimes_global, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     return nprimes_global;
 }
-
 
 double run_serial()
 {
