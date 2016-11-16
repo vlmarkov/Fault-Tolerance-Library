@@ -31,6 +31,7 @@
 
 #include <mpi.h>
 
+#include <string.h>
 #include "../checkpoint_lib/checkpoint_lib.h"
 
 #define EPS 0.001
@@ -43,7 +44,12 @@
 /*************************************************************************/
 /* Global variables                                                      */
 /*************************************************************************/
+
+int options    = CHECKPOINT_MODE;
+
 int niters     = 0;
+
+int ny, nx;
 
 double ttotal  = 0.0;
 double thalo   = 0.0;
@@ -51,7 +57,6 @@ double treduce = 0.0;
 
 double *local_grid    = NULL;
 double *local_newgrid = NULL;
-
 
 
 void *xcalloc(size_t nmemb, size_t size)
@@ -78,9 +83,53 @@ int get_sum_of_prev_blocks(int n, int rank, int nprocs)
     return n / nprocs * rank + ((rank >= rem) ? rem : rank);
 }
 
+/*************************************************************************/
+/* Additional functions helps save and get data                          */
+/*************************************************************************/
+inline static void checkpoint_save(int phase)
+{
+    MPI_File local_snapshot;
+        
+    CHECKPOINT_FILE_OPEN(&local_snapshot, phase);
+        
+    CHECKPOINT_SAVE(local_snapshot, local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE);
+    CHECKPOINT_SAVE(local_snapshot, &ttotal, 1, MPI_DOUBLE);
+    CHECKPOINT_SAVE(local_snapshot, &thalo, 1, MPI_DOUBLE);
+    CHECKPOINT_SAVE(local_snapshot, &treduce, 1, MPI_DOUBLE);
+    CHECKPOINT_SAVE(local_snapshot, &niters, 1, MPI_INT);
+    
+    CHECKPOINT_FILE_CLOSE(&local_snapshot);
+}
+
+
+inline static int checkpoint_get(double *local_grid,
+                                 int size,
+                                 double *ttotal, 
+                                 double *thalo, 
+                                 double *treduce, 
+                                 int *niters)
+{
+    char last_chechkpoint[] = { "0_0_0.000000" };
+    int phase = CHECKPOINT_GET(last_chechkpoint);
+
+    FILE * file = fopen(last_chechkpoint, "rb");
+    if (file) {
+        // copy the file into the buffer:
+        fread(local_grid, sizeof(double), size, file);
+        fread(ttotal, sizeof(double), 1, file);
+        fread(thalo, sizeof(double), 1, file);
+        fread(treduce, sizeof(double), 1, file);
+        fread(niters, sizeof(int), 1, file);
+        
+        fclose(file);
+    }
+
+    return phase;
+}
+
 void time_handler(int sig)
 {
-    //CHECKPOINT_SAVE(data, n, dtype, phase);
+    checkpoint_save(1);
 }
 
 int main(int argc, char *argv[]) 
@@ -88,11 +137,11 @@ int main(int argc, char *argv[])
     /*************************************************************************/
     /* Initialize checkpoint library                                         */
     /*************************************************************************/
-    CHECKPOINT_LIB_INIT(2, 5); // 2 checkpoints, 5 seconds for timer
+    CHECKPOINT_LIB_INIT(2, 1); // 2 checkpoints, 5 seconds for timer
     CHECKPOINT_ASSIGN(&&start);
     CHECKPOINT_ASSIGN(&&end);
 
-    CHECKPOINT_HANDLER(time_handler);
+    CHECKPOINT_SIGNAL_HANDLER(time_handler);
 
 
     /*************************************************************************/
@@ -100,7 +149,7 @@ int main(int argc, char *argv[])
     /*************************************************************************/
     char procname[MPI_MAX_PROCESSOR_NAME];
 
-    int commsize, rank, rankx, ranky, rows, cols, px, py, namelen, ny, nx;
+    int commsize, rank, rankx, ranky, rows, cols, px, py, namelen;
 
     int coords[2];
     int dims[2]     = { 0, 0 };
@@ -224,15 +273,16 @@ int main(int argc, char *argv[])
 
 
     if (options == CHECKPOINT_MODE) {
-        CHECKPOINT_SAVE(data, n, dtype, 1);
-    } else if (options = RECOVERY_MODE) {
-        int phase = CHECKPOINT_GET(local_grid, &ttotal, &thalo, &treduce, &niters);
+        checkpoint_save(1);
+    } else if (options == RECOVERY_MODE) {
+        int phase = checkpoint_get(local_grid, ((ny + 2) * (nx + 2)), &ttotal, &thalo, &treduce, &niters);
         CHECKPOINT_GOTO(phase);
     }
 
-    CHECKPOINT_TIMER();
-
     CHECKPOINT_SET(start);
+    CHECKPOINT_TIMER_INIT();
+
+    MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
 
     for (;;) {
         niters++;
@@ -285,8 +335,7 @@ int main(int argc, char *argv[])
         thalo += MPI_Wtime();
     }
 
-    CHECKPOINT_SAVE(data, n, dtype, 2);
-
+    checkpoint_save(2);
     CHECKPOINT_SET(end);
 
 
