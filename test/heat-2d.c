@@ -88,6 +88,10 @@ int get_sum_of_prev_blocks(int n, int rank, int nprocs)
 /*************************************************************************/
 inline static void checkpoint_save(int phase)
 {
+    if (phase > 0) {
+        CHECKPOINT_TIMER_STOP();
+    }
+
     MPI_File local_snapshot;
         
     CHECKPOINT_FILE_OPEN(&local_snapshot, phase);
@@ -129,7 +133,7 @@ inline static int checkpoint_get(double *local_grid,
 
 void time_handler(int sig)
 {
-    checkpoint_save(1);
+    checkpoint_save(0);
 }
 
 int main(int argc, char *argv[]) 
@@ -137,7 +141,7 @@ int main(int argc, char *argv[])
     /*************************************************************************/
     /* Initialize checkpoint library                                         */
     /*************************************************************************/
-    CHECKPOINT_LIB_INIT(2, 1); // 2 checkpoints, 5 seconds for timer
+    CHECKPOINT_LIB_INIT(2, 5); // 2 checkpoints, 5 seconds for timer
     CHECKPOINT_ASSIGN(&&start);
     CHECKPOINT_ASSIGN(&&end);
 
@@ -273,7 +277,7 @@ int main(int argc, char *argv[])
 
 
     if (options == CHECKPOINT_MODE) {
-        checkpoint_save(1);
+        checkpoint_save(0);
     } else if (options == RECOVERY_MODE) {
         int phase = checkpoint_get(local_grid, ((ny + 2) * (nx + 2)), &ttotal, &thalo, &treduce, &niters);
         CHECKPOINT_GOTO(phase);
@@ -335,7 +339,7 @@ int main(int argc, char *argv[])
         thalo += MPI_Wtime();
     }
 
-    checkpoint_save(2);
+    checkpoint_save(1);
     CHECKPOINT_SET(end);
 
 

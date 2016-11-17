@@ -12,7 +12,7 @@ struct itimerval nval, oval;
 
 inline void timer_init_()
 {
-    struct itimerval nval, oval;
+    //struct itimerval nval, oval;
 
     nval.it_interval.tv_sec  = TIME; // interval 
     nval.it_interval.tv_usec = 0;
@@ -20,6 +20,14 @@ inline void timer_init_()
     nval.it_value.tv_usec    = 0;
 
     setitimer(ITIMER_REAL, &nval, &oval);
+}
+
+inline void timer_stop_()
+{
+    nval.it_interval.tv_sec  = 0; // interval 
+    nval.it_interval.tv_usec = 0;
+    nval.it_value.tv_sec     = 0; // time until next expiration
+    nval.it_value.tv_usec    = 0;
 }
 
 inline double wtime_()
@@ -130,6 +138,10 @@ int get_lastcheckpoint(char *last_checkpoint)
             
             // Skip '.' '..' directory
             if (strlen(file->d_name) < 3) {
+                continue;
+            }
+
+            if (file->d_name[1] != '_') {
                 continue;
             }
 

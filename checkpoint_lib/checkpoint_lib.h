@@ -50,6 +50,7 @@ enum {
 /*****************************************************************************/
 #define CHECKPOINT_SIGNAL_HANDLER(func) signal(SIGALRM, func);
 #define CHECKPOINT_TIMER_INIT() timer_init_();
+#define CHECKPOINT_TIMER_STOP() timer_stop_();
 
 
 /*****************************************************************************/
@@ -75,6 +76,7 @@ int get_lastcheckpoint(char *last_chechkpoint);
 
 double wtime_();
 void timer_init_();
+void timer_stop_();
 
 void close_checkpoint_file(MPI_File *snapshot);
 void open_checkpoint_file(MPI_File *snapshot, int phase);
