@@ -141,12 +141,14 @@ int main(int argc, char *argv[])
     /*************************************************************************/
     /* Initialize checkpoint library                                         */
     /*************************************************************************/
-    CHECKPOINT_LIB_INIT(2, 5); // 2 checkpoints, 5 seconds for timer
-    CHECKPOINT_ASSIGN(&&start);
-    CHECKPOINT_ASSIGN(&&end);
+    
+    int checkpoint_numbers = 2;
+    int timers_time        = 5;
 
-    CHECKPOINT_SIGNAL_HANDLER(time_handler);
+    CHECKPOINT_LIB_INIT(checkpoint_numbers, timers_time, time_handler);
 
+    DECLARATE_CHECKPOINT(&&phase_one);
+    DECLARATE_CHECKPOINT(&&phase_two);
 
     /*************************************************************************/
     /* Local  variables                                                      */
@@ -195,10 +197,10 @@ int main(int argc, char *argv[])
     rankx = coords[0];
     ranky = coords[1];
 
-
     /*************************************************************************/
     /* Broadcast command line arguments                                      */
     /*************************************************************************/
+
     if (rank == 0) {
         rows = (argc > 1) ? atoi(argv[1]) : py * 100;
         cols = (argc > 2) ? atoi(argv[2]) : px * 100;
@@ -221,11 +223,11 @@ int main(int argc, char *argv[])
         cols = args[1];
     }
 
-
     /*************************************************************************/
     /* Allocate memory for local 2D subgrids with halo cells                 */
     /* [0..ny + 1][0..nx + 1]                                                */
     /*************************************************************************/
+
     ny = get_block_size(rows, ranky, py);
     nx = get_block_size(cols, rankx, px);
 
@@ -272,7 +274,6 @@ int main(int argc, char *argv[])
     MPI_Datatype row;        
     MPI_Type_contiguous(nx, MPI_DOUBLE, &row);
     MPI_Type_commit(&row);
-
     MPI_Request reqs[8];
 
 
@@ -280,10 +281,11 @@ int main(int argc, char *argv[])
         checkpoint_save(0);
     } else if (options == RECOVERY_MODE) {
         int phase = checkpoint_get(local_grid, ((ny + 2) * (nx + 2)), &ttotal, &thalo, &treduce, &niters);
-        CHECKPOINT_GOTO(phase);
+        // Jumping to checkpoint
+        GO_TO_CHECKPOINT(phase);
     }
 
-    CHECKPOINT_SET(start);
+    SET_CHECKPOINT(phase_one);
     CHECKPOINT_TIMER_INIT();
 
     MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
@@ -339,8 +341,8 @@ int main(int argc, char *argv[])
         thalo += MPI_Wtime();
     }
 
-    checkpoint_save(1);
-    CHECKPOINT_SET(end);
+    //checkpoint_save(1);
+    SAVE_STATE_AND_SET_CHECKPOINT(phase_two);
 
 
     MPI_Type_free(&row);

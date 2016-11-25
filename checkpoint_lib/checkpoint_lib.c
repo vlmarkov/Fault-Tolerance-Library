@@ -12,8 +12,6 @@ struct itimerval nval, oval;
 
 inline void timer_init_()
 {
-    //struct itimerval nval, oval;
-
     nval.it_interval.tv_sec  = TIME; // interval 
     nval.it_interval.tv_usec = 0;
     nval.it_value.tv_sec     = TIME; // time until next expiration
@@ -162,4 +160,16 @@ int get_lastcheckpoint(char *last_checkpoint)
     }
 
     return last_checkpoint[0] - '0';
+}
+
+
+
+int get_checkpoint_idx_by_name(void **table, int size, void *name)
+{
+    int i;
+    for (i = 0; i < size; i++) {
+        if (table[i] == &name) {
+            break;
+        }
+    }
 }
