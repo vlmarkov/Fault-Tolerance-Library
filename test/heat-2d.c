@@ -45,7 +45,8 @@
 /* Global variables                                                      */
 /*************************************************************************/
 
-int options    = CHECKPOINT_MODE;
+int options    = CPL_CHECKPOINT_MODE;
+//int options    = CPL_RECOVERY_MODE;
 
 int niters     = 0;
 
@@ -83,18 +84,19 @@ int get_sum_of_prev_blocks(int n, int rank, int nprocs)
     return n / nprocs * rank + ((rank >= rem) ? rem : rank);
 }
 
-/*************************************************************************/
-/* Additional functions helps save and get data                          */
-/*************************************************************************/
-inline static void checkpoint_save(int phase)
+/*****************************************************************************/
+/* User defiend callbacks                                                    */
+/* Additional functions helps save and get data                              */
+/*****************************************************************************/
+inline static void user_save_callback(int phase)
 {
     if (phase > 0) {
-        CHECKPOINT_TIMER_STOP();
+        CPL_TIMER_STOP();
     }
 
     MPI_File local_snapshot;
         
-    CHECKPOINT_FILE_OPEN(&local_snapshot, phase);
+    CPL_FILE_OPEN(&local_snapshot, phase);
         
     CHECKPOINT_SAVE(local_snapshot, local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE);
     CHECKPOINT_SAVE(local_snapshot, &ttotal, 1, MPI_DOUBLE);
@@ -102,7 +104,7 @@ inline static void checkpoint_save(int phase)
     CHECKPOINT_SAVE(local_snapshot, &treduce, 1, MPI_DOUBLE);
     CHECKPOINT_SAVE(local_snapshot, &niters, 1, MPI_INT);
     
-    CHECKPOINT_FILE_CLOSE(&local_snapshot);
+    CPL_FILE_CLOSE(&local_snapshot);
 }
 
 
@@ -133,7 +135,7 @@ inline static int checkpoint_get(double *local_grid,
 
 void time_handler(int sig)
 {
-    checkpoint_save(0);
+    user_save_callback(0);
 }
 
 int main(int argc, char *argv[]) 
@@ -145,10 +147,10 @@ int main(int argc, char *argv[])
     int checkpoint_numbers = 2;
     int timers_time        = 5;
 
-    CHECKPOINT_LIB_INIT(checkpoint_numbers, timers_time, time_handler);
+    CPL_INIT(checkpoint_numbers, timers_time, time_handler);
 
-    DECLARATE_CHECKPOINT(&&phase_one);
-    DECLARATE_CHECKPOINT(&&phase_two);
+    CPL_DECLARATE_CHECKPOINT(&&phase_one);
+    CPL_DECLARATE_CHECKPOINT(&&phase_two);
 
     /*************************************************************************/
     /* Local  variables                                                      */
@@ -277,16 +279,17 @@ int main(int argc, char *argv[])
     MPI_Request reqs[8];
 
 
-    if (options == CHECKPOINT_MODE) {
-        checkpoint_save(0);
-    } else if (options == RECOVERY_MODE) {
+    if (options == CPL_CHECKPOINT_MODE) {
+        CPL_SAVE_STATE(&&phase_one, user_save_callback);
+    } else if (options == CPL_RECOVERY_MODE) {
         int phase = checkpoint_get(local_grid, ((ny + 2) * (nx + 2)), &ttotal, &thalo, &treduce, &niters);
         // Jumping to checkpoint
-        GO_TO_CHECKPOINT(phase);
+        CPL_GO_TO_CHECKPOINT(phase);
     }
 
-    SET_CHECKPOINT(phase_one);
-    CHECKPOINT_TIMER_INIT();
+    CPL_SET_CHECKPOINT(phase_one);
+    CPL_TIMER_INIT();
+
 
     MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
 
@@ -341,8 +344,9 @@ int main(int argc, char *argv[])
         thalo += MPI_Wtime();
     }
 
-    //checkpoint_save(1);
-    SAVE_STATE_AND_SET_CHECKPOINT(phase_two);
+
+    CPL_SAVE_STATE(&&phase_two, user_save_callback);
+    CPL_SET_CHECKPOINT(phase_two);
 
 
     MPI_Type_free(&row);

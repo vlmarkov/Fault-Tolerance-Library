@@ -7,14 +7,14 @@
 #include <sys/types.h>
 
 
-double GLOBAL_START_TIME = 0.0;
+double CPL_GLOBAL_START_TIME = 0.0;
 struct itimerval nval, oval;
 
 inline void timer_init_()
 {
-    nval.it_interval.tv_sec  = TIME; // interval 
+    nval.it_interval.tv_sec  = CPL_TIME; // interval 
     nval.it_interval.tv_usec = 0;
-    nval.it_value.tv_sec     = TIME; // time until next expiration
+    nval.it_value.tv_sec     = CPL_TIME; // time until next expiration
     nval.it_value.tv_usec    = 0;
 
     setitimer(ITIMER_REAL, &nval, &oval);
@@ -61,7 +61,7 @@ void open_checkpoint_file(MPI_File *snapshot, int phase)
      * CHECKPOINT_TIME      - each 'PHASE_OF_CALCULATION' could reach many times
      */
 
-    sprintf(file_name,"%d_%d_%f", phase, get_comm_rank_(), wtime_() - GLOBAL_START_TIME);
+    sprintf(file_name,"%d_%d_%f", phase, get_comm_rank_(), wtime_() - CPL_GLOBAL_START_TIME);
 
     MPI_File_open( MPI_COMM_WORLD, file_name, 
                    MPI_MODE_CREATE|MPI_MODE_WRONLY, 
@@ -162,14 +162,23 @@ int get_lastcheckpoint(char *last_checkpoint)
     return last_checkpoint[0] - '0';
 }
 
-
-
-int get_checkpoint_idx_by_name(void **table, int size, void *name)
+int get_checkpoint_idx_by_name_(void **table, int size, void *name)
 {
     int i;
     for (i = 0; i < size; i++) {
-        if (table[i] == &name) {
+        if (table[i] == name) {
             break;
         }
     }
+    return i;
+}
+
+void **init_table_(int size)
+{
+    void **jump_table = (void**) malloc (sizeof(void*) * size);
+    if (!jump_table) {
+        fprintf(stderr, "[ERROR] can't allocate memory for CPL_GLOBAL_JUMP_TABLE\n");
+        exit(1);
+    }
+    return jump_table;
 }
