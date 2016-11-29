@@ -45,6 +45,8 @@
 /* Global variables                                                      */
 /*************************************************************************/
 
+int time_to_save = 0;
+
 int options    = CPL_CHECKPOINT_MODE;
 //int options    = CPL_RECOVERY_MODE;
 
@@ -67,7 +69,7 @@ void *xcalloc(size_t nmemb, size_t size)
         fprintf(stderr, "No enough memory\n");
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
-    return p;    
+    return p;
 }
 
 int get_block_size(int n, int rank, int nprocs)
@@ -90,33 +92,31 @@ int get_sum_of_prev_blocks(int n, int rank, int nprocs)
 /*****************************************************************************/
 inline static void user_save_callback(int phase)
 {
-    if (phase > 0) {
-        CPL_TIMER_STOP();
-    }
-
     MPI_File local_snapshot;
-        
+
     CPL_FILE_OPEN(&local_snapshot, phase);
-        
-    CHECKPOINT_SAVE(local_snapshot, local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE);
-    CHECKPOINT_SAVE(local_snapshot, &ttotal, 1, MPI_DOUBLE);
-    CHECKPOINT_SAVE(local_snapshot, &thalo, 1, MPI_DOUBLE);
-    CHECKPOINT_SAVE(local_snapshot, &treduce, 1, MPI_DOUBLE);
-    CHECKPOINT_SAVE(local_snapshot, &niters, 1, MPI_INT);
-    
+
+    CPL_SAVE_SNAPSHOT(local_snapshot, local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE);
+    CPL_SAVE_SNAPSHOT(local_snapshot, &ttotal, 1, MPI_DOUBLE);
+    CPL_SAVE_SNAPSHOT(local_snapshot, &thalo, 1, MPI_DOUBLE);
+    CPL_SAVE_SNAPSHOT(local_snapshot, &treduce, 1, MPI_DOUBLE);
+    CPL_SAVE_SNAPSHOT(local_snapshot, &niters, 1, MPI_INT);
+
     CPL_FILE_CLOSE(&local_snapshot);
+
+    time_to_save = 0;
 }
 
 
 inline static int checkpoint_get(double *local_grid,
                                  int size,
-                                 double *ttotal, 
-                                 double *thalo, 
-                                 double *treduce, 
+                                 double *ttotal,
+                                 double *thalo,
+                                 double *treduce,
                                  int *niters)
 {
     char last_chechkpoint[] = { "0_0_0.000000" };
-    int phase = CHECKPOINT_GET(last_chechkpoint);
+    int phase = CPL_GET_SNAPSHOT(last_chechkpoint);
 
     FILE * file = fopen(last_chechkpoint, "rb");
     if (file) {
@@ -126,7 +126,7 @@ inline static int checkpoint_get(double *local_grid,
         fread(thalo, sizeof(double), 1, file);
         fread(treduce, sizeof(double), 1, file);
         fread(niters, sizeof(int), 1, file);
-        
+
         fclose(file);
     }
 
@@ -135,7 +135,7 @@ inline static int checkpoint_get(double *local_grid,
 
 void time_handler(int sig)
 {
-    user_save_callback(0);
+    time_to_save = 1;
 }
 
 int main(int argc, char *argv[]) 
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
     /*************************************************************************/
     /* Initialize checkpoint library                                         */
     /*************************************************************************/
-    
+
     int checkpoint_numbers = 2;
     int timers_time        = 5;
 
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
     /* Create 2D grid of processes: commsize = px * py */
     MPI_Comm cartcomm;
     MPI_Dims_create(commsize, 2, dims);
-    
+
     px = dims[0];
     py = dims[1];
 
@@ -290,12 +290,11 @@ int main(int argc, char *argv[])
     CPL_SET_CHECKPOINT(phase_one);
     CPL_TIMER_INIT();
 
-
-    MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    time_to_save = 1;
 
     for (;;) {
         niters++;
-        
+
         // Update interior points
         for (int i = 1; i <= ny; i++) {
             for (int j = 1; j <= nx; j++) {
@@ -321,12 +320,12 @@ int main(int argc, char *argv[])
 
         treduce -= MPI_Wtime();
         MPI_Allreduce(MPI_IN_PLACE, &maxdiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-        treduce += MPI_Wtime();               
-        
+        treduce += MPI_Wtime();
+
         if (maxdiff < EPS) {
             break;
         }
-        
+
         // Halo exchange: T = 4 * (a + b * (rows / py)) + 4 * (a + b * (cols / px))
         thalo -= MPI_Wtime();
 
@@ -338,10 +337,15 @@ int main(int argc, char *argv[])
         MPI_Isend(&local_grid[IND(ny, 1)], 1, row, bottom, 0, cartcomm, &reqs[5]);     // bottom
         MPI_Isend(&local_grid[IND(1, 1)], 1, col, left, 0, cartcomm, &reqs[6]);        // left
         MPI_Isend(&local_grid[IND(1, nx)], 1, col, right, 0, cartcomm, &reqs[7]);      // right
-        
+
         MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
-        
+
         thalo += MPI_Wtime();
+
+        if (time_to_save)
+            CPL_SAVE_STATE(&&phase_one, user_save_callback);
+
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
 
@@ -351,7 +355,7 @@ int main(int argc, char *argv[])
 
     MPI_Type_free(&row);
     MPI_Type_free(&col);
-       
+
     free(local_newgrid);
     free(local_grid);
 
@@ -360,7 +364,7 @@ int main(int argc, char *argv[])
     if (rank == 0) {
         printf("# Heat 2D (mpi): grid: rows %d, cols %d, procs %d (px %d, py %d)\n", rows, cols, commsize, px, py);
     }
-    
+
     printf("# P %4d (%2d, %2d) on %s: grid ny %d nx %d, total %.6f,"
         " mpi %.6f (%.2f) = allred %.6f (%.2f) + halo %.6f (%.2f)\n", 
         rank, rankx, ranky, procname, ny, nx, ttotal, treduce + thalo, 

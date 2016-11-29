@@ -1,28 +1,29 @@
 #ifndef _CHECKPOINT_LIB_H_
 #define _CHECKPOINT_LIB_H_
 
-#include <stdio.h>
-#include <signal.h>
-#include <sys/time.h>
-
-#include <mpi.h>
-
 /*****************************************************************************/
 /* C - check                                                                 */
 /* P - point                                                                 */
 /* L - library                                                               */
 /*****************************************************************************/
 
+#include <stdio.h>
+#include <signal.h>
+#include <sys/time.h>
+
+#include <mpi.h>
+
 
 /*****************************************************************************/
 /* Global variables                                                          */
 /*****************************************************************************/
-extern double CPL_GLOBAL_START_TIME;
-void   **CPL_GLOBAL_JUMP_TABLE;
+extern double cpl_start_time;
 
-int CPL_SIZE;
-int CPL_TIME;
-int CPL_COUNTER;
+extern void   **cpl_checkpoint_table;
+
+extern int cpl_size;
+extern int cpl_time;
+extern int cpl_counter;
 
 enum {
     CPL_CHECKPOINT_MODE = 0,
@@ -43,16 +44,17 @@ enum {
 
 #define CPL_INIT(size, time, func)                                            \
     signal(SIGALRM, func);                                                    \
-    CPL_TIME              = time;                                             \
-    CPL_COUNTER           = 0;                                                \
-    CPL_SIZE              = size;                                             \
-    CPL_GLOBAL_START_TIME = wtime_();                                         \
-    CPL_GLOBAL_JUMP_TABLE = init_table_(CPL_SIZE);                            \
+    cpl_size             = time;                                              \
+    cpl_counter          = 0;                                                 \
+    cpl_size             = size;                                              \
+    cpl_start_time       = wtime_();                                          \
+    cpl_checkpoint_table = init_table_(cpl_size);                             \
 
 //#define CPL_DEINIT() deinit_table_();
 
+
 /*****************************************************************************/
-/* Assigning checkpoint macros                                               */
+/* Declaration checkpoint macros                                             */
 /*****************************************************************************/
 
 /*
@@ -63,68 +65,71 @@ enum {
  */
 
 #define CPL_DECLARATE_CHECKPOINT(name)                                        \
-    CPL_GLOBAL_JUMP_TABLE[CPL_COUNTER++] = name;                              \
+    cpl_checkpoint_table[cpl_counter++] = name;                               \
 
 
 /*****************************************************************************/
 /* Control flow-macros                                                       */
 /*****************************************************************************/
 #define CPL_GO_TO_CHECKPOINT(idx)                                             \
-    goto *CPL_GLOBAL_JUMP_TABLE[idx];                                             \
+    goto *cpl_checkpoint_table[idx];                                          \
 
 
 #define CPL_SET_CHECKPOINT(checkpoint_name)                                   \
     checkpoint_name :                                                         \
 
 
-#define CPL_SAVE_STATE(name, callback)                                       \
-    int _i_ = get_checkpoint_idx_by_name_(CPL_GLOBAL_JUMP_TABLE, CPL_SIZE, name); \
-    callback(_i_);\
+/*****************************************************************************/
+/* Checkpoint-save macros                                                    */
+/*****************************************************************************/
+#define CPL_FILE_OPEN(file, phase)                                            \
+    open_snapshot_file_(file, phase);                                         \
+
+
+#define CPL_FILE_CLOSE(file)                                                  \
+    close_snapshot_file_(file);                                               \
+
+
+#define CPL_SAVE_SNAPSHOT(file, data, n, type)                                \
+    write_to_snapshot_(file, data, n, type);                                  \
+
+
+#define CPL_GET_SNAPSHOT(snapshot)                                            \
+    get_last_snapshot_(snapshot);                                             \
+
+
+#define CPL_SAVE_STATE(checkpoint, user_save_callback)                        \
+    user_save_callback(get_checkpoint_idx_by_name_(cpl_checkpoint_table, cpl_size, checkpoint));\
 
 
 /*****************************************************************************/
 /* Timer                                                                     */
 /*****************************************************************************/
-#define CPL_TIMER_INIT() timer_init_();                                       \
-
-#define CPL_TIMER_STOP() timer_stop_();                                       \
-
-
-/*****************************************************************************/
-/* Checkpoint-save macros                                                    */
-/*****************************************************************************/
-#define CPL_FILE_OPEN(file, phase)                                            \
-    open_checkpoint_file(file, phase);                                        \
+#define CPL_TIMER_INIT()                                                      \
+    timer_init_();                                                            \
 
 
-#define CPL_FILE_CLOSE(file)                                                  \
-    close_checkpoint_file(file);                                              \
-
-#define CHECKPOINT_SAVE(file, data, n, type)                                  \
-    make_snapshot(file, data, n, type);                                       \
-
-
-#define CHECKPOINT_GET(last_chechkpoint) get_lastcheckpoint(last_chechkpoint);
-
+#define CPL_TIMER_STOP()                                                      \
+    timer_stop_();                                                            \
 
 
 /*****************************************************************************/
 /* Prototypes                                                                */
 /*****************************************************************************/
-void make_snapshot(MPI_File file, void *data, int n, MPI_Datatype type);
-
-int get_lastcheckpoint(char *last_chechkpoint);
-
 void   **init_table_(int size);
 
 double wtime_();
 
-void   timer_init_();
-void   timer_stop_();
+void timer_init_();
+void timer_stop_();
 
-void   close_checkpoint_file(MPI_File *snapshot);
-void   open_checkpoint_file(MPI_File *snapshot, int phase);
+void write_to_snapshot_(MPI_File file, void *data, int n, MPI_Datatype type);
 
-int    get_checkpoint_idx_by_name_(void **table, int size, void *name);
+int get_last_snapshot_(char *last_checkpoint);
+int get_checkpoint_idx_by_name_(void **table, int size, void *name);
+
+void open_snapshot_file_(MPI_File *snapshot, int phase);
+void close_snapshot_file_(MPI_File *snapshot);
+
 
 #endif /* _CHECKPOINT_LIB_H_ */
