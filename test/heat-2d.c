@@ -45,7 +45,7 @@
 /* Global variables                                                      */
 /*************************************************************************/
 
-int time_to_save = 0;
+int is_time_to_save = 0;
 
 int options    = CPL_CHECKPOINT_MODE;
 //int options    = CPL_RECOVERY_MODE;
@@ -96,6 +96,9 @@ inline static void user_save_callback(int phase)
 
     CPL_FILE_OPEN(&local_snapshot, phase);
 
+    CPL_SAVE_SNAPSHOT(local_snapshot, &nx, 1, MPI_INT);
+    CPL_SAVE_SNAPSHOT(local_snapshot, &ny, 1, MPI_INT);
+
     CPL_SAVE_SNAPSHOT(local_snapshot, local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE);
     CPL_SAVE_SNAPSHOT(local_snapshot, &ttotal, 1, MPI_DOUBLE);
     CPL_SAVE_SNAPSHOT(local_snapshot, &thalo, 1, MPI_DOUBLE);
@@ -104,7 +107,7 @@ inline static void user_save_callback(int phase)
 
     CPL_FILE_CLOSE(&local_snapshot);
 
-    time_to_save = 0;
+    is_time_to_save = 0;
 }
 
 
@@ -115,27 +118,45 @@ inline static int checkpoint_get(double *local_grid,
                                  double *treduce,
                                  int *niters)
 {
+    int nx, ny;
+
     char last_chechkpoint[] = { "0_0_0.000000" };
     int phase = CPL_GET_SNAPSHOT(last_chechkpoint);
 
-    FILE * file = fopen(last_chechkpoint, "rb");
-    if (file) {
-        // copy the file into the buffer:
-        fread(local_grid, sizeof(double), size, file);
-        fread(ttotal, sizeof(double), 1, file);
-        fread(thalo, sizeof(double), 1, file);
-        fread(treduce, sizeof(double), 1, file);
-        fread(niters, sizeof(int), 1, file);
+    char last_chechkpoint_path[256] = { "snapshot/" };
+    strcat(last_chechkpoint_path, last_chechkpoint);
 
-        fclose(file);
+    FILE * file = fopen(last_chechkpoint_path, "rb");
+    if (!file) {
+        fprintf(stderr, "Can't read snapshot\n");
+        exit(1);
     }
 
+    // copy the file into the buffer:
+    fread(&nx, sizeof(int), 1, file);
+    fread(&ny, sizeof(int), 1, file);
+
+    if (size != ((ny + 2) * (nx + 2))) {
+        fprintf(stderr, "Snapshot size not match\n");
+        fclose(file);
+        exit(1);
+    } else {
+        fprintf(stderr, "Snapshot size match\n");
+    }
+
+    fread(local_grid, sizeof(double), size, file);
+    fread(ttotal, sizeof(double), 1, file);
+    fread(thalo, sizeof(double), 1, file);
+    fread(treduce, sizeof(double), 1, file);
+    fread(niters, sizeof(int), 1, file);
+
+    fclose(file);
     return phase;
 }
 
 void time_handler(int sig)
 {
-    time_to_save = 1;
+    is_time_to_save = 1;
 }
 
 int main(int argc, char *argv[]) 
@@ -290,7 +311,7 @@ int main(int argc, char *argv[])
     CPL_SET_CHECKPOINT(phase_one);
     CPL_TIMER_INIT();
 
-    time_to_save = 1;
+    is_time_to_save = 1;
 
     for (;;) {
         niters++;
@@ -342,7 +363,7 @@ int main(int argc, char *argv[])
 
         thalo += MPI_Wtime();
 
-        if (time_to_save)
+        if (is_time_to_save)
             CPL_SAVE_STATE(&&phase_one, user_save_callback);
 
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);

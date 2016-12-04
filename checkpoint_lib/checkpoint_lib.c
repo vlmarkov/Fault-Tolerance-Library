@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include <sys/stat.h>
 
 /*****************************************************************************/
 /* Global variables                                                          */
@@ -91,7 +92,7 @@ void open_snapshot_file_(MPI_File *snapshot, int phase)
      * CHECKPOINT_TIME      - each 'PHASE_OF_CALCULATION' could reach many times
      */
 
-    sprintf(file_name,"%d_%d_%f", phase, get_comm_rank__(), wtime_() - cpl_start_time);
+    sprintf(file_name,"snapshot/%d_%d_%f", phase, get_comm_rank__(), wtime_() - cpl_start_time);
 
     MPI_File_open( MPI_COMM_WORLD, file_name, 
                    MPI_MODE_CREATE|MPI_MODE_WRONLY, 
@@ -161,7 +162,7 @@ int get_last_snapshot_(char *last_checkpoint)
     DIR           *dir;
     struct dirent *file;
 
-    dir = opendir("./"); // open current directory
+    dir = opendir("./snapshot"); // open current directory
     if (dir) {
         while (file = readdir(dir)) {
             
@@ -221,5 +222,8 @@ void **init_table_(int size)
         fprintf(stderr, "[ERROR] can't allocate memory for CPL_GLOBAL_JUMP_TABLE\n");
         exit(1);
     }
+
+    mkdir("snapshot", 0777);
+
     return jump_table;
 }
