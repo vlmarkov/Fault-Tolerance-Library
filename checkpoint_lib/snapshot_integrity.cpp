@@ -29,10 +29,14 @@ SnapshotDataFile& SnapshotDataFile::operator=(const SnapshotDataFile &rhs)
 /*****************************************************************************/
 /* SnapshotIntegrity class implementation                                    */
 /*****************************************************************************/
+
+/* Main constructor */
 SnapshotIntegrity::SnapshotIntegrity(int commSize) : commSize_(commSize) {}
 
+/* Destructor */
 SnapshotIntegrity::~SnapshotIntegrity() {}
 
+/* Main method */
 void SnapshotIntegrity::getIntegritySnapshots()
 {
     DIR *dir = NULL;
@@ -117,7 +121,7 @@ void SnapshotIntegrity::checkIntegity_(vector<vector<SnapshotDataFile>> &sVector
         integrityVector.push_back(*i);
 
         for (auto j = 1; j < globalSize; j++) {
-            SnapshotDataFile returnObject(-1, "empty");
+            SnapshotDataFile returnObject(-1, "NULL");
             if (fileNameMatch_(i->fileName_, sVector[j], returnObject)) {
                 integrityVector.push_back(returnObject);
             } else {
@@ -126,8 +130,7 @@ void SnapshotIntegrity::checkIntegity_(vector<vector<SnapshotDataFile>> &sVector
         }
 
         if (integritySnapshots_(integrityVector, globalSize)) {
-            cout << "[RESULT]" << endl;
-            printSnapshotVector_(integrityVector);
+            saveSnapshotVector_(integrityVector);
             return;
         }
     }
@@ -153,7 +156,8 @@ bool SnapshotIntegrity::integritySnapshots_(vector<SnapshotDataFile> &sVector, i
         try {
             if (checkSnapohot.is_open()) {
                 while (getline(checkSnapohot, line)) {
-                    if (line.compare("echo") == 0) {
+                    cout << line << endl;
+                    if (line.compare(INTEGRITY_SNAPSHOT) == 0) {
                         counter++;
                         break;
                     }
@@ -200,11 +204,44 @@ void SnapshotIntegrity::printSnapshotVector_(const vector<SnapshotDataFile> sVec
     cout << endl;
 }
 
+void SnapshotIntegrity::saveSnapshotVector_(const vector<SnapshotDataFile> sVector)
+{
+    ofstream outFile;
+
+    outFile.open(INTEGRITY_SNAPSHOT_FILE);
+    try {
+        if (outFile.is_open()) {
+            for (auto i: sVector) {
+                outFile << string(  to_string(i.rank_)    \
+                                    + string("=")         \
+                                    + string(i.fileName_) \
+                                    + string("\n"));
+            }
+            outFile.close();
+        } else {
+            throw string("Can't open file " + string(INTEGRITY_SNAPSHOT_FILE));
+        }
+    }
+
+    catch (string err) {
+        cerr << "[ERROR] " << err << endl;
+        exit(1);
+    }
+}
+
 int main(int argc, char const *argv[])
 {
-    SnapshotIntegrity snapshotIntegrityObject(8);
+    try {
+        if (argc < 1) {
+            throw "not enought arguments";
+        }
+        SnapshotIntegrity snapshotIntegrityObject(atoi(argv[1]));
 
-    snapshotIntegrityObject.getIntegritySnapshots();
-
+        snapshotIntegrityObject.getIntegritySnapshots();
+    }
+    catch (string err) {
+        cerr << "[ERROR] " << err << endl;
+        exit(0); 
+    }
     return 0;
 }

@@ -24,6 +24,7 @@
  *
  * (C) Mikhail Kurnosov, 2015
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -105,6 +106,8 @@ inline static void user_save_callback(int phase)
     CPL_SAVE_SNAPSHOT(local_snapshot, &treduce, 1, MPI_DOUBLE);
     CPL_SAVE_SNAPSHOT(local_snapshot, &niters, 1, MPI_INT);
 
+    CPL_SAVE_SNAPSHOT(local_snapshot, &INTEGRITY_SNAPSHOT, strlen(INTEGRITY_SNAPSHOT), MPI_CHAR);
+
     CPL_FILE_CLOSE(&local_snapshot);
 
     is_time_to_save = 0;
@@ -120,15 +123,18 @@ inline static int checkpoint_get(double *local_grid,
 {
     int nx, ny;
 
-    char last_chechkpoint[] = { "0_0_0.000000" };
+    char last_chechkpoint_path[256] = { 0 };
+    char last_chechkpoint[256]      = { 0 };
+
     int phase = CPL_GET_SNAPSHOT(last_chechkpoint);
 
-    char last_chechkpoint_path[256] = { "snapshot/" };
+    strcpy(last_chechkpoint_path, SNAPSHOT_DIR_NAME);
+    strcat(last_chechkpoint_path, "/");
     strcat(last_chechkpoint_path, last_chechkpoint);
 
     FILE * file = fopen(last_chechkpoint_path, "rb");
     if (!file) {
-        fprintf(stderr, "Can't read snapshot\n");
+        fprintf(stderr, "Can't read %s\n", last_chechkpoint_path);
         exit(1);
     }
 
@@ -362,11 +368,12 @@ int main(int argc, char *argv[])
         MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
 
         thalo += MPI_Wtime();
-
+/*
         if (is_time_to_save)
             CPL_SAVE_STATE(&&phase_one, user_save_callback);
 
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+*/
     }
 
 

@@ -4,7 +4,11 @@
 #include <string>
 #include <vector>
 
-#define SNAPSHOT_DIR_NAME "snapshot"
+
+#define SNAPSHOT_DIR_NAME       "snapshot"
+#define INTEGRITY_SNAPSHOT      "=end_of_file="
+#define INTEGRITY_SNAPSHOT_FILE "integity_file.txt"
+
 
 /*****************************************************************************/
 /* SnapshotDataFile class defenition                                         */
@@ -43,6 +47,8 @@ class SnapshotIntegrity
                             SnapshotDataFile &returnObject);
 
         static void printSnapshotVector_(const std::vector<SnapshotDataFile> sVector);
+
+        static void saveSnapshotVector_(const std::vector<SnapshotDataFile> sVector);
 
     public:
         SnapshotIntegrity(int commSize);

@@ -82,17 +82,20 @@ static int get_comm_size__()
 /*****************************************************************************/
 void open_snapshot_file_(MPI_File *snapshot, int phase)
 {
+    static int counter  = 0;
     char file_name[256] = { 0 };
-
+    char file_path[256] = { 0 };
     /* 
-     * 1_1_1.3456 => [PHASE_OF_CALCULATION]_[RANK]_[CHECKPOINT_TIME]
+     * 1_1 => [PHASE_OF_CALCULATION]_[COUNTER]
      *
      * PHASE_OF_CALCULATION - global state, need for 'goto'
-     * RANK                 - process rank
-     * CHECKPOINT_TIME      - each 'PHASE_OF_CALCULATION' could reach many times
+     * COUNTER              - each PHASE_OF_CALCULATION could reach many times
      */
 
-    sprintf(file_name,"snapshot/%d_%d_%f", phase, get_comm_rank__(), wtime_() - cpl_start_time);
+    sprintf(file_path,"%s/%d", SNAPSHOT_DIR_NAME, get_comm_rank__());
+    mkdir(file_path, 0777);
+
+    sprintf(file_name,"%s/%d/%d_%d", SNAPSHOT_DIR_NAME, get_comm_rank__(), phase, counter++);
 
     MPI_File_open( MPI_COMM_WORLD, file_name, 
                    MPI_MODE_CREATE|MPI_MODE_WRONLY, 
@@ -114,82 +117,19 @@ void write_to_snapshot_(MPI_File file, void *data, int n, MPI_Datatype type)
 /*****************************************************************************/
 /* Get last snapshot file                                                    */
 /*****************************************************************************/
-static int get_lastcheckpoint_rank__(char *file)
-{
-    int j, i, checkpoint_rank;
-
-    char tmp_rank[10] = { 0 };
-
-    for (j = 0, i = 2; i < strlen(file); i++, j++) {
-        if (file[i] != '_') {
-           tmp_rank[j] = file[i];
-        } else {
-            break;
-        }
-    }
-
-    sscanf(tmp_rank, "%d", &checkpoint_rank);
-    return checkpoint_rank;
-}
-
-static void get_lastcheckpoint_time__(char *a, char *b)
-{
-    int j, i;
-
-    double x, y;
-
-    char time_last[10] = { 0 };
-    char time_cur[10] = { 0 };
-
-    for (j = 0, i = 4; i < strlen(b); i++, j++) {
-        time_last[j] = a[i];
-        time_cur[j]  = b[i];
-    }
-    
-    sscanf(time_last, "%lf", &x);
-    sscanf(time_cur, "%lf", &y);
-
-    // Figure out which checkpoint is 'older'
-    if (x < y) {
-        strcpy(a, b);
-    }
-}
-
 int get_last_snapshot_(char *last_checkpoint)
 {
     int myrank = get_comm_rank__();
 
-    DIR           *dir;
-    struct dirent *file;
-
-    dir = opendir("./snapshot"); // open current directory
-    if (dir) {
-        while (file = readdir(dir)) {
-            
-            // Skip '.' '..' directory
-            if (strlen(file->d_name) < 3) {
-                continue;
-            }
-
-            if (file->d_name[1] != '_') {
-                continue;
-            }
-
-            // Work only with myrank checkpoint
-            if (myrank == get_lastcheckpoint_rank__(file->d_name)) {
-                //printf("[DEBUG] Found for rank %d - %s\n", myrank, file->d_name);
-
-                // Work only with greater checkpoint phase
-                if (last_checkpoint[0] <= file->d_name[0]) {
-                    get_lastcheckpoint_time__(last_checkpoint, file->d_name);
-                }
-                //printf("[DEBUG] %s\n", last_checkpoint);
-            }
-        }
-        closedir(dir);
-    } else {
-        fprintf(stderr, "can't open current directory\n");
+    FILE * file = fopen(INTEGRITY_SNAPSHOT_FILE, "r");
+    if (!file) {
+        fprintf(stderr, "Can't read %s\n", SNAPSHOT_DIR_NAME);
+        exit(1);
     }
+
+    // TO DO
+
+    fclose(file);
 
     printf("Rankd %d, file %s, phase %d\n", myrank, last_checkpoint, last_checkpoint[0] - '0');
 
@@ -223,7 +163,7 @@ void **init_table_(int size)
         exit(1);
     }
 
-    mkdir("snapshot", 0777);
+    mkdir(SNAPSHOT_DIR_NAME, 0777);
 
     return jump_table;
 }

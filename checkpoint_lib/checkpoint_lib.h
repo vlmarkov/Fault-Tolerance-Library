@@ -13,6 +13,9 @@
 
 #include <mpi.h>
 
+#define SNAPSHOT_DIR_NAME "snapshot"
+#define INTEGRITY_SNAPSHOT "\n=end_of_file="
+#define INTEGRITY_SNAPSHOT_FILE "integity_file.txt"
 
 /*****************************************************************************/
 /* Global variables                                                          */
@@ -99,7 +102,8 @@ enum {
 
 
 #define CPL_SAVE_STATE(checkpoint, user_save_callback)                        \
-    user_save_callback(get_checkpoint_idx_by_name_(cpl_checkpoint_table, cpl_size, checkpoint));\
+    user_save_callback(get_checkpoint_idx_by_name_(cpl_checkpoint_table,      \
+                                                       cpl_size, checkpoint));\
 
 
 /*****************************************************************************/
