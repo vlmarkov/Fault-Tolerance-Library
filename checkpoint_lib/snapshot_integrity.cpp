@@ -156,7 +156,7 @@ bool SnapshotIntegrity::integritySnapshots_(vector<SnapshotDataFile> &sVector, i
         try {
             if (checkSnapohot.is_open()) {
                 while (getline(checkSnapohot, line)) {
-                    cout << line << endl;
+                    //cout << line << endl;
                     if (line.compare(INTEGRITY_SNAPSHOT) == 0) {
                         counter++;
                         break;

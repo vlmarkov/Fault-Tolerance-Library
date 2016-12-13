@@ -48,10 +48,10 @@
 
 int is_time_to_save = 0;
 
-int options    = CPL_CHECKPOINT_MODE;
-//int options    = CPL_RECOVERY_MODE;
+int options = CPL_CHECKPOINT_MODE;
+//int options = CPL_RECOVERY_MODE;
 
-int niters     = 0;
+int niters = 0;
 
 int ny, nx;
 
@@ -116,6 +116,7 @@ inline static void user_save_callback(int phase)
 
 inline static int checkpoint_get(double *local_grid,
                                  int size,
+                                 int rank,
                                  double *ttotal,
                                  double *thalo,
                                  double *treduce,
@@ -123,18 +124,23 @@ inline static int checkpoint_get(double *local_grid,
 {
     int nx, ny;
 
-    char last_chechkpoint_path[256] = { 0 };
-    char last_chechkpoint[256]      = { 0 };
+    char rank_str[256]             = { 0 };
+    char last_checkpoint_path[256] = { 0 };
+    char last_checkpoint[256]      = { 0 };
 
-    int phase = CPL_GET_SNAPSHOT(last_chechkpoint);
+    int phase = CPL_GET_SNAPSHOT(last_checkpoint);
 
-    strcpy(last_chechkpoint_path, SNAPSHOT_DIR_NAME);
-    strcat(last_chechkpoint_path, "/");
-    strcat(last_chechkpoint_path, last_chechkpoint);
+    sprintf(rank_str, "/%d/", rank);
 
-    FILE * file = fopen(last_chechkpoint_path, "rb");
+    strcpy(last_checkpoint_path, SNAPSHOT_DIR_NAME);
+    strcat(last_checkpoint_path, rank_str);
+    strcat(last_checkpoint_path, last_checkpoint);
+
+    //printf("-> rank %d, phase %d, file %s\n", rank, phase, last_checkpoint_path);
+
+    FILE * file = fopen(last_checkpoint_path, "rb");
     if (!file) {
-        fprintf(stderr, "Can't read %s\n", last_chechkpoint_path);
+        fprintf(stderr, "Can't read %s\n", last_checkpoint_path);
         exit(1);
     }
 
@@ -300,7 +306,7 @@ int main(int argc, char *argv[])
     MPI_Type_commit(&col);
 
     // Top and bottom borders type
-    MPI_Datatype row;        
+    MPI_Datatype row;
     MPI_Type_contiguous(nx, MPI_DOUBLE, &row);
     MPI_Type_commit(&row);
     MPI_Request reqs[8];
@@ -309,7 +315,7 @@ int main(int argc, char *argv[])
     if (options == CPL_CHECKPOINT_MODE) {
         CPL_SAVE_STATE(&&phase_one, user_save_callback);
     } else if (options == CPL_RECOVERY_MODE) {
-        int phase = checkpoint_get(local_grid, ((ny + 2) * (nx + 2)), &ttotal, &thalo, &treduce, &niters);
+        int phase = checkpoint_get(local_grid, ((ny + 2) * (nx + 2)), rank, &ttotal, &thalo, &treduce, &niters);
         // Jumping to checkpoint
         CPL_GO_TO_CHECKPOINT(phase);
     }
@@ -398,8 +404,8 @@ int main(int argc, char *argv[])
         rank, rankx, ranky, procname, ny, nx, ttotal, treduce + thalo, 
         (treduce + thalo) / ttotal, treduce, treduce / (treduce + thalo), 
         thalo, thalo / (treduce + thalo)); 
-        
-    double prof[3] = { ttotal, treduce, thalo };    
+
+    double prof[3] = { ttotal, treduce, thalo };
 
     if (rank == 0) {
         MPI_Reduce(MPI_IN_PLACE, prof, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);

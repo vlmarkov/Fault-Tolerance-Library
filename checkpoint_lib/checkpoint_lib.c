@@ -121,15 +121,44 @@ int get_last_snapshot_(char *last_checkpoint)
 {
     int myrank = get_comm_rank__();
 
-    FILE * file = fopen(INTEGRITY_SNAPSHOT_FILE, "r");
+    char tmp_checkpoint[256] = { 0 };
+
+    char * line = NULL;
+    size_t len = 0;
+    int i, j;
+
+    FILE *file = fopen(INTEGRITY_SNAPSHOT_FILE, "r");
     if (!file) {
-        fprintf(stderr, "Can't read %s\n", SNAPSHOT_DIR_NAME);
+        fprintf(stderr, "Can't read from %s\n", INTEGRITY_SNAPSHOT_FILE);
         exit(1);
     }
 
-    // TO DO
-
+    while ((getline(&line, &len, file)) != -1) {
+        //printf("%s\n", line);
+        char tmp[10] = { 0 };
+        sprintf(tmp, "%c", line[0]);
+        if (atoi(tmp) == myrank) {
+            //printf("*%s\n", line);
+            strcpy(last_checkpoint, line);
+        }
+    }
     fclose(file);
+
+    for (i = 0; i < strlen(last_checkpoint); i++) {
+        if (last_checkpoint[i] == '=') {
+            break;
+        }
+    }
+
+    i += 1;
+
+    for (j = 0; i < strlen(last_checkpoint); j++, i++) {
+        tmp_checkpoint[j] = last_checkpoint[i];
+    }
+
+    strcpy(last_checkpoint, tmp_checkpoint);
+
+    last_checkpoint[strlen(last_checkpoint) - 1] = '\0';
 
     printf("Rankd %d, file %s, phase %d\n", myrank, last_checkpoint, last_checkpoint[0] - '0');
 
