@@ -20,12 +20,9 @@
 /*****************************************************************************/
 /* Global variables                                                          */
 /*****************************************************************************/
-extern double cpl_start_time;
-
 extern void   **cpl_checkpoint_table;
 
 extern int cpl_size;
-extern int cpl_time;
 extern int cpl_counter;
 
 enum {
@@ -42,18 +39,14 @@ enum {
  * Decription:
  * size - checkpoints numbers
  * time - in seconds for timer 
- * func - handler function
  */
 
-#define CPL_INIT(size, time, func)                                            \
-    signal(SIGALRM, func);                                                    \
-    cpl_size             = time;                                              \
-    cpl_counter          = 0;                                                 \
-    cpl_size             = size;                                              \
-    cpl_start_time       = wtime_();                                          \
-    cpl_checkpoint_table = init_table_(cpl_size);                             \
+#define CPL_INIT(size, time)                                                  \
+    cpl_init(size, time);                                                     \
 
-//#define CPL_DEINIT() deinit_table_();
+
+#define CPL_FINILIZE()                                                        \
+    cpl_finilize();                                                           \
 
 
 /*****************************************************************************/
@@ -106,6 +99,9 @@ enum {
                                                        cpl_size, checkpoint));\
 
 
+#define CPL_OPEN_SNAPSHOT(file_name, mode)                                    \
+    cpl_open_file(file_name, mode);                                           \
+
 /*****************************************************************************/
 /* Timer                                                                     */
 /*****************************************************************************/
@@ -122,11 +118,16 @@ enum {
 /*****************************************************************************/
 void   **init_table_(int size);
 
+void cpl_init(int size, double time);
+void cpl_finilize();
+
+
 double wtime_();
 
 void timer_init_();
 void timer_stop_();
 
+FILE *cpl_open_file(char *file_name, char *mode);
 void write_to_snapshot_(MPI_File file, void *data, int n, MPI_Datatype type);
 
 int get_last_snapshot_(char *last_checkpoint);

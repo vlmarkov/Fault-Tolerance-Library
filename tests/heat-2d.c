@@ -138,7 +138,8 @@ inline static int checkpoint_get(double *local_grid,
 
     //printf("-> rank %d, phase %d, file %s\n", rank, phase, last_checkpoint_path);
 
-    FILE * file = fopen(last_checkpoint_path, "rb");
+    FILE *file = CPL_OPEN_SNAPSHOT(last_checkpoint_path, "rb");
+    //FILE * file = fopen(last_checkpoint_path, "rb");
     if (!file) {
         fprintf(stderr, "Can't read %s\n", last_checkpoint_path);
         exit(1);
@@ -166,11 +167,9 @@ inline static int checkpoint_get(double *local_grid,
     return phase;
 }
 
-void time_handler(int sig)
-{
-    is_time_to_save = 1;
-}
-
+/*************************************************************************/
+/* Main function                                                         */
+/*************************************************************************/
 int main(int argc, char *argv[]) 
 {
     /*************************************************************************/
@@ -180,7 +179,7 @@ int main(int argc, char *argv[])
     int checkpoint_numbers = 2;
     int timers_time        = 5;
 
-    CPL_INIT(checkpoint_numbers, timers_time, time_handler);
+    CPL_INIT(checkpoint_numbers, timers_time);
 
     CPL_DECLARATE_CHECKPOINT(&&phase_one);
     CPL_DECLARATE_CHECKPOINT(&&phase_two);
@@ -415,6 +414,8 @@ int main(int argc, char *argv[])
     } else {
         MPI_Reduce(prof, NULL, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     }
+
+    CPL_FINILIZE();
 
     MPI_Finalize();
     return 0;
