@@ -236,12 +236,11 @@ void cpl_init(int size, double time)
     cpl_size             = time; 
     cpl_counter          = 0;
     cpl_size             = size;
-    cpl_start_time       = wtime_();
     cpl_start_time_local = wtime_();
     cpl_checkpoint_table = init_table_(cpl_size);
 }
 
-void cpl_finilize()
+void cpl_finailize()
 {
     int i;
 

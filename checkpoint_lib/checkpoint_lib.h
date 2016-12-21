@@ -45,8 +45,8 @@ enum {
     cpl_init(size, time);                                                     \
 
 
-#define CPL_FINILIZE()                                                        \
-    cpl_finilize();                                                           \
+#define CPL_FINAILIZE()                                                       \
+    cpl_finailize();                                                          \
 
 
 /*****************************************************************************/
