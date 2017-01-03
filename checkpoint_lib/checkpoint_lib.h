@@ -45,7 +45,7 @@ enum {
     cpl_init(size, time);                                                     \
 
 
-#define CPL_FINAILIZE()                                                       \
+#define CPL_FINALIZE()                                                        \
     cpl_finailize();                                                          \
 
 
@@ -119,7 +119,7 @@ enum {
 void   **init_table_(int size);
 
 void cpl_init(int size, double time);
-void cpl_finailize();
+void cpl_finalize();
 
 
 double wtime_();

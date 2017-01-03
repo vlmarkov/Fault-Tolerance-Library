@@ -153,7 +153,7 @@ FILE *cpl_open_file(char *file_name, char *mode)
     // Move file to the end of file
     fseek(file, -offset, SEEK_END);
 
-    // Read from file
+    // copy the file into the buffer:
     fread(&cpl_start_time, sizeof(double), 1, file);
     fread(&cpl_save_time, sizeof(double), 1, file);
     fread(&cpl_snapshot_counter, sizeof(int), 1, file);
@@ -254,7 +254,7 @@ void cpl_init(int size, double time)
     cpl_checkpoint_table = init_table_(cpl_size);
 }
 
-void cpl_finailize()
+void cpl_finalize()
 {
     int i;
 

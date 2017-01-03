@@ -413,7 +413,7 @@ int main(int argc, char *argv[])
         MPI_Reduce(prof, NULL, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     }
 
-    CPL_FINAILIZE();
+    CPL_FINALIZE();
 
     MPI_Finalize();
     return 0;
