@@ -106,8 +106,6 @@ inline static void user_save_callback(int phase)
     CPL_SAVE_SNAPSHOT(local_snapshot, &treduce, 1, MPI_DOUBLE);
     CPL_SAVE_SNAPSHOT(local_snapshot, &niters, 1, MPI_INT);
 
-    CPL_SAVE_SNAPSHOT(local_snapshot, &INTEGRITY_SNAPSHOT, strlen(INTEGRITY_SNAPSHOT), MPI_CHAR);
-
     CPL_FILE_CLOSE(&local_snapshot);
 
     is_time_to_save = 0;
@@ -138,7 +136,8 @@ inline static int checkpoint_get(double *local_grid,
 
     //printf("-> rank %d, phase %d, file %s\n", rank, phase, last_checkpoint_path);
 
-    FILE * file = fopen(last_checkpoint_path, "rb");
+    FILE *file = CPL_OPEN_SNAPSHOT(last_checkpoint_path, "rb");
+    //FILE * file = fopen(last_checkpoint_path, "rb");
     if (!file) {
         fprintf(stderr, "Can't read %s\n", last_checkpoint_path);
         exit(1);
@@ -166,11 +165,9 @@ inline static int checkpoint_get(double *local_grid,
     return phase;
 }
 
-void time_handler(int sig)
-{
-    is_time_to_save = 1;
-}
-
+/*************************************************************************/
+/* Main function                                                         */
+/*************************************************************************/
 int main(int argc, char *argv[]) 
 {
     /*************************************************************************/
@@ -180,7 +177,7 @@ int main(int argc, char *argv[])
     int checkpoint_numbers = 2;
     int timers_time        = 5;
 
-    CPL_INIT(checkpoint_numbers, timers_time, time_handler);
+    CPL_INIT(checkpoint_numbers, timers_time);
 
     CPL_DECLARATE_CHECKPOINT(&&phase_one);
     CPL_DECLARATE_CHECKPOINT(&&phase_two);
@@ -393,7 +390,7 @@ int main(int argc, char *argv[])
     free(local_newgrid);
     free(local_grid);
 
-    ttotal += MPI_Wtime();
+    ttotal = MPI_Wtime() - ttotal;
 
     if (rank == 0) {
         printf("# Heat 2D (mpi): grid: rows %d, cols %d, procs %d (px %d, py %d)\n", rows, cols, commsize, px, py);
@@ -415,6 +412,8 @@ int main(int argc, char *argv[])
     } else {
         MPI_Reduce(prof, NULL, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     }
+
+    CPL_FINAILIZE();
 
     MPI_Finalize();
     return 0;

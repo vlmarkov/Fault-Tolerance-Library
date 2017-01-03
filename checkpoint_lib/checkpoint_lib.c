@@ -17,9 +17,15 @@
 /*****************************************************************************/
 /* Global variables                                                          */
 /*****************************************************************************/
-double cpl_start_time = 0.0;
-
 void   **cpl_checkpoint_table;
+
+double cpl_start_time    = 0.0;
+double cpl_start_time_local = 0.0;
+
+double cpl_save_time       = 0.0;
+double cpl_save_time_local = 0.0;
+
+int cpl_snapshot_counter = 0;
 
 int cpl_size    = 0;
 int cpl_time    = 0;
@@ -82,6 +88,8 @@ static int get_comm_size__()
 /*****************************************************************************/
 void open_snapshot_file_(MPI_File *snapshot, int phase)
 {
+    MPI_Status status;
+
     static int counter  = 0;
     char file_name[256] = { 0 };
     char file_path[256] = { 0 };
@@ -100,10 +108,26 @@ void open_snapshot_file_(MPI_File *snapshot, int phase)
     MPI_File_open( MPI_COMM_WORLD, file_name, 
                    MPI_MODE_CREATE|MPI_MODE_WRONLY, 
                    MPI_INFO_NULL, snapshot );
+
+    cpl_save_time_local = wtime_();
 }
 
 void close_snapshot_file_(MPI_File *snapshot)
 {
+    MPI_Status status;
+
+    cpl_snapshot_counter += 1;
+
+    cpl_save_time_local = wtime_() - cpl_save_time_local;
+    cpl_save_time += cpl_save_time_local;
+
+    double elapsed_time = wtime_() - cpl_start_time_local;
+
+    MPI_File_write(*snapshot, &elapsed_time, 1, MPI_DOUBLE, &status);
+    MPI_File_write(*snapshot, &cpl_save_time, 1, MPI_DOUBLE, &status);
+    MPI_File_write(*snapshot, &cpl_snapshot_counter, 1, MPI_INT, &status);
+    MPI_File_write(*snapshot, &INTEGRITY_SNAPSHOT, strlen(INTEGRITY_SNAPSHOT), MPI_CHAR, &status);
+
     MPI_File_close(snapshot);
 }
 
@@ -113,6 +137,32 @@ void write_to_snapshot_(MPI_File file, void *data, int n, MPI_Datatype type)
     MPI_File_write(file, data, n, type, &status);
 }
 
+FILE *cpl_open_file(char *file_name, char *mode)
+{
+    FILE *file = fopen(file_name, mode);
+    if (!file) {
+        fprintf(stderr, "Can't read %s\n", file_name);
+        exit(1);
+    }
+
+    long offset = sizeof(cpl_start_time) \
+                  + sizeof(cpl_save_time) \
+                  + sizeof(cpl_snapshot_counter) \
+                  + strlen(INTEGRITY_SNAPSHOT); 
+
+    // Move file to the end of file
+    fseek(file, -offset, SEEK_END);
+
+    // Read from file
+    fread(&cpl_start_time, sizeof(double), 1, file);
+    fread(&cpl_save_time, sizeof(double), 1, file);
+    fread(&cpl_snapshot_counter, sizeof(int), 1, file);
+
+    // Move file ptr to the begin of file
+    rewind(file);
+
+    return file;
+}
 
 /*****************************************************************************/
 /* Get last snapshot file                                                    */
@@ -134,11 +184,9 @@ int get_last_snapshot_(char *last_checkpoint)
     }
 
     while ((getline(&line, &len, file)) != -1) {
-        //printf("%s\n", line);
         char tmp[10] = { 0 };
         sprintf(tmp, "%c", line[0]);
         if (atoi(tmp) == myrank) {
-            //printf("*%s\n", line);
             strcpy(last_checkpoint, line);
         }
     }
@@ -195,4 +243,43 @@ void **init_table_(int size)
     mkdir(SNAPSHOT_DIR_NAME, 0777);
 
     return jump_table;
+}
+
+void cpl_init(int size, double time)
+{
+    cpl_size             = time; 
+    cpl_counter          = 0;
+    cpl_size             = size;
+    cpl_start_time_local = wtime_();
+    cpl_checkpoint_table = init_table_(cpl_size);
+}
+
+void cpl_finailize()
+{
+    int i;
+
+    // Zero process print statistic
+    if (get_comm_rank__() == 0) {
+        printf("\n");
+        // Print up border
+        for (i = 0; i < 80; i++) {
+            printf("*");
+        }
+        printf("\n");
+        cpl_start_time +=  wtime_() - cpl_start_time_local;
+        printf("[CPL_LIBRARY] common elapsed time   = %f sec\n", cpl_start_time);
+
+        double time_one_save = cpl_save_time / (double)cpl_snapshot_counter;
+        cpl_save_time = time_one_save * (double)cpl_snapshot_counter;
+
+        printf("[CPL_LIBRARY] elapsed time one save = %f sec\n", time_one_save);
+        printf("[CPL_LIBRARY] elapsed time all save = %f sec\n", cpl_save_time);
+        printf("[CPL_LIBRARY] amount of snapshots   = %d\n", cpl_snapshot_counter);
+
+        // Print down border
+        for (i = 0; i < 80; i++) {
+            printf("*");
+        }
+        printf("\n");
+    }
 }
