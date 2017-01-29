@@ -45,8 +45,6 @@
 /*************************************************************************/
 /* Global variables                                                      */
 /*************************************************************************/
-int is_time_to_save = 0;
-
 int niters = 0;
 
 int ny, nx;
@@ -103,8 +101,6 @@ inline static void user_save_callback(int phase)
     CPL_SAVE_SNAPSHOT(local_snapshot, &niters, 1, MPI_INT);
 
     CPL_FILE_CLOSE(&local_snapshot);
-
-    is_time_to_save = 0;
 }
 
 
