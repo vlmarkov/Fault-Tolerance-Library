@@ -232,8 +232,8 @@ void SnapshotIntegrity::saveSnapshotVector_(const vector<SnapshotDataFile> sVect
 int main(int argc, char const *argv[])
 {
     try {
-        if (argc < 1) {
-            throw "not enought arguments";
+        if (argc < 2) {
+            throw string("not enought arguments");
         }
         SnapshotIntegrity snapshotIntegrityObject(atoi(argv[1]));
 
@@ -241,6 +241,7 @@ int main(int argc, char const *argv[])
     }
     catch (string err) {
         cerr << "[ERROR] " << err << endl;
+        cerr << "[NOTE] " << argv[0] << " [proc_number]. snapshot directory must be in the same directory" << endl;
         exit(0); 
     }
     return 0;

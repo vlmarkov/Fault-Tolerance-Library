@@ -45,11 +45,7 @@
 /*************************************************************************/
 /* Global variables                                                      */
 /*************************************************************************/
-
 int is_time_to_save = 0;
-
-int options = CPL_CHECKPOINT_MODE;
-//int options = CPL_RECOVERY_MODE;
 
 int niters = 0;
 
@@ -134,12 +130,9 @@ inline static int checkpoint_get(double *local_grid,
     strcat(last_checkpoint_path, rank_str);
     strcat(last_checkpoint_path, last_checkpoint);
 
-    //printf("-> rank %d, phase %d, file %s\n", rank, phase, last_checkpoint_path);
-
     FILE *file = CPL_OPEN_SNAPSHOT(last_checkpoint_path, "rb");
-    //FILE * file = fopen(last_checkpoint_path, "rb");
     if (!file) {
-        fprintf(stderr, "Can't read %s\n", last_checkpoint_path);
+        fprintf(stderr, "[CPL_LIBRARY] Can't read %s\n", last_checkpoint_path);
         exit(1);
     }
 
@@ -148,11 +141,11 @@ inline static int checkpoint_get(double *local_grid,
     fread(&ny, sizeof(int), 1, file);
 
     if (size != ((ny + 2) * (nx + 2))) {
-        fprintf(stderr, "Snapshot size not match\n");
+        printf("[CPL_LIBRARY] Snapshot size not match\n");
         fclose(file);
         exit(1);
     } else {
-        fprintf(stderr, "Snapshot size match\n");
+        printf("[CPL_LIBRARY] Snapshot size match\n");
     }
 
     fread(local_grid, sizeof(double), size, file);
@@ -170,6 +163,9 @@ inline static int checkpoint_get(double *local_grid,
 /*************************************************************************/
 int main(int argc, char *argv[]) 
 {
+    /* Allways FIRST */
+    MPI_Init(&argc, &argv);
+
     /*************************************************************************/
     /* Initialize checkpoint library                                         */
     /*************************************************************************/
@@ -177,7 +173,7 @@ int main(int argc, char *argv[])
     int checkpoint_numbers = 2;
     int timers_time        = 5;
 
-    CPL_INIT(checkpoint_numbers, timers_time);
+    CPL_INIT(checkpoint_numbers, timers_time, argc, argv);
 
     CPL_DECLARATE_CHECKPOINT(&&phase_one);
     CPL_DECLARATE_CHECKPOINT(&&phase_two);
@@ -201,7 +197,6 @@ int main(int argc, char *argv[])
     /*************************************************************************/
 
     /* Initialize args, rank, commsize */
-    MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &commsize);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -308,19 +303,15 @@ int main(int argc, char *argv[])
     MPI_Type_commit(&row);
     MPI_Request reqs[8];
 
-
-    if (options == CPL_CHECKPOINT_MODE) {
-        CPL_SAVE_STATE(&&phase_one, user_save_callback);
-    } else if (options == CPL_RECOVERY_MODE) {
+    if (IS_CPL_RECOVERY_MODE()) {
         int phase = checkpoint_get(local_grid, ((ny + 2) * (nx + 2)), rank, &ttotal, &thalo, &treduce, &niters);
         // Jumping to checkpoint
         CPL_GO_TO_CHECKPOINT(phase);
     }
 
+    CPL_SAVE_STATE(&&phase_one, user_save_callback);
     CPL_SET_CHECKPOINT(phase_one);
     CPL_TIMER_INIT();
-
-    is_time_to_save = 1;
 
     for (;;) {
         niters++;
@@ -371,18 +362,13 @@ int main(int argc, char *argv[])
         MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
 
         thalo += MPI_Wtime();
-/*
-        if (is_time_to_save)
-            CPL_SAVE_STATE(&&phase_one, user_save_callback);
 
+        CPL_SAVE_STATE(&&phase_one, user_save_callback);
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-*/
     }
-
 
     CPL_SAVE_STATE(&&phase_two, user_save_callback);
     CPL_SET_CHECKPOINT(phase_two);
-
 
     MPI_Type_free(&row);
     MPI_Type_free(&col);

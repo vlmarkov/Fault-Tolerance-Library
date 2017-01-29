@@ -25,11 +25,6 @@ extern void   **cpl_checkpoint_table;
 extern int cpl_size;
 extern int cpl_counter;
 
-enum {
-    CPL_CHECKPOINT_MODE = 0,
-    CPL_RECOVERY_MODE   = 1
-};
-
 
 /*****************************************************************************/
 /* Initializing checkpoint library macros                                    */
@@ -41,12 +36,12 @@ enum {
  * time - in seconds for timer 
  */
 
-#define CPL_INIT(size, time)                                                  \
-    cpl_init(size, time);                                                     \
+#define CPL_INIT(size, time, argc, argv)                                      \
+    cpl_init(size, time, argc, argv);                                         \
 
 
 #define CPL_FINALIZE()                                                        \
-    cpl_finalize();                                                          \
+    cpl_finalize();                                                           \
 
 
 /*****************************************************************************/
@@ -118,7 +113,7 @@ enum {
 /*****************************************************************************/
 void   **init_table_(int size);
 
-void cpl_init(int size, double time);
+void cpl_init(int size, double time, int argc, char *argv[]);
 void cpl_finalize();
 
 
@@ -135,6 +130,12 @@ int get_checkpoint_idx_by_name_(void **table, int size, void *name);
 
 void open_snapshot_file_(MPI_File *snapshot, int phase);
 void close_snapshot_file_(MPI_File *snapshot);
+
+/*****************************************************************************/
+/* Run options functions                                                     */
+/*****************************************************************************/
+int IS_CPL_CHECKPOINT_MODE();
+int IS_CPL_RECOVERY_MODE();
 
 
 #endif /* _CHECKPOINT_LIB_H_ */

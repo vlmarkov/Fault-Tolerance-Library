@@ -17,6 +17,12 @@
 /*****************************************************************************/
 /* Global variables                                                          */
 /*****************************************************************************/
+enum {
+    CPL_CHECKPOINT_MODE = 1,
+    CPL_RECOVERY_MODE   = 2
+};
+
+
 void   **cpl_checkpoint_table;
 
 double cpl_start_time    = 0.0;
@@ -30,6 +36,8 @@ int cpl_snapshot_counter = 0;
 int cpl_size    = 0;
 int cpl_time    = 0;
 int cpl_counter = 0;
+
+int cpl_run_options = 0;
 
 static struct itimerval cpl_timer;
 
@@ -208,7 +216,7 @@ int get_last_snapshot_(char *last_checkpoint)
 
     last_checkpoint[strlen(last_checkpoint) - 1] = '\0';
 
-    printf("Rankd %d, file %s, phase %d\n", myrank, last_checkpoint, last_checkpoint[0] - '0');
+    printf("Rank %d, file %s, phase %d\n", myrank, last_checkpoint, last_checkpoint[0] - '0');
 
     return last_checkpoint[0] - '0';
 }
@@ -245,13 +253,27 @@ void **init_table_(int size)
     return jump_table;
 }
 
-void cpl_init(int size, double time)
+void cpl_init(int size, double time, int argc, char *argv[])
 {
     cpl_size             = time; 
     cpl_counter          = 0;
     cpl_size             = size;
     cpl_start_time_local = wtime_();
     cpl_checkpoint_table = init_table_(cpl_size);
+
+    if (get_comm_rank__() == 0) {
+        printf("\n[CPL_LIBRARY] note, use: %s [args] [recovery]\n", argv[0]);
+    }
+
+    while (argc-->0) {
+        if (strcmp(argv[argc], "recovery") == 0) {
+            if (get_comm_rank__() == 0) {
+                printf("[CPL_LIBRARY] running options 'recovery'\n");
+            }
+            cpl_run_options = CPL_RECOVERY_MODE;
+            break;
+        }
+    }
 }
 
 void cpl_finalize()
@@ -282,4 +304,12 @@ void cpl_finalize()
         }
         printf("\n");
     }
+}
+
+int IS_CPL_RECOVERY_MODE()
+{
+    if (cpl_run_options == CPL_RECOVERY_MODE)
+        return 1;
+    else
+        return 0;
 }
