@@ -85,6 +85,18 @@ extern int cpl_counter;
     write_to_snapshot_(file, data, n, type);                                  \
 
 
+#define CPL_FILE_OPEN_TMP(file, phase)                                        \
+    open_snapshot_file_tmp_(file, phase);                                     \
+
+
+#define CPL_FILE_CLOSE_TMP(file)                                              \
+    close_snapshot_file_tmp_(file);                                           \
+
+
+#define CPL_SAVE_SNAPSHOT_TMP(file, data, n, type)                            \
+    write_to_snapshot_tmp_(file, data, n, type);                              \
+
+
 #define CPL_GET_SNAPSHOT(snapshot)                                            \
     get_last_snapshot_(snapshot);                                             \
 
@@ -124,12 +136,15 @@ void timer_stop_();
 
 FILE *cpl_open_file(char *file_name, char *mode);
 void write_to_snapshot_(MPI_File file, void *data, int n, MPI_Datatype type);
+void write_to_snapshot_tmp_(FILE *snapshot, void *data, int n, MPI_Datatype type);
 
 int get_last_snapshot_(char *last_checkpoint);
 int get_checkpoint_idx_by_name_(void **table, int size, void *name);
 
 void open_snapshot_file_(MPI_File *snapshot, int phase);
+void open_snapshot_file_tmp_(FILE **snapshot, int phase);
 void close_snapshot_file_(MPI_File *snapshot);
+void close_snapshot_file_tmp_(FILE *snapshot);
 
 /*****************************************************************************/
 /* Run options functions                                                     */

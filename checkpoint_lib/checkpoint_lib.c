@@ -101,14 +101,15 @@ void open_snapshot_file_(MPI_File *snapshot, int phase)
     static int counter  = 0;
     char file_name[256] = { 0 };
     char file_path[256] = { 0 };
-    /* 
+
+    /*
      * 1_1 => [PHASE_OF_CALCULATION]_[COUNTER]
      *
      * PHASE_OF_CALCULATION - global state, need for 'goto'
      * COUNTER              - each PHASE_OF_CALCULATION could reach many times
      */
 
-    sprintf(file_path,"%s/%d", SNAPSHOT_DIR_NAME, get_comm_rank__());
+    sprintf(file_path,"/tmp/%s/%d", SNAPSHOT_DIR_NAME, get_comm_rank__());
     mkdir(file_path, 0777);
 
     sprintf(file_name,"%s/%d/%d_%d", SNAPSHOT_DIR_NAME, get_comm_rank__(), phase, counter++);
@@ -143,6 +144,65 @@ void write_to_snapshot_(MPI_File file, void *data, int n, MPI_Datatype type)
 {
     MPI_Status status;
     MPI_File_write(file, data, n, type, &status);
+}
+
+void open_snapshot_file_tmp_(FILE **snapshot, int phase)
+{
+    static int counter  = 0;
+    char file_name[256] = { 0 };
+    char file_path[256] = { 0 };
+
+    /*
+     * 1_1_1 => [RANK]_[PHASE_OF_CALCULATION]_[COUNTER]
+     *
+     * PHASE_OF_CALCULATION - global state, need for 'goto'
+     * COUNTER              - each PHASE_OF_CALCULATION could reach many times
+     */
+    sprintf(file_name,"/tmp/snapshot_%d_%d_%d", get_comm_rank__(), phase, counter++);
+
+    *snapshot = fopen(file_name, "w");
+    if (!*snapshot) {
+        fprintf(stderr, "Can't create snapshot %d\n", get_comm_rank__());
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    cpl_save_time_local = wtime_();
+}
+
+void close_snapshot_file_tmp_(FILE *snapshot)
+{
+    cpl_snapshot_counter += 1;
+
+    cpl_save_time_local = wtime_() - cpl_save_time_local;
+    cpl_save_time += cpl_save_time_local;
+
+    double elapsed_time = wtime_() - cpl_start_time_local;
+
+    fprintf(snapshot, "%f\n", elapsed_time);
+    fprintf(snapshot, "%f\n", cpl_save_time);
+    fprintf(snapshot, "%d\n", cpl_snapshot_counter);
+    fprintf(snapshot, "%s\n", INTEGRITY_SNAPSHOT);
+
+    fclose(snapshot);
+}
+
+void write_to_snapshot_tmp_(FILE *snapshot, void *data, int n, MPI_Datatype type)
+{
+    switch (type)
+    {
+        case MPI_DOUBLE:
+            fwrite(data, sizeof(double), n, snapshot);
+            break;
+        case MPI_INT:
+            fwrite(data, sizeof(int), n, snapshot);
+            break;
+        case MPI_CHAR:
+            fwrite(data, sizeof(char), n, snapshot);
+            break;
+        default:
+            fprintf(stderr, "Can't write to file - unsupported type %d\n", type);
+            break;
+    }
 }
 
 FILE *cpl_open_file(char *file_name, char *mode)

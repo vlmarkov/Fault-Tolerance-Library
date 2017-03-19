@@ -87,6 +87,7 @@ int get_sum_of_prev_blocks(int n, int rank, int nprocs)
 /*****************************************************************************/
 inline static void user_save_callback(int phase)
 {
+/*
     MPI_File local_snapshot;
 
     CPL_FILE_OPEN(&local_snapshot, phase);
@@ -101,6 +102,19 @@ inline static void user_save_callback(int phase)
     CPL_SAVE_SNAPSHOT(local_snapshot, &niters, 1, MPI_INT);
 
     CPL_FILE_CLOSE(&local_snapshot);
+*/
+    FILE *local_snapshot = NULL;
+    CPL_FILE_OPEN_TMP(&local_snapshot, phase);
+
+    CPL_SAVE_SNAPSHOT_TMP(local_snapshot, &nx, 1, MPI_INT);
+    CPL_SAVE_SNAPSHOT_TMP(local_snapshot, &ny, 1, MPI_INT);
+    CPL_SAVE_SNAPSHOT_TMP(local_snapshot, local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE);
+    CPL_SAVE_SNAPSHOT_TMP(local_snapshot, &ttotal, 1, MPI_DOUBLE);
+    CPL_SAVE_SNAPSHOT_TMP(local_snapshot, &thalo, 1, MPI_DOUBLE);
+    CPL_SAVE_SNAPSHOT_TMP(local_snapshot, &treduce, 1, MPI_DOUBLE);
+    CPL_SAVE_SNAPSHOT_TMP(local_snapshot, &niters, 1, MPI_INT);
+
+    CPL_FILE_CLOSE_TMP(local_snapshot);
 }
 
 
@@ -358,9 +372,10 @@ int main(int argc, char *argv[])
         MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
 
         thalo += MPI_Wtime();
-
-        CPL_SAVE_STATE(&&phase_one, user_save_callback);
-        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+        if (niters == 1) {
+            CPL_SAVE_STATE(&&phase_one, user_save_callback);
+        }
+        //MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
     CPL_SAVE_STATE(&&phase_two, user_save_callback);
