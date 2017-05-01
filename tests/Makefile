@@ -1,4 +1,4 @@
-all: checkpoint_lib heat_2d snapshot_integrity
+all: checkpoint_lib heat_2d
 
 heat_2d: heat-2d.c
 	mpicc -g -Wall -o heat_2d heat-2d.c checkpoint_lib.o -lm -std=c99

@@ -25,6 +25,16 @@ extern void   **cpl_checkpoint_table;
 extern int cpl_size;
 extern int cpl_counter;
 
+struct DeltaCP
+{
+    int            block;  // checkpoint block number
+    int            offset;
+    int            size;   // data size
+    MPI_Datatype   type;   // data type
+    void           *data;  // data itself
+    struct DeltaCP *next;
+};
+
 
 /*****************************************************************************/
 /* Initializing checkpoint library macros                                    */
@@ -85,18 +95,6 @@ extern int cpl_counter;
     write_to_snapshot_(file, data, n, type);                                  \
 
 
-#define CPL_FILE_OPEN_TMP(file, phase)                                        \
-    open_snapshot_file_tmp_(file, phase);                                     \
-
-
-#define CPL_FILE_CLOSE_TMP(file)                                              \
-    close_snapshot_file_tmp_(file);                                           \
-
-
-#define CPL_SAVE_SNAPSHOT_TMP(file, data, n, type)                            \
-    write_to_snapshot_tmp_(file, data, n, type);                              \
-
-
 #define CPL_GET_SNAPSHOT(snapshot)                                            \
     get_last_snapshot_(snapshot);                                             \
 
@@ -136,15 +134,12 @@ void timer_stop_();
 
 FILE *cpl_open_file(char *file_name, char *mode);
 void write_to_snapshot_(MPI_File file, void *data, int n, MPI_Datatype type);
-void write_to_snapshot_tmp_(FILE *snapshot, void *data, int n, MPI_Datatype type);
 
 int get_last_snapshot_(char *last_checkpoint);
 int get_checkpoint_idx_by_name_(void **table, int size, void *name);
 
 void open_snapshot_file_(MPI_File *snapshot, int phase);
-void open_snapshot_file_tmp_(FILE **snapshot, int phase);
 void close_snapshot_file_(MPI_File *snapshot);
-void close_snapshot_file_tmp_(FILE *snapshot);
 
 /*****************************************************************************/
 /* Run options functions                                                     */
@@ -152,5 +147,14 @@ void close_snapshot_file_tmp_(FILE *snapshot);
 int IS_CPL_CHECKPOINT_MODE();
 int IS_CPL_RECOVERY_MODE();
 
+
+#define CPL_SAVE_SNAPSHOT_DELTA(file, buffer)                                 \
+    cpl_save_snapshot_delta(file, buffer);                                    \
+
+#define CPL_IS_DATA_DIFF(buffer, source, size, type, idx)                     \
+    cpl_is_data_diff(buffer, source, size, type, idx);                        \
+
+int cpl_is_data_diff(struct DeltaCP *buf, void * src, int size, MPI_Datatype type, int delta_idx);
+void cpl_save_snapshot_delta(MPI_File file, struct DeltaCP data);
 
 #endif /* _CHECKPOINT_LIB_H_ */
