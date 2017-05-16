@@ -221,11 +221,7 @@ int main(int argc, char *argv[])
     /*************************************************************************/
     /* Initialize checkpoint library                                         */
     /*************************************************************************/
-
-    int checkpoint_numbers = 2;
-    int timers_time        = 5;
-
-    CPL_INIT(checkpoint_numbers, timers_time, argc, argv);
+    CPL_INIT(2, argc, argv);
 
     CPL_DECLARATE_CHECKPOINT(&&phase_one);
     CPL_DECLARATE_CHECKPOINT(&&phase_two);
@@ -363,7 +359,6 @@ int main(int argc, char *argv[])
 
     CPL_SAVE_STATE(&&phase_one, user_save_callback);
     CPL_SET_CHECKPOINT(phase_one);
-    CPL_TIMER_INIT();
 
     for (;;) {
         niters++;
@@ -414,9 +409,9 @@ int main(int argc, char *argv[])
         MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
 
         thalo += MPI_Wtime();
-	if (niters == 1) {
-	        CPL_SAVE_STATE(&&phase_one, user_save_callback);
-	}
+        if (niters == 1) {
+            //CPL_SAVE_STATE(&&phase_one, user_save_callback);
+        }
         //MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
@@ -453,7 +448,6 @@ int main(int argc, char *argv[])
     }
 
     CPL_FINALIZE();
-
     MPI_Finalize();
     return 0;
 }

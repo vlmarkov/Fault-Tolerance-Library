@@ -39,51 +39,22 @@ int cpl_counter = 0;
 
 int cpl_run_options = 0;
 
-static struct itimerval cpl_timer;
 
-
-/*****************************************************************************/
-/* Timer                                                                     */
-/*****************************************************************************/
-inline void timer_init_()
-{
-    cpl_timer.it_interval.tv_sec  = cpl_time; // interval 
-    cpl_timer.it_interval.tv_usec = 0;
-    cpl_timer.it_value.tv_sec     = cpl_time; // time until next expiration
-    cpl_timer.it_value.tv_usec    = 0;
-
-    setitimer(ITIMER_REAL, &cpl_timer, NULL);
-}
-
-inline void timer_stop_()
-{
-    cpl_timer.it_interval.tv_sec = 0;
-    cpl_timer.it_value.tv_sec    = 0;
-}
-
-
-/*****************************************************************************/
-/* Measure time                                                              */
-/*****************************************************************************/
-inline double wtime_()
+static double wtime_()
 {
     struct timeval t;
     gettimeofday(&t, NULL);
     return (double)t.tv_sec + (double)t.tv_usec * 1E-6;
 }
 
-
-/*****************************************************************************/
-/* Aditional internal mpi functions                                          */
-/*****************************************************************************/
-static int get_comm_rank__()
+static int get_comm_rank_()
 {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     return rank;
 }
 
-static int get_comm_size__()
+static int get_comm_size_()
 {
     int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -94,7 +65,7 @@ static int get_comm_size__()
 /*****************************************************************************/
 /* Work with files                                                           */
 /*****************************************************************************/
-void open_snapshot_file_(MPI_File *snapshot, int phase)
+void CPL_FILE_OPEN(MPI_File *snapshot, int phase)
 {
     MPI_Status status;
 
@@ -108,19 +79,20 @@ void open_snapshot_file_(MPI_File *snapshot, int phase)
      * COUNTER              - each PHASE_OF_CALCULATION could reach many times
      */
 
-    sprintf(file_path,"%s/%d", SNAPSHOT_DIR_NAME, get_comm_rank__());
+    sprintf(file_path,"%s/%d", SNAPSHOT_DIR_NAME, get_comm_rank_());
     mkdir(file_path, 0777);
 
-    sprintf(file_name,"%s/%d/%d_%d", SNAPSHOT_DIR_NAME, get_comm_rank__(), phase, counter++);
+    sprintf(file_name,"%s/%d/%d_%d", SNAPSHOT_DIR_NAME, get_comm_rank_(), phase, counter++);
 
-    MPI_File_open( MPI_COMM_WORLD, file_name, 
-                   MPI_MODE_CREATE|MPI_MODE_WRONLY, 
-                   MPI_INFO_NULL, snapshot );
+    MPI_File_open(MPI_COMM_WORLD,
+                  file_name,
+                  MPI_MODE_CREATE|MPI_MODE_WRONLY,
+                  MPI_INFO_NULL, snapshot);
 
     cpl_save_time_local = wtime_();
 }
 
-void close_snapshot_file_(MPI_File *snapshot)
+void CPL_FILE_CLOSE(MPI_File *snapshot)
 {
     MPI_Status status;
 
@@ -131,6 +103,7 @@ void close_snapshot_file_(MPI_File *snapshot)
 
     double elapsed_time = wtime_() - cpl_start_time_local;
 
+    // Write meta-data
     MPI_File_write(*snapshot, &elapsed_time, 1, MPI_DOUBLE, &status);
     MPI_File_write(*snapshot, &cpl_save_time, 1, MPI_DOUBLE, &status);
     MPI_File_write(*snapshot, &cpl_snapshot_counter, 1, MPI_INT, &status);
@@ -139,13 +112,13 @@ void close_snapshot_file_(MPI_File *snapshot)
     MPI_File_close(snapshot);
 }
 
-void write_to_snapshot_(MPI_File file, void *data, int n, MPI_Datatype type)
+void CPL_SAVE_SNAPSHOT(MPI_File file, void *data, int n, MPI_Datatype type)
 {
     MPI_Status status;
     MPI_File_write(file, data, n, type, &status);
 }
 
-FILE *cpl_open_file(char *file_name, char *mode)
+FILE *CPL_OPEN_SNAPSHOT(char *file_name, char *mode)
 {
     FILE *file = fopen(file_name, mode);
     if (!file) {
@@ -175,9 +148,9 @@ FILE *cpl_open_file(char *file_name, char *mode)
 /*****************************************************************************/
 /* Get last snapshot file                                                    */
 /*****************************************************************************/
-int get_last_snapshot_(char *last_checkpoint)
+int CPL_GET_SNAPSHOT(char *last_checkpoint)
 {
-    int myrank = get_comm_rank__();
+    int myrank = get_comm_rank_();
 
     char tmp_checkpoint[256] = { 0 };
 
@@ -229,9 +202,8 @@ int get_checkpoint_idx_by_name_(void **table, int size, void *name)
 {
     int i;
     for (i = 0; i < size; i++) {
-        if (table[i] == name) {
+        if (table[i] == name)
             break;
-        }
     }
     return i;
 }
@@ -244,7 +216,7 @@ void **init_table_(int size)
 {
     void **jump_table = (void**) malloc (sizeof(void*) * size);
     if (!jump_table) {
-        fprintf(stderr, "[ERROR] can't allocate memory for CPL_GLOBAL_JUMP_TABLE\n");
+        fprintf(stderr, "[%s] Can't allocate memory\n", __FUNCTION__);
         exit(1);
     }
 
@@ -253,21 +225,20 @@ void **init_table_(int size)
     return jump_table;
 }
 
-void cpl_init(int size, double time, int argc, char *argv[])
+void CPL_INIT(int size, int argc, char *argv[])
 {
-    cpl_size             = time; 
     cpl_counter          = 0;
     cpl_size             = size;
     cpl_start_time_local = wtime_();
     cpl_checkpoint_table = init_table_(cpl_size);
 
-    if (get_comm_rank__() == 0) {
+    if (get_comm_rank_() == 0) {
         printf("\n[CPL_LIBRARY] note, use: %s [args] [recovery]\n", argv[0]);
     }
 
     while (argc-->0) {
         if (strcmp(argv[argc], "recovery") == 0) {
-            if (get_comm_rank__() == 0) {
+            if (get_comm_rank_() == 0) {
                 printf("[CPL_LIBRARY] running options 'recovery'\n");
             }
             cpl_run_options = CPL_RECOVERY_MODE;
@@ -276,12 +247,12 @@ void cpl_init(int size, double time, int argc, char *argv[])
     }
 }
 
-void cpl_finalize()
+void CPL_FINALIZE()
 {
     int i;
 
     // Zero process print statistic
-    if (get_comm_rank__() == 0) {
+    if (get_comm_rank_() == 0) {
         printf("\n");
         // Print up border
         for (i = 0; i < 80; i++) {
@@ -314,7 +285,7 @@ int IS_CPL_RECOVERY_MODE()
         return 0;
 }
 
-int cpl_is_data_diff(struct DeltaCP *buffer, void * data, int size, MPI_Datatype type, int block_idx)
+int CPL_IS_DATA_DIFF(struct DeltaCP *buffer, void * data, int size, MPI_Datatype type, int block_idx)
 {
     // TODO
 
@@ -327,19 +298,15 @@ int cpl_is_data_diff(struct DeltaCP *buffer, void * data, int size, MPI_Datatype
     return 1;
 }
 
-void cpl_save_snapshot_delta(MPI_File file, struct DeltaCP data)
+void CPL_SAVE_SNAPSHOT_DELTA(MPI_File file, struct DeltaCP data)
 {
     MPI_Status status;
     char string[256] = { 0 };
 
-    switch(data.type)
-    {
-        case MPI_INT:
-            sprintf(string, "\nblock %d\nsize %d\ntype 1\n", data.block, data.size);
-            break;
-        case MPI_DOUBLE:
-            sprintf(string, "\nblock %d\nsize %d\ntype 2\n", data.block, data.size);
-            break;
+    if (data.type == MPI_INT) {
+        sprintf(string, "\nblock %d\nsize %d\ntype 1\n", data.block, data.size);
+    } else if (data.type == MPI_DOUBLE) {
+        sprintf(string, "\nblock %d\nsize %d\ntype 2\n", data.block, data.size);
     }
 
     MPI_File_write(file, string, strlen(string), MPI_CHAR, &status);
