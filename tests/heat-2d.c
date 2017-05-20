@@ -87,9 +87,11 @@ int get_sum_of_prev_blocks(int n, int rank, int nprocs)
 /*****************************************************************************/
 inline static void user_save_callback(int phase)
 {
+/*
     MPI_File local_snapshot;
 
     CPL_FILE_OPEN(&local_snapshot, phase);
+*/
 /*
     CPL_SAVE_SNAPSHOT(local_snapshot, &nx, 1, MPI_INT);
     CPL_SAVE_SNAPSHOT(local_snapshot, &ny, 1, MPI_INT);
@@ -102,7 +104,7 @@ inline static void user_save_callback(int phase)
 
     CPL_FILE_CLOSE(&local_snapshot);
 */
-
+/*
     struct DeltaCP raw_buffer;
     int delta_idx     = 1;
     int rc            = 0;
@@ -155,6 +157,22 @@ inline static void user_save_callback(int phase)
     if (rc) {
         CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
     }
+*/
+
+    MPI_File local_snapshot;
+
+    CPL_FILE_OPEN(&local_snapshot, phase);
+
+    int delta_idx = 1;
+
+    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &nx, 1, MPI_INT, delta_idx++);
+    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &ny, 1, MPI_INT, delta_idx++);
+    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &ttotal, 1, MPI_DOUBLE, delta_idx++);
+    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &thalo, 1, MPI_DOUBLE, delta_idx++);
+    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &treduce, 1, MPI_DOUBLE, delta_idx++);
+    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &niters, 1, MPI_INT, delta_idx++);
+    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, local_grid, ((ny + 2) * (nx + 2)),
+                                                                    MPI_DOUBLE, delta_idx++);
 
     CPL_FILE_CLOSE(&local_snapshot);
 }

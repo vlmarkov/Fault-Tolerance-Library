@@ -285,6 +285,19 @@ int IS_CPL_RECOVERY_MODE()
         return 0;
 }
 
+void *CPL_COMRESS_DATA_BLOCK(void *data, int size, MPI_Datatype type)
+{
+/*
+    void *compressed_data = NULL;
+    // TODO
+    if (!compressed_data) {
+        fprintf(stderr, "[%s] Can't allocate memory\n", __FUNCTION__);
+        exit(1);
+    }
+    return data;
+*/
+}
+
 int CPL_IS_DATA_DIFF(struct DeltaCP *buffer, void * data, int size, MPI_Datatype type, int block_idx)
 {
     // TODO
@@ -311,4 +324,25 @@ void CPL_SAVE_SNAPSHOT_DELTA(MPI_File file, struct DeltaCP data)
 
     MPI_File_write(file, string, strlen(string), MPI_CHAR, &status);
     MPI_File_write(file, data.data, data.size, data.type, &status);
+}
+
+void CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(MPI_File file,
+                                       void *data,
+                                       int size,
+                                       MPI_Datatype type,
+                                       int block_idx)
+{
+    struct DeltaCP buffer;
+/*
+    void *compressed_data = NULL;
+
+    compressed_data = CPL_COMRESS_DATA_BLOCK(data, size, type);
+*/
+    if (CPL_IS_DATA_DIFF(&buffer, data, size, type, block_idx)) {
+        // compress
+        CPL_SAVE_SNAPSHOT_DELTA(file, buffer);
+    }
+/*
+    free(compressed_data);
+*/
 }

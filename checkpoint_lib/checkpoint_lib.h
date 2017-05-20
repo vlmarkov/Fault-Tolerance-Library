@@ -85,6 +85,12 @@ int CPL_IS_DATA_DIFF(struct DeltaCP *buf,
 
 void CPL_SAVE_SNAPSHOT_DELTA(MPI_File file, struct DeltaCP data);
 
+void CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(MPI_File file,
+                                       void *data,
+                                       int size,
+                                       MPI_Datatype type,
+                                       int delta_idx);
+
 /*****************************************************************************/
 /* Run options functions                                                     */
 /*****************************************************************************/
