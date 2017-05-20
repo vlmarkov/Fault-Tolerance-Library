@@ -14,6 +14,8 @@
 
 #include <sys/stat.h>
 
+#include "zlib.h"
+
 /*****************************************************************************/
 /* Global variables                                                          */
 /*****************************************************************************/
@@ -333,16 +335,37 @@ void CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(MPI_File file,
                                        int block_idx)
 {
     struct DeltaCP buffer;
-/*
-    void *compressed_data = NULL;
 
-    compressed_data = CPL_COMRESS_DATA_BLOCK(data, size, type);
-*/
-    if (CPL_IS_DATA_DIFF(&buffer, data, size, type, block_idx)) {
-        // compress
+    uLong offset           = 12;
+    uLong data_size        = 0;
+    uLongf *compress_size  = NULL;
+    void * compressed_data = NULL;
+
+    if (type == MPI_INT) {
+        data_size = size * sizeof(int);
+        compressed_data = (int *) malloc((sizeof(int) * size) + offset);
+        offset += data_size;
+    } else if (type == MPI_DOUBLE) {
+        data_size = size * sizeof(double);
+        compressed_data = (double *) malloc((sizeof(double) * size) + offset);
+        offset += data_size;
+    }
+
+    if (!compressed_data) {
+        fprintf(stderr, "[%s] Can't allocate memory\n",__FUNCTION__);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    compress_size = &offset;
+
+    if (compress((Bytef*)compressed_data, compress_size, (Bytef*)data, data_size) != Z_OK) {
+        fprintf(stderr, "[%s] Error in compress\n",__FUNCTION__);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    if (CPL_IS_DATA_DIFF(&buffer, compressed_data, (int)*compress_size, MPI_CHAR, block_idx)) {
         CPL_SAVE_SNAPSHOT_DELTA(file, buffer);
     }
-/*
+
     free(compressed_data);
-*/
 }
