@@ -87,92 +87,40 @@ int get_sum_of_prev_blocks(int n, int rank, int nprocs)
 /*****************************************************************************/
 inline static void user_save_callback(int phase)
 {
-/*
+
     MPI_File local_snapshot;
 
     CPL_FILE_OPEN(&local_snapshot, phase);
-*/
+
 /*
     CPL_SAVE_SNAPSHOT(local_snapshot, &nx, 1, MPI_INT);
     CPL_SAVE_SNAPSHOT(local_snapshot, &ny, 1, MPI_INT);
-
     CPL_SAVE_SNAPSHOT(local_snapshot, local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE);
     CPL_SAVE_SNAPSHOT(local_snapshot, &ttotal, 1, MPI_DOUBLE);
     CPL_SAVE_SNAPSHOT(local_snapshot, &thalo, 1, MPI_DOUBLE);
     CPL_SAVE_SNAPSHOT(local_snapshot, &treduce, 1, MPI_DOUBLE);
     CPL_SAVE_SNAPSHOT(local_snapshot, &niters, 1, MPI_INT);
-
-    CPL_FILE_CLOSE(&local_snapshot);
 */
-/*
-    struct DeltaCP raw_buffer;
-    int delta_idx     = 1;
-    int rc            = 0;
-
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, &nx, 1, MPI_INT, delta_idx);
-    if (rc) {
-        // Never reach
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-
-    delta_idx++;
-
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, &ny, 1, MPI_INT, delta_idx);
-    if (rc) {
-        // Never reach
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-
-    delta_idx++;
-
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, &ttotal, 1, MPI_DOUBLE, delta_idx);
-    if (rc) {
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-
-    delta_idx++;
-    
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, &thalo, 1, MPI_DOUBLE, delta_idx);
-    if (rc) {
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-
-    delta_idx++;
-
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, &treduce, 1, MPI_DOUBLE, delta_idx);
-    if (rc) {
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-    
-    delta_idx++;
-
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, &niters, 1, MPI_INT, delta_idx);
-    if (rc) {
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-
-    delta_idx++;
-
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE, delta_idx);
-    if (rc) {
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-*/
-
-    MPI_File local_snapshot;
-
-    CPL_FILE_OPEN(&local_snapshot, phase);
 
     int delta_idx = 1;
+    static int invoke_function = 0;
 
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &nx, 1, MPI_INT, delta_idx++);
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &ny, 1, MPI_INT, delta_idx++);
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &ttotal, 1, MPI_DOUBLE, delta_idx++);
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &thalo, 1, MPI_DOUBLE, delta_idx++);
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &treduce, 1, MPI_DOUBLE, delta_idx++);
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &niters, 1, MPI_INT, delta_idx++);
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, local_grid, ((ny + 2) * (nx + 2)),
+    CPL_SAVE_SNAPSHOT_SIMPLE_COMRESSED(local_snapshot, &nx, 1, MPI_INT, delta_idx++);
+    CPL_SAVE_SNAPSHOT_SIMPLE_COMRESSED(local_snapshot, &ny, 1, MPI_INT, delta_idx++);
+    CPL_SAVE_SNAPSHOT_SIMPLE_COMRESSED(local_snapshot, &ttotal, 1, MPI_DOUBLE, delta_idx++);
+    CPL_SAVE_SNAPSHOT_SIMPLE_COMRESSED(local_snapshot, &thalo, 1, MPI_DOUBLE, delta_idx++);
+    CPL_SAVE_SNAPSHOT_SIMPLE_COMRESSED(local_snapshot, &treduce, 1, MPI_DOUBLE, delta_idx++);
+    CPL_SAVE_SNAPSHOT_SIMPLE_COMRESSED(local_snapshot, &niters, 1, MPI_INT, delta_idx++);
+
+    if (invoke_function == 0) {
+        CPL_SAVE_SNAPSHOT_SIMPLE_COMRESSED(local_snapshot, local_grid, ((ny + 2) * (nx + 2)),
                                                                     MPI_DOUBLE, delta_idx++);
+    } else {
+        CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, local_grid, ((ny + 2) * (nx + 2)),
+                                                                    MPI_DOUBLE, delta_idx++);
+    }
+
+    invoke_function++;
 
     CPL_FILE_CLOSE(&local_snapshot);
 }
@@ -375,6 +323,8 @@ int main(int argc, char *argv[])
         CPL_GO_TO_CHECKPOINT(phase);
     }
 
+    CPL_SET_BASE_CHECK_POINT(local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE);
+
     CPL_SAVE_STATE(&&phase_one, user_save_callback);
     CPL_SET_CHECKPOINT(phase_one);
 
@@ -465,6 +415,7 @@ int main(int argc, char *argv[])
         MPI_Reduce(prof, NULL, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     }
 
+    CPL_FREE_BASE_CHECK_POINT();
     CPL_FINALIZE();
     MPI_Finalize();
     return 0;

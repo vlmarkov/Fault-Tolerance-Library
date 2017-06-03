@@ -287,45 +287,85 @@ int IS_CPL_RECOVERY_MODE()
         return 0;
 }
 
-void *CPL_COMRESS_DATA_BLOCK(void *data, int size, MPI_Datatype type)
-{
-/*
-    void *compressed_data = NULL;
-    // TODO
-    if (!compressed_data) {
-        fprintf(stderr, "[%s] Can't allocate memory\n", __FUNCTION__);
-        exit(1);
-    }
-    return data;
-*/
-}
-
-int CPL_IS_DATA_DIFF(struct DeltaCP *buffer, void * data, int size, MPI_Datatype type, int block_idx)
-{
-    // TODO
-
-    buffer->block  = block_idx;
-    buffer->size   = size;
-    buffer->type   = type;
-    buffer->offset = 0;
-    buffer->data   = data;
-
-    return 1;
-}
-
-void CPL_SAVE_SNAPSHOT_DELTA(MPI_File file, struct DeltaCP data)
+void CPL_SAVE_SNAPSHOT_DELTA(MPI_File file, struct DeltaCP *data)
 {
     MPI_Status status;
     char string[256] = { 0 };
 
-    if (data.type == MPI_INT) {
-        sprintf(string, "\nblock %d\nsize %d\ntype 1\n", data.block, data.size);
-    } else if (data.type == MPI_DOUBLE) {
-        sprintf(string, "\nblock %d\nsize %d\ntype 2\n", data.block, data.size);
+    if (data->type == MPI_INT) {
+        sprintf(string, "\nblock %d\nsize %d\ntype 1\n", data->block, data->size);
+    } else if (data->type == MPI_DOUBLE) {
+        sprintf(string, "\nblock %d\nsize %d\ntype 2\n", data->block, data->size);
     }
 
     MPI_File_write(file, string, strlen(string), MPI_CHAR, &status);
-    MPI_File_write(file, data.data, data.size, data.type, &status);
+    MPI_File_write(file, data->data, data->size, data->type, &status);
+}
+
+int CPL_SAVE_DATA_DIFF(MPI_File file,
+                       void *compressed_data,
+                       int compress_size,
+                       MPI_Datatype type,
+                       int block_idx)
+{
+    return 1;
+}
+
+#undef get16bits
+#if (defined(__GNUC__) && defined(__i386__)) || defined(__WATCOMC__) \
+  || defined(_MSC_VER) || defined (__BORLANDC__) || defined (__TURBOC__)
+#define get16bits(d) (*((const uint16_t *) (d)))
+#endif /* get16bits */
+
+#if !defined (get16bits)
+#define get16bits(d) ((((uint32_t)(((const uint8_t *)(d))[1])) << 8)\
+                       +(uint32_t)(((const uint8_t *)(d))[0]) )
+#endif /* get16bits */
+
+static uint32_t SuperFastHash(const char * data, int len)
+{
+    uint32_t hash = len, tmp;
+    int rem;
+
+    if (len <= 0 || data == NULL) return 0;
+
+    rem = len & 3;
+    len >>= 2;
+
+    /* Main loop */
+    for (;len > 0; len--) {
+        hash  += get16bits (data);
+        tmp    = (get16bits (data+2) << 11) ^ hash;
+        hash   = (hash << 16) ^ tmp;
+        data  += 2*sizeof (uint16_t);
+        hash  += hash >> 11;
+    }
+
+    /* Handle end cases */
+    switch (rem) {
+        case 3: hash += get16bits (data);
+                hash ^= hash << 16;
+                hash ^= ((signed char)data[sizeof (uint16_t)]) << 18;
+                hash += hash >> 11;
+                break;
+        case 2: hash += get16bits (data);
+                hash ^= hash << 11;
+                hash += hash >> 17;
+                break;
+        case 1: hash += (signed char)*data;
+                hash ^= hash << 10;
+                hash += hash >> 1;
+    }
+
+    /* Force "avalanching" of final 127 bits */
+    hash ^= hash << 3;
+    hash += hash >> 5;
+    hash ^= hash << 4;
+    hash += hash >> 17;
+    hash ^= hash << 25;
+    hash += hash >> 6;
+
+    return hash;
 }
 
 void CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(MPI_File file,
@@ -334,8 +374,62 @@ void CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(MPI_File file,
                                        MPI_Datatype type,
                                        int block_idx)
 {
-    struct DeltaCP buffer;
+    int i;
+    int block_checkpoint = size / 8192;
+    int block_checkpoint_size = 0;
+    
+    char *memoryBlock = (char *)data;
 
+    if (type == MPI_DOUBLE) {
+        block_checkpoint_size = sizeof(char) * block_checkpoint * sizeof(double);
+    }
+
+    for (i = 0; i < block_checkpoint; i++) {
+        uint32_t hash = SuperFastHash(memoryBlock, block_checkpoint_size);
+        if (HASH_IDX_CHECK_POINT[i] != hash) {
+
+            uLong offset           = 12;
+            uLong data_size        = 0;
+            uLongf *compress_size  = NULL;
+            void * compressed_data = NULL;
+
+            data_size = block_checkpoint;
+            compressed_data = (char *) malloc(block_checkpoint_size + offset);
+            offset += data_size;
+
+            if (!compressed_data) {
+                fprintf(stderr, "[%s] Can't allocate memory\n",__FUNCTION__);
+                MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+            }
+
+            compress_size = &offset;
+
+            if (compress((Bytef*)compressed_data, compress_size, (Bytef*)memoryBlock, data_size) != Z_OK) {
+                fprintf(stderr, "[%s] Error in compress\n",__FUNCTION__);
+                MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+            }
+
+            struct DeltaCP buffer = { 
+                .block  = block_idx,
+                .size   = block_checkpoint,
+                .type   = type,
+                .offset = i,
+                .data   = compressed_data };
+
+            CPL_SAVE_SNAPSHOT_DELTA(file, &buffer);
+        }
+
+        HASH_IDX_CHECK_POINT[i] = hash; //reassign base checkpoint
+        memoryBlock += block_checkpoint_size;
+    }
+}
+
+void CPL_SAVE_SNAPSHOT_SIMPLE_COMRESSED(MPI_File file,
+                                       void *data,
+                                       int size,
+                                       MPI_Datatype type,
+                                       int block_idx)
+{
     uLong offset           = 12;
     uLong data_size        = 0;
     uLongf *compress_size  = NULL;
@@ -363,9 +457,56 @@ void CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(MPI_File file,
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
-    if (CPL_IS_DATA_DIFF(&buffer, compressed_data, (int)*compress_size, MPI_CHAR, block_idx)) {
-        CPL_SAVE_SNAPSHOT_DELTA(file, buffer);
-    }
+    struct DeltaCP buffer = { 
+        .block  = block_idx,
+        .size   = (int)*compress_size,
+        .type   = type,
+        .offset = 0,
+        .data   = compressed_data };
+
+    CPL_SAVE_SNAPSHOT_DELTA(file, &buffer);
 
     free(compressed_data);
+}
+
+void CPL_SET_BASE_CHECK_POINT(void *data, int size, MPI_Datatype type)
+{
+    int i;
+    int block_checkpoint = size / 8192;
+    int block_checkpoint_size = 0;
+    
+    char *memoryBlock = (char *)data;
+
+    if (type == MPI_DOUBLE) {
+        block_checkpoint_size = sizeof(char) * block_checkpoint * sizeof(double);
+    }
+
+    HASH_IDX_CHECK_POINT = (uint32_t *)malloc((sizeof(uint32_t) * block_checkpoint));
+    if (!HASH_IDX_CHECK_POINT) {
+        fprintf(stderr, "[%s] Can't allocate memory\n",__FUNCTION__);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    if (get_comm_rank_() == 0) {
+        printf("%s %d\n", __FUNCTION__, __LINE__);
+        printf("%s %d block_checkpoint %d\n", __FUNCTION__, __LINE__, block_checkpoint);
+        printf("%s %d block_checkpoint_size %d\n", __FUNCTION__, __LINE__, block_checkpoint_size);
+    }
+
+    for (i = 0; i < block_checkpoint; i++) {
+        HASH_IDX_CHECK_POINT[i] = SuperFastHash(memoryBlock, block_checkpoint_size);
+        memoryBlock += block_checkpoint_size;
+        if (!memoryBlock) {
+            if (get_comm_rank_() == 0) {
+                printf("%s %d index %d\n", __FUNCTION__, __LINE__, i);
+            }
+        }
+    }
+}
+
+void CPL_FREE_BASE_CHECK_POINT()
+{
+    if (!HASH_IDX_CHECK_POINT) {
+        free(HASH_IDX_CHECK_POINT);
+    }
 }

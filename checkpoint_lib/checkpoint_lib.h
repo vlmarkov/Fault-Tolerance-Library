@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <signal.h>
+#include <stdint.h>
 #include <sys/time.h>
 
 #include <mpi.h>
@@ -28,6 +29,8 @@ struct DeltaCP
     void           *data;  // data itself
     struct DeltaCP *next;
 };
+
+uint32_t *HASH_IDX_CHECK_POINT;
 
 
 /*****************************************************************************/
@@ -77,13 +80,14 @@ void CPL_FILE_CLOSE(MPI_File *snapshot);
 void CPL_SAVE_SNAPSHOT(MPI_File file, void *data, int size, MPI_Datatype type);
 int CPL_GET_SNAPSHOT(char *file_name);
 FILE *CPL_OPEN_SNAPSHOT(char *file_name, char *mode);
-int CPL_IS_DATA_DIFF(struct DeltaCP *buf,
+
+int CPL_IS_DATA_DIFF(MPI_File file,
                      void * src,
                      int size,
                      MPI_Datatype type,
                      int delta_idx);
 
-void CPL_SAVE_SNAPSHOT_DELTA(MPI_File file, struct DeltaCP data);
+void CPL_SAVE_SNAPSHOT_DELTA(MPI_File file, struct DeltaCP *data);
 
 void CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(MPI_File file,
                                        void *data,
@@ -91,10 +95,19 @@ void CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(MPI_File file,
                                        MPI_Datatype type,
                                        int delta_idx);
 
+void CPL_SAVE_SNAPSHOT_SIMPLE_COMRESSED(MPI_File file,
+                                       void *data,
+                                       int size,
+                                       MPI_Datatype type,
+                                       int block_idx);
+
 /*****************************************************************************/
 /* Run options functions                                                     */
 /*****************************************************************************/
 int IS_CPL_CHECKPOINT_MODE();
 int IS_CPL_RECOVERY_MODE();
+
+void CPL_FREE_BASE_CHECK_POINT();
+void CPL_SET_BASE_CHECK_POINT(void *data, int size, MPI_Datatype type);
 
 #endif /* _CHECKPOINT_LIB_H_ */
