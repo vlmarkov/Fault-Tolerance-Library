@@ -14,6 +14,8 @@
 
 #include <sys/stat.h>
 
+#include <inttypes.h>
+
 #include "zlib.h"
 
 /*****************************************************************************/
@@ -328,6 +330,23 @@ void CPL_SAVE_SNAPSHOT_DELTA(MPI_File file, struct DeltaCP data)
     MPI_File_write(file, data.data, data.size, data.type, &status);
 }
 
+/*
+ * Compressing double-precision numbers by erasing the last 29 bits.
+ * In that case we sacrifice number precision,
+ * but helps to compress that data array.
+ * 29 bits, because ieee 754 number representation (sign, exponent, mantissa)
+ */
+static double double_trunc(double x)
+{
+    int zerobits       = 29;
+    uint64_t mask      = -(1LL << zerobits);
+    uint64_t floatbits = (*((uint64_t*)(&x)));
+    floatbits          &= mask;
+
+    return *((double*)(&floatbits));
+}
+
+
 void CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(MPI_File file,
                                        void *data,
                                        int size,
@@ -357,6 +376,15 @@ void CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(MPI_File file,
     }
 
     compress_size = &offset;
+
+    if (type == MPI_DOUBLE) {
+        int i;
+        double *trunc_ptr = (double *)data;
+
+        for (i = 0; i < size; i++) {
+            trunc_ptr[i] = double_trunc(trunc_ptr[i]);
+        }
+    }
 
     if (compress((Bytef*)compressed_data, compress_size, (Bytef*)data, data_size) != Z_OK) {
         fprintf(stderr, "[%s] Error in compress\n",__FUNCTION__);
