@@ -77,7 +77,7 @@ void CPL_FILE_CLOSE(MPI_File *snapshot);
 void CPL_SAVE_SNAPSHOT(MPI_File file, void *data, int size, MPI_Datatype type);
 int CPL_GET_SNAPSHOT(char *file_name);
 FILE *CPL_OPEN_SNAPSHOT(char *file_name, char *mode);
-int CPL_IS_DATA_DIFF(struct DeltaCP *buf,
+int CPL_IS_DATA_PACK(struct DeltaCP *buf,
                      void * src,
                      int size,
                      MPI_Datatype type,
@@ -91,10 +91,22 @@ void CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(MPI_File file,
                                        MPI_Datatype type,
                                        int delta_idx);
 
+void CPL_SAVE_SNAPSHOT_COMRESSED(MPI_File file,
+                                 void *data,
+                                 int size,
+                                 MPI_Datatype type,
+                                 int delta_idx);
+
 /*****************************************************************************/
 /* Run options functions                                                     */
 /*****************************************************************************/
 int IS_CPL_CHECKPOINT_MODE();
 int IS_CPL_RECOVERY_MODE();
+
+/*
+ * Very WIP
+ */
+void get_delta_double(double *a, double *b, double *delta);
+void CPL_SET_DIFF_SNAPSHOT(MPI_Datatype type, int size);
 
 #endif /* _CHECKPOINT_LIB_H_ */

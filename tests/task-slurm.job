@@ -2,4 +2,4 @@
 
 #SBATCH --nodes=2 --ntasks-per-node=8
 
-mpiexec ./heat_2d 1024 1024
+mpiexec ./heat_2d 8192 8192

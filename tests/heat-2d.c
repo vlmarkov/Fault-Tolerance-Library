@@ -165,12 +165,12 @@ inline static void user_save_callback(int phase)
 
     int delta_idx = 1;
 
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &nx, 1, MPI_INT, delta_idx++);
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &ny, 1, MPI_INT, delta_idx++);
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &ttotal, 1, MPI_DOUBLE, delta_idx++);
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &thalo, 1, MPI_DOUBLE, delta_idx++);
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &treduce, 1, MPI_DOUBLE, delta_idx++);
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, &niters, 1, MPI_INT, delta_idx++);
+    CPL_SAVE_SNAPSHOT_COMRESSED(local_snapshot, &nx, 1, MPI_INT, delta_idx++);
+    CPL_SAVE_SNAPSHOT_COMRESSED(local_snapshot, &ny, 1, MPI_INT, delta_idx++);
+    CPL_SAVE_SNAPSHOT_COMRESSED(local_snapshot, &ttotal, 1, MPI_DOUBLE, delta_idx++);
+    CPL_SAVE_SNAPSHOT_COMRESSED(local_snapshot, &thalo, 1, MPI_DOUBLE, delta_idx++);
+    CPL_SAVE_SNAPSHOT_COMRESSED(local_snapshot, &treduce, 1, MPI_DOUBLE, delta_idx++);
+    CPL_SAVE_SNAPSHOT_COMRESSED(local_snapshot, &niters, 1, MPI_INT, delta_idx++);
     CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, local_grid, ((ny + 2) * (nx + 2)),
                                                                     MPI_DOUBLE, delta_idx++);
 
@@ -375,6 +375,8 @@ int main(int argc, char *argv[])
         CPL_GO_TO_CHECKPOINT(phase);
     }
 
+    CPL_SET_DIFF_SNAPSHOT(MPI_DOUBLE, ((ny + 2) * (nx + 2)));
+    
     CPL_SAVE_STATE(&&phase_one, user_save_callback);
     CPL_SET_CHECKPOINT(phase_one);
 
@@ -427,8 +429,8 @@ int main(int argc, char *argv[])
         MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
 
         thalo += MPI_Wtime();
-        if (niters == 1) {
-            //CPL_SAVE_STATE(&&phase_one, user_save_callback);
+        if (niters%80 == 0) {
+            CPL_SAVE_STATE(&&phase_one, user_save_callback);
         }
         //MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }

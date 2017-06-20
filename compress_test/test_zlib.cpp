@@ -5,7 +5,25 @@
 
 #include "zlib.h"
 
+#include <iostream>
+#include <vector>
+#include <random>
+#include <climits>
+
+#include <algorithm>
+#include <cassert>
+#include <iterator>
+
 using namespace std;
+
+void xor_double(double *a)
+{
+    int *part_of_double = (int *)a;
+
+    for (int i = 0; i < 2; i++) {
+        *part_of_double++ ^= INT_MAX;
+    }
+}
 
 int main(int argc, char const *argv[])
 {
@@ -24,7 +42,11 @@ int main(int argc, char const *argv[])
     dest = new double[sourceLen];
 
     for (uLong i = 0; i < sourceLen; ++i) {
-        source[i] = i;
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<> dis(0.0, 9999.0);
+        source[i] = dis(gen);
+        xor_double(&source[i]);
     }
 
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
@@ -52,7 +74,7 @@ int main(int argc, char const *argv[])
 
     cout << "Size before compress : " << sourceLen << endl;
     cout << "Size atfter compress : " << *destLen << endl;
-    cout << "Compress ratio       : " << sourceLen / *destLen << endl;
+    cout << "Compress ratio       : " << (double)sourceLen / (double)*destLen << endl;
 
     //using namespace std::chrono::;
 

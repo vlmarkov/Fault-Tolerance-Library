@@ -43,6 +43,8 @@ int cpl_counter = 0;
 
 int cpl_run_options = 0;
 
+double * BASE_SNAPSHOT;
+
 
 static double wtime_()
 {
@@ -279,6 +281,8 @@ void CPL_FINALIZE()
         }
         printf("\n");
     }
+
+    free(BASE_SNAPSHOT);
 }
 
 int IS_CPL_RECOVERY_MODE()
@@ -302,7 +306,7 @@ void *CPL_COMRESS_DATA_BLOCK(void *data, int size, MPI_Datatype type)
 */
 }
 
-int CPL_IS_DATA_DIFF(struct DeltaCP *buffer, void * data, int size, MPI_Datatype type, int block_idx)
+int CPL_IS_DATA_PACK(struct DeltaCP *buffer, void * data, int size, MPI_Datatype type, int block_idx)
 {
     // TODO
 
@@ -377,23 +381,94 @@ void CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(MPI_File file,
 
     compress_size = &offset;
 
-    if (type == MPI_DOUBLE) {
-        int i;
-        double *trunc_ptr = (double *)data;
+    int i = 0;
+    double *new_snapshot = (double *)data;
+    double *delta_snapshot = (double *) malloc(sizeof(double) * size);
 
-        for (i = 0; i < size; i++) {
-            trunc_ptr[i] = double_trunc(trunc_ptr[i]);
-        }
+    for (i = 0; i < size; i++) {
+        get_delta_double(&BASE_SNAPSHOT[i], &new_snapshot[i], &delta_snapshot[i]);
+        BASE_SNAPSHOT[i] = new_snapshot[i];
     }
+
+    if (compress((Bytef*)compressed_data, compress_size, (Bytef*)delta_snapshot, data_size) != Z_OK) {
+        fprintf(stderr, "[%s] Error in compress\n",__FUNCTION__);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    if (CPL_IS_DATA_PACK(&buffer, compressed_data, (int)*compress_size, MPI_CHAR, block_idx)) {
+        CPL_SAVE_SNAPSHOT_DELTA(file, buffer);
+    }
+
+    free(delta_snapshot);
+    free(compressed_data);
+
+    printf("<%s><%d>\n", __FUNCTION__, __LINE__);
+}
+
+void CPL_SAVE_SNAPSHOT_COMRESSED(MPI_File file,
+                                       void *data,
+                                       int size,
+                                       MPI_Datatype type,
+                                       int block_idx)
+{
+    struct DeltaCP buffer;
+
+    uLong offset           = 12;
+    uLong data_size        = 0;
+    uLongf *compress_size  = NULL;
+    void * compressed_data = NULL;
+
+    if (type == MPI_INT) {
+        data_size = size * sizeof(int);
+        compressed_data = (int *) malloc((sizeof(int) * size) + offset);
+        offset += data_size;
+    } else if (type == MPI_DOUBLE) {
+        data_size = size * sizeof(double);
+        compressed_data = (double *) malloc((sizeof(double) * size) + offset);
+        offset += data_size;
+    }
+
+    if (!compressed_data) {
+        fprintf(stderr, "[%s] Can't allocate memory\n",__FUNCTION__);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    compress_size = &offset;
 
     if (compress((Bytef*)compressed_data, compress_size, (Bytef*)data, data_size) != Z_OK) {
         fprintf(stderr, "[%s] Error in compress\n",__FUNCTION__);
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
-    if (CPL_IS_DATA_DIFF(&buffer, compressed_data, (int)*compress_size, MPI_CHAR, block_idx)) {
+    if (CPL_IS_DATA_PACK(&buffer, compressed_data, (int)*compress_size, MPI_CHAR, block_idx)) {
         CPL_SAVE_SNAPSHOT_DELTA(file, buffer);
     }
 
     free(compressed_data);
+}
+
+/*
+ * Very WIP
+ */
+void get_delta_double(double *a, double *b, double *delta)
+{
+    int *part_of_double_a     = (int *)a;
+    int *part_of_double_b     = (int *)b;
+    int *part_of_double_delta = (int *)delta;
+
+    *part_of_double_delta++ = *part_of_double_a++ ^ *part_of_double_b++;
+    *part_of_double_delta   = *part_of_double_a   ^ *part_of_double_b;
+}
+
+void CPL_SET_DIFF_SNAPSHOT(MPI_Datatype type, int size)
+{
+    int i = 0;
+
+    if (type == MPI_DOUBLE) {
+        BASE_SNAPSHOT = (double *) malloc(sizeof(double) * size);
+    }
+
+    for (i = 0; i < size; i++) {
+        BASE_SNAPSHOT[i] = 0.0;
+    }
 }
