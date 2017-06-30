@@ -7,6 +7,9 @@
 
 #include <mpi.h>
 
+#include <mpi.h>
+#include <mpi-ext.h>
+
 #define SNAPSHOT_DIR_NAME "snapshot"
 #define INTEGRITY_SNAPSHOT "\n=end_of_file="
 #define INTEGRITY_SNAPSHOT_FILE "integrity_file.txt"

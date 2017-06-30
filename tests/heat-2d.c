@@ -33,7 +33,7 @@
 #include <mpi.h>
 
 #include <string.h>
-#include "../checkpoint_lib/checkpoint_lib.h"
+#include "../checkpoint_lib/ulcp_header.h"
 
 #define EPS 0.001
 #define PI 3.14159265358979323846
@@ -161,20 +161,20 @@ inline static void user_save_callback(int phase)
 
     MPI_File local_snapshot;
 
-    CPL_FILE_OPEN(&local_snapshot, phase);
+    ulcp_open_file(&local_snapshot, phase);
 
     int delta_idx = 1;
 
-    CPL_SAVE_SNAPSHOT_COMRESSED(local_snapshot, &nx, 1, MPI_INT, delta_idx++);
-    CPL_SAVE_SNAPSHOT_COMRESSED(local_snapshot, &ny, 1, MPI_INT, delta_idx++);
-    CPL_SAVE_SNAPSHOT_COMRESSED(local_snapshot, &ttotal, 1, MPI_DOUBLE, delta_idx++);
-    CPL_SAVE_SNAPSHOT_COMRESSED(local_snapshot, &thalo, 1, MPI_DOUBLE, delta_idx++);
-    CPL_SAVE_SNAPSHOT_COMRESSED(local_snapshot, &treduce, 1, MPI_DOUBLE, delta_idx++);
-    CPL_SAVE_SNAPSHOT_COMRESSED(local_snapshot, &niters, 1, MPI_INT, delta_idx++);
-    CPL_SAVE_SNAPSHOT_DELTA_COMRESSED(local_snapshot, local_grid, ((ny + 2) * (nx + 2)),
+    ulcp_snapshot_save_compressed(local_snapshot, &nx, 1, MPI_INT, delta_idx++);
+    ulcp_snapshot_save_compressed(local_snapshot, &ny, 1, MPI_INT, delta_idx++);
+    ulcp_snapshot_save_compressed(local_snapshot, &ttotal, 1, MPI_DOUBLE, delta_idx++);
+    ulcp_snapshot_save_compressed(local_snapshot, &thalo, 1, MPI_DOUBLE, delta_idx++);
+    ulcp_snapshot_save_compressed(local_snapshot, &treduce, 1, MPI_DOUBLE, delta_idx++);
+    ulcp_snapshot_save_compressed(local_snapshot, &niters, 1, MPI_INT, delta_idx++);
+    ulcp_snapshot_delta_save_compressed(local_snapshot, local_grid, ((ny + 2) * (nx + 2)),
                                                                     MPI_DOUBLE, delta_idx++);
 
-    CPL_FILE_CLOSE(&local_snapshot);
+    ulcp_close_file(&local_snapshot);
 }
 
 
@@ -192,7 +192,7 @@ inline static int checkpoint_get(double *local_grid,
     char last_checkpoint_path[256] = { 0 };
     char last_checkpoint[256]      = { 0 };
 
-    int phase = CPL_GET_SNAPSHOT(last_checkpoint);
+    int phase = ulcp_get_snapshot(last_checkpoint);
 
     sprintf(rank_str, "/%d/", rank);
 
@@ -200,7 +200,7 @@ inline static int checkpoint_get(double *local_grid,
     strcat(last_checkpoint_path, rank_str);
     strcat(last_checkpoint_path, last_checkpoint);
 
-    FILE *file = CPL_OPEN_SNAPSHOT(last_checkpoint_path, "rb");
+    FILE *file = ulcp_open_snapshot(last_checkpoint_path, "rb");
     if (!file) {
         fprintf(stderr, "[CPL_LIBRARY] Can't read %s\n", last_checkpoint_path);
         exit(1);
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
     /*************************************************************************/
     /* Initialize checkpoint library                                         */
     /*************************************************************************/
-    CPL_INIT(2, argc, argv);
+    ulcp_init(2, argc, argv);
 
     CPL_DECLARATE_CHECKPOINT(&&phase_one);
     CPL_DECLARATE_CHECKPOINT(&&phase_two);
@@ -369,13 +369,13 @@ int main(int argc, char *argv[])
     MPI_Type_commit(&row);
     MPI_Request reqs[8];
 
-    if (IS_CPL_RECOVERY_MODE()) {
+    if (ulcp_is_recovery_mode()) {
         int phase = checkpoint_get(local_grid, ((ny + 2) * (nx + 2)), rank, &ttotal, &thalo, &treduce, &niters);
         // Jumping to checkpoint
         CPL_GO_TO_CHECKPOINT(phase);
     }
 
-    CPL_SET_DIFF_SNAPSHOT(MPI_DOUBLE, ((ny + 2) * (nx + 2)));
+    ulcp_snapshot_set_diff(MPI_DOUBLE, ((ny + 2) * (nx + 2)));
     
     CPL_SAVE_STATE(&&phase_one, user_save_callback);
     CPL_SET_CHECKPOINT(phase_one);
@@ -467,7 +467,7 @@ int main(int argc, char *argv[])
         MPI_Reduce(prof, NULL, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     }
 
-    CPL_FINALIZE();
+    ulcp_finalize();
     MPI_Finalize();
     return 0;
 }
