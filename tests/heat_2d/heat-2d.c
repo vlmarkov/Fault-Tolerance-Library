@@ -25,15 +25,17 @@
  * (C) Mikhail Kurnosov, 2015
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <inttypes.h>
-#include <math.h>
+
+#include "../../src/ulcp_lib/ulcp.h"
 
 #include <mpi.h>
+#include <mpi-ext.h> // ULFM support
 
-#include <string.h>
-#include "../checkpoint_lib/ulcp_header.h"
 
 #define EPS 0.001
 #define PI 3.14159265358979323846
@@ -60,7 +62,8 @@ double *local_newgrid = NULL;
 void *xcalloc(size_t nmemb, size_t size)
 {
     void *p = calloc(nmemb, size);
-    if (p == NULL) {
+    if (p == NULL)
+    {
         fprintf(stderr, "No enough memory\n");
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
@@ -87,78 +90,6 @@ int get_sum_of_prev_blocks(int n, int rank, int nprocs)
 /*****************************************************************************/
 inline static void user_save_callback(int phase)
 {
-/*
-    MPI_File local_snapshot;
-
-    CPL_FILE_OPEN(&local_snapshot, phase);
-*/
-/*
-    CPL_SAVE_SNAPSHOT(local_snapshot, &nx, 1, MPI_INT);
-    CPL_SAVE_SNAPSHOT(local_snapshot, &ny, 1, MPI_INT);
-
-    CPL_SAVE_SNAPSHOT(local_snapshot, local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE);
-    CPL_SAVE_SNAPSHOT(local_snapshot, &ttotal, 1, MPI_DOUBLE);
-    CPL_SAVE_SNAPSHOT(local_snapshot, &thalo, 1, MPI_DOUBLE);
-    CPL_SAVE_SNAPSHOT(local_snapshot, &treduce, 1, MPI_DOUBLE);
-    CPL_SAVE_SNAPSHOT(local_snapshot, &niters, 1, MPI_INT);
-
-    CPL_FILE_CLOSE(&local_snapshot);
-*/
-/*
-    struct DeltaCP raw_buffer;
-    int delta_idx     = 1;
-    int rc            = 0;
-
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, &nx, 1, MPI_INT, delta_idx);
-    if (rc) {
-        // Never reach
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-
-    delta_idx++;
-
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, &ny, 1, MPI_INT, delta_idx);
-    if (rc) {
-        // Never reach
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-
-    delta_idx++;
-
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, &ttotal, 1, MPI_DOUBLE, delta_idx);
-    if (rc) {
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-
-    delta_idx++;
-    
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, &thalo, 1, MPI_DOUBLE, delta_idx);
-    if (rc) {
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-
-    delta_idx++;
-
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, &treduce, 1, MPI_DOUBLE, delta_idx);
-    if (rc) {
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-    
-    delta_idx++;
-
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, &niters, 1, MPI_INT, delta_idx);
-    if (rc) {
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-
-    delta_idx++;
-
-    rc = CPL_IS_DATA_DIFF(&raw_buffer, local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE, delta_idx);
-    if (rc) {
-        CPL_SAVE_SNAPSHOT_DELTA(local_snapshot, raw_buffer);
-    }
-*/
-
     MPI_File local_snapshot;
 
     ulcp_open_file(&local_snapshot, phase);
@@ -171,8 +102,12 @@ inline static void user_save_callback(int phase)
     ulcp_snapshot_save_compressed(local_snapshot, &thalo, 1, MPI_DOUBLE, delta_idx++);
     ulcp_snapshot_save_compressed(local_snapshot, &treduce, 1, MPI_DOUBLE, delta_idx++);
     ulcp_snapshot_save_compressed(local_snapshot, &niters, 1, MPI_INT, delta_idx++);
-    ulcp_snapshot_delta_save_compressed(local_snapshot, local_grid, ((ny + 2) * (nx + 2)),
-                                                                    MPI_DOUBLE, delta_idx++);
+
+    ulcp_snapshot_delta_save_compressed(local_snapshot,
+                                        local_grid,
+                                        ((ny + 2) * (nx + 2)),
+                                        MPI_DOUBLE,
+                                        delta_idx++);
 
     ulcp_close_file(&local_snapshot);
 }
@@ -196,12 +131,13 @@ inline static int checkpoint_get(double *local_grid,
 
     sprintf(rank_str, "/%d/", rank);
 
-    strcpy(last_checkpoint_path, SNAPSHOT_DIR_NAME);
+    strcpy(last_checkpoint_path, ULCP_SNAPSHOT_DIR_NAME);
     strcat(last_checkpoint_path, rank_str);
     strcat(last_checkpoint_path, last_checkpoint);
 
     FILE *file = ulcp_open_snapshot(last_checkpoint_path, "rb");
-    if (!file) {
+    if (!file)
+    {
         fprintf(stderr, "[CPL_LIBRARY] Can't read %s\n", last_checkpoint_path);
         exit(1);
     }
@@ -210,11 +146,14 @@ inline static int checkpoint_get(double *local_grid,
     fread(&nx, sizeof(int), 1, file);
     fread(&ny, sizeof(int), 1, file);
 
-    if (size != ((ny + 2) * (nx + 2))) {
+    if (size != ((ny + 2) * (nx + 2)))
+    {
         printf("[CPL_LIBRARY] Snapshot size not match\n");
         fclose(file);
         exit(1);
-    } else {
+    } 
+    else
+    {
         printf("[CPL_LIBRARY] Snapshot size match\n");
     }
 
@@ -241,8 +180,8 @@ int main(int argc, char *argv[])
     /*************************************************************************/
     ulcp_init(2, argc, argv);
 
-    CPL_DECLARATE_CHECKPOINT(&&phase_one);
-    CPL_DECLARATE_CHECKPOINT(&&phase_two);
+    ulcp_init_checkpoit(&&phase_one);
+    ulcp_init_checkpoit(&&phase_two);
 
     /*************************************************************************/
     /* Local  variables                                                      */
@@ -369,23 +308,28 @@ int main(int argc, char *argv[])
     MPI_Type_commit(&row);
     MPI_Request reqs[8];
 
-    if (ulcp_is_recovery_mode()) {
-        int phase = checkpoint_get(local_grid, ((ny + 2) * (nx + 2)), rank, &ttotal, &thalo, &treduce, &niters);
+    if (ulcp_is_recovery_mode())
+    {
+        int checkpoint = checkpoint_get(local_grid, ((ny + 2) * (nx + 2)),
+                                        rank, &ttotal, &thalo, &treduce, &niters);
         // Jumping to checkpoint
-        CPL_GO_TO_CHECKPOINT(phase);
+        ulpc_goto_checkpoint(checkpoint);
     }
 
     ulcp_snapshot_set_diff(MPI_DOUBLE, ((ny + 2) * (nx + 2)));
     
-    CPL_SAVE_STATE(&&phase_one, user_save_callback);
-    CPL_SET_CHECKPOINT(phase_one);
+    ulcp_save_data(&&phase_one, user_save_callback);
+    ulpc_set_checkpoint(phase_one);
 
-    for (;;) {
+    for (;;)
+    {
         niters++;
 
         // Update interior points
-        for (int i = 1; i <= ny; i++) {
-            for (int j = 1; j <= nx; j++) {
+        for (int i = 1; i <= ny; i++)
+        {
+            for (int j = 1; j <= nx; j++)
+            {
                 local_newgrid[IND(i, j)] = 
                     (local_grid[IND(i - 1, j)] + local_grid[IND(i + 1, j)] +
                      local_grid[IND(i, j - 1)] + local_grid[IND(i, j + 1)]) * 0.25;
@@ -429,14 +373,15 @@ int main(int argc, char *argv[])
         MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
 
         thalo += MPI_Wtime();
-        if (niters%80 == 0) {
-            CPL_SAVE_STATE(&&phase_one, user_save_callback);
+        if (niters%80 == 0)
+        {
+            ulcp_save_data(&&phase_one, user_save_callback);
         }
         //MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
-    CPL_SAVE_STATE(&&phase_two, user_save_callback);
-    CPL_SET_CHECKPOINT(phase_two);
+    ulcp_save_data(&&phase_two, user_save_callback);
+    ulpc_set_checkpoint(phase_two);
 
     MPI_Type_free(&row);
     MPI_Type_free(&col);
@@ -446,24 +391,29 @@ int main(int argc, char *argv[])
 
     ttotal = MPI_Wtime() - ttotal;
 
-    if (rank == 0) {
-        printf("# Heat 2D (mpi): grid: rows %d, cols %d, procs %d (px %d, py %d)\n", rows, cols, commsize, px, py);
+    if (rank == 0)
+    {
+        printf("# Heat 2D (mpi): grid: rows %d, cols %d, procs %d (px %d, py %d)\n",
+               rows, cols, commsize, px, py);
     }
 
     printf("# P %4d (%2d, %2d) on %s: grid ny %d nx %d, total %.6f,"
-        " mpi %.6f (%.2f) = allred %.6f (%.2f) + halo %.6f (%.2f)\n", 
-        rank, rankx, ranky, procname, ny, nx, ttotal, treduce + thalo, 
-        (treduce + thalo) / ttotal, treduce, treduce / (treduce + thalo), 
-        thalo, thalo / (treduce + thalo)); 
+           " mpi %.6f (%.2f) = allred %.6f (%.2f) + halo %.6f (%.2f)\n", 
+           rank, rankx, ranky, procname, ny, nx, ttotal, treduce + thalo, 
+           (treduce + thalo) / ttotal, treduce, treduce / (treduce + thalo), 
+           thalo, thalo / (treduce + thalo)); 
 
     double prof[3] = { ttotal, treduce, thalo };
 
-    if (rank == 0) {
+    if (rank == 0)
+    {
         MPI_Reduce(MPI_IN_PLACE, prof, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-        printf("# procs %d : grid %d %d : niters %d : total time %.6f :" 
-            " mpi time %.6f : allred %.6f : halo %.6f\n", 
-            commsize, rows, cols, niters, prof[0], prof[1] + prof[2], prof[1], prof[2]);
-    } else {
+        printf("# procs %d : grid %d %d : niters %d : total time %.6f :"
+               " mpi time %.6f : allred %.6f : halo %.6f\n",
+               commsize, rows, cols, niters, prof[0], prof[1] + prof[2], prof[1], prof[2]);
+    }
+    else
+    {
         MPI_Reduce(prof, NULL, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     }
 

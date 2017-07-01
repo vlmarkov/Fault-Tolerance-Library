@@ -1,4 +1,4 @@
-#include "ulcp_header.h"
+#include "ulcp.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -18,13 +18,12 @@ void ulcp_open_file(MPI_File* file, int snapshot_phase)
      * COUNTER              - each PHASE_OF_CALCULATION could reach many times
      */
 
-    sprintf(file_path,"%s/%d", SNAPSHOT_DIR_NAME, ulcp_get_comm_rank());
+    sprintf(file_path,"%s/%d", ULCP_SNAPSHOT_DIR_NAME, ulcp_get_comm_rank());
     
     mkdir(file_path, 0777);
 
-    sprintf(file_name,"%s/%d/%d_%d", 
-            SNAPSHOT_DIR_NAME, ulcp_get_comm_rank(),
-            snapshot_phase, counter++);
+    sprintf(file_name,"%s/%d/%d_%d", ULCP_SNAPSHOT_DIR_NAME,
+            ulcp_get_comm_rank(), snapshot_phase, counter++);
 
     MPI_File_open(MPI_COMM_WORLD, file_name,
                   MPI_MODE_CREATE|MPI_MODE_WRONLY,
@@ -48,7 +47,8 @@ void ulcp_close_file(MPI_File* file)
     MPI_File_write(*file, &elapsed_time, 1, MPI_DOUBLE, &status);
     MPI_File_write(*file, &ulcp_save_time, 1, MPI_DOUBLE, &status);
     MPI_File_write(*file, &ulcp_snapshot_counter, 1, MPI_INT, &status);
-    MPI_File_write(*file, &INTEGRITY_SNAPSHOT, strlen(INTEGRITY_SNAPSHOT), MPI_CHAR, &status);
+    MPI_File_write(*file, &ULCP_SNAPSHOT_INTEGRITY_FILE_MARK, 
+                    strlen(ULCP_SNAPSHOT_INTEGRITY_FILE_MARK), MPI_CHAR, &status);
 
     MPI_File_close(file);
 }
@@ -67,10 +67,8 @@ FILE* ulcp_open_snapshot(char* file_name, char* mode)
         exit(1);
     }
 
-    long offset = sizeof(ulcp_start_time) \
-                  + sizeof(ulcp_save_time) \
-                  + sizeof(ulcp_snapshot_counter) \
-                  + strlen(INTEGRITY_SNAPSHOT); 
+    long offset = sizeof(ulcp_start_time) + sizeof(ulcp_save_time) \
+                  + sizeof(ulcp_snapshot_counter) + strlen(ULCP_SNAPSHOT_INTEGRITY_FILE_MARK); 
 
     // Move file to the end of file
     fseek(file, -offset, SEEK_END);
@@ -96,10 +94,10 @@ int ulcp_get_snapshot(char* last_snapshot)
     size_t len = 0;
     int i, j;
 
-    FILE *file = fopen(INTEGRITY_SNAPSHOT_FILE, "r");
+    FILE *file = fopen(ULCP_SNAPSHOT_INTEGRITY_FILE_NAME, "r");
     if (!file)
     {
-        fprintf(stderr, "Can't read from %s\n", INTEGRITY_SNAPSHOT_FILE);
+        fprintf(stderr, "Can't read from %s\n", ULCP_SNAPSHOT_INTEGRITY_FILE_NAME);
         exit(1);
     }
 

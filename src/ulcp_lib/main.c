@@ -5,7 +5,7 @@
 /* P - point                                                                 */
 /*****************************************************************************/
 
-#include "ulcp_header.h"
+#include "ulcp.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,7 +35,7 @@ void** ulcp_init_table(int size)
         exit(1);
     }
 
-    mkdir(SNAPSHOT_DIR_NAME, 0777);
+    mkdir(ULCP_SNAPSHOT_DIR_NAME, 0777);
 
     return jump_table;
 }
