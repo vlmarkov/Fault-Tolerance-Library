@@ -1,7 +1,9 @@
 #include "ulcp.h"
 
 #include <mpi.h>
+#ifdef ULFM_SUPPORT
 #include <mpi-ext.h> // ULFM support
+#endif /* ULFM_SUPPORT */
 
 #include <stdio.h>
 #include <stdlib.h>

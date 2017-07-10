@@ -34,8 +34,9 @@
 #include "../../src/ulcp_lib/ulcp.h"
 
 #include <mpi.h>
+#ifdef ULFM_SUPPORT
 #include <mpi-ext.h> // ULFM support
-
+#endif /* ULFM_SUPPORT */
 
 #define EPS 0.001
 #define PI 3.14159265358979323846

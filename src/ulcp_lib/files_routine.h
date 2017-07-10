@@ -2,7 +2,9 @@
 #define _ULCP_FILES_ROUTINE_H_
 
 #include <mpi.h>
+#ifdef ULFM_SUPPORT
 #include <mpi-ext.h> // ULFM support
+#endif /* ULFM_SUPPORT */
 
 #include <stdio.h>
 

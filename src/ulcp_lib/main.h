@@ -2,7 +2,9 @@
 #define _ULCP_LIB_H_
 
 #include <mpi.h>
+#ifdef ULFM_SUPPORT
 #include <mpi-ext.h> // ULFM support
+#endif /* ULFM_SUPPORT */
 
 #define ULCP_SNAPSHOT_DIR_NAME "snapshot"
 #define ULCP_SNAPSHOT_INTEGRITY_FILE_MARK "\n=end_of_file="

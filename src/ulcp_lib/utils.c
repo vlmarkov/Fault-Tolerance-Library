@@ -1,7 +1,9 @@
 #include "utils.h"
 
 #include <mpi.h>
+#ifdef ULFM_SUPPORT
 #include <mpi-ext.h> // ULFM support
+#endif /* ULFM_SUPPORT */
 
 #include <stddef.h>
 #include <sys/time.h>
