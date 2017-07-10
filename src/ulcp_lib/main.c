@@ -25,6 +25,9 @@ int ulcp_time                = 0;
 int ulcp_counter             = 0;
 int ulcp_run_options         = 0;
 
+#ifdef ULFM_SUPPORT
+MPI_Errhandler ulpc_err_handler;
+#endif /* ULFM_SUPPORT */
 
 void** ulcp_init_table(int size)
 {
@@ -49,7 +52,7 @@ void ulcp_init(int size, int argc, char *argv[])
 
     if (ulcp_get_comm_rank() == 0)
     {
-        printf("\n[CPL_LIBRARY] note, use: %s [args] [recovery]\n", argv[0]);
+        printf("\n[ULCP] note, use: %s [args] [recovery]\n", argv[0]);
     }
 
     while (argc-->0)
@@ -58,12 +61,17 @@ void ulcp_init(int size, int argc, char *argv[])
         {
             if (ulcp_get_comm_rank() == 0)
             {
-                printf("[CPL_LIBRARY] running options 'recovery'\n");
+                printf("[ULCP] Running options 'recovery'\n");
             }
             ulcp_run_options = ULCP_RECOVER_MODE;
             break;
         }
     }
+
+#ifdef ULFM_SUPPORT
+    MPI_Comm_create_errhandler(ulcp_verbose_errhandler, &ulpc_err_handler);
+    MPI_Comm_set_errhandler(MPI_COMM_WORLD, ulpc_err_handler);
+#endif /* ULFM_SUPPORT */
 }
 
 void ulcp_finalize()

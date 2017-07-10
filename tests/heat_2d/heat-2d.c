@@ -28,6 +28,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -234,22 +235,28 @@ int main(int argc, char *argv[])
     /* Broadcast command line arguments                                      */
     /*************************************************************************/
 
-    if (rank == 0) {
+    if (rank == 0)
+    {
         rows = (argc > 1) ? atoi(argv[1]) : py * 100;
         cols = (argc > 2) ? atoi(argv[2]) : px * 100;
 
-        if (rows < py) {
+        if (rows < py)
+        {
             fprintf(stderr, "Number of rows %d less then number of py processes %d\n", rows, py);
             MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
         }
-        if (cols < px) {
+        
+        if (cols < px)
+        {
             fprintf(stderr, "Number of cols %d less then number of px processes %d\n", cols, px);
             MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
         }
 
         int args[2] = { rows, cols };
         MPI_Bcast(&args, NELEMS(args), MPI_INT, 0, MPI_COMM_WORLD);
-    } else {
+    } 
+    else 
+    {
         int args[2];
         MPI_Bcast(&args, NELEMS(args), MPI_INT, 0, MPI_COMM_WORLD);
         rows = args[0];
@@ -274,9 +281,11 @@ int main(int argc, char *argv[])
     double dx = 1.0 / (cols - 1.0); 
     int sj    = get_sum_of_prev_blocks(cols, rankx, px);
 
-    if (ranky == 0) {
+    if (ranky == 0)
+    {
         // Initialize top border: u(x, 0) = sin(pi * x)
-        for (int j = 1; j <= nx; j++) {
+        for (int j = 1; j <= nx; j++)
+        {
             // Translate col index to x coord in [0, 1]
             double x = dx * (sj + j - 1);
             int ind  = IND(0, j);
@@ -284,9 +293,11 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (ranky == (py - 1)) {
+    if (ranky == (py - 1))
+    {
         // Initialize bottom border: u(x, 1) = sin(pi * x) * exp(-pi)
-        for (int j = 1; j <= nx; j++) {
+        for (int j = 1; j <= nx; j++)
+        {
             // Translate col index to x coord in [0, 1]
             double x = dx * (sj + j - 1);
             int ind  = IND(ny + 1, j);
@@ -339,8 +350,10 @@ int main(int argc, char *argv[])
 
         // Check termination condition
         double maxdiff = 0;
-        for (int i = 1; i <= ny; i++) {
-            for (int j = 1; j <= nx; j++) {
+        for (int i = 1; i <= ny; i++)
+        {
+            for (int j = 1; j <= nx; j++)
+            {
                 int ind = IND(i, j);
                 maxdiff = fmax(maxdiff, fabs(local_grid[ind] - local_newgrid[ind]));
             }
@@ -355,7 +368,8 @@ int main(int argc, char *argv[])
         MPI_Allreduce(MPI_IN_PLACE, &maxdiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
         treduce += MPI_Wtime();
 
-        if (maxdiff < EPS) {
+        if (maxdiff < EPS)
+        {
             break;
         }
 
@@ -371,14 +385,26 @@ int main(int argc, char *argv[])
         MPI_Isend(&local_grid[IND(1, 1)], 1, col, left, 0, cartcomm, &reqs[6]);        // left
         MPI_Isend(&local_grid[IND(1, nx)], 1, col, right, 0, cartcomm, &reqs[7]);      // right
 
+#ifdef ULFM_TEST
+        if(ulcp_get_comm_rank() == (ulcp_get_comm_size() - 1))
+        {
+            printf( "[ULCP] Rank %d: committing suicide\n", ulcp_get_comm_rank());
+            raise(SIGKILL);
+        }
+#endif /* ULFM_TEST */
+        /*
+         * 1. Manualy kill some process
+         * 2. Get error by some collective operation, e.g. MPI_Barrier()
+         * 3. Will be invoke ulcp_verbose_errhandler()
+         */
         MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
 
         thalo += MPI_Wtime();
+
         if (niters%80 == 0)
         {
             ulcp_save_data(&&phase_one, user_save_callback);
         }
-        //MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
     ulcp_save_data(&&phase_two, user_save_callback);
