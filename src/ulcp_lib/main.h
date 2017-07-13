@@ -25,8 +25,21 @@ typedef struct ulcp_snapshot
     struct DeltaCP *next;
 } ulcp_t;
 
-extern void** ulcp_checkpoint_table;
-extern double* ulcp_base_snapshot;
+enum {
+    ULCP_SET_MODE_SIMPLE,
+    ULCP_SET_MODE_COMPLEX
+};
+
+typedef struct
+{
+    int mode;
+    MPI_Datatype mpi_type;
+    int user_type;
+    int size;
+} ulcp_action_t;
+
+extern void **ulcp_checkpoint_table;
+extern void *ulcp_base_snapshot;
 extern double ulcp_start_time;
 extern double ulcp_start_time_local;
 extern double ulcp_save_time;

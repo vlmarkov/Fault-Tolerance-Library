@@ -13,8 +13,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-void** ulcp_checkpoint_table = NULL;
-double* ulcp_base_snapshot   = NULL;
+void **ulcp_checkpoint_table = NULL;
+void  *ulcp_base_snapshot    = NULL;
 double ulcp_start_time       = 0.0;
 double ulcp_start_time_local = 0.0;
 double ulcp_save_time        = 0.0;

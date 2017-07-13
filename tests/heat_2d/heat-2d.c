@@ -328,8 +328,14 @@ int main(int argc, char *argv[])
         ulpc_goto_checkpoint(checkpoint);
     }
 
-    ulcp_snapshot_set_diff(MPI_DOUBLE, ((ny + 2) * (nx + 2)));
-    
+    ulcp_action_t action = {
+        .mode = ULCP_SET_MODE_SIMPLE,
+        .mpi_type = MPI_DOUBLE,
+        .size = ((ny + 2) * (nx + 2)),
+    };
+
+    ulcp_snapshot_set_diff(&action);
+
     ulcp_save_data(&&phase_one, user_save_callback);
     ulpc_set_checkpoint(phase_one);
 

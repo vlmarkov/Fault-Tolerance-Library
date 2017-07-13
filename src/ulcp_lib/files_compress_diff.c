@@ -35,7 +35,7 @@ static int ulcp_is_data_packed(ulcp_t *buffer,
 /*
  * Very WIP
  */
-static void ulcp_get_double_delta(double *a, double *b, double *delta)
+static void ulcp_get_delta_double(double *a, double *b, double *delta)
 {
     int *part_of_double_a     = (int *)a;
     int *part_of_double_b     = (int *)b;
@@ -44,6 +44,26 @@ static void ulcp_get_double_delta(double *a, double *b, double *delta)
     *part_of_double_delta++ = *part_of_double_a++ ^ *part_of_double_b++;
     *part_of_double_delta   = *part_of_double_a   ^ *part_of_double_b;
 }
+
+static void ulcp_get_delta_int(int *a, int *b, int *delta)
+{
+    *delta = *a ^ *b;
+}
+
+/*
+static void ulcp_get_delta_complex(void *a, void *b, void *delta, size_t size)
+{
+    int i;
+    int *part_of_a     = (int *)a;
+    int *part_of_b     = (int *)b;
+    int *part_of_delta = (int *)delta;
+
+    for (i = 0; i < size; i++)
+    {        
+        *part_of_delta++ = *part_of_a++ ^ *part_of_b++;
+    }
+}
+*/
 
 void ulcp_snapshot_delta_save(MPI_File file, ulcp_t data)
 {
@@ -64,11 +84,9 @@ void ulcp_snapshot_delta_save(MPI_File file, ulcp_t data)
 }
 
 void ulcp_snapshot_delta_save_compressed(MPI_File file,
-                                         void *data,
-                                         int size,
-                                         MPI_Datatype type,
-                                         int block_idx)
+    void *data, int size, MPI_Datatype type, int block_idx)
 {
+    int i;
     ulcp_t buffer;
 
     uLong offset           = 12;
@@ -79,32 +97,63 @@ void ulcp_snapshot_delta_save_compressed(MPI_File file,
     if (type == MPI_INT)
     {
         data_size = size * sizeof(int);
-        compressed_data = (int *)malloc((sizeof(int) * size) + offset);
+        compressed_data = (void *)malloc((sizeof(int) * size) + offset);
         offset += data_size;
     } 
     else if (type == MPI_DOUBLE)
     {
         data_size = size * sizeof(double);
-        compressed_data = (double *)malloc((sizeof(double) * size) + offset);
+        compressed_data = (void *)malloc((sizeof(double) * size) + offset);
         offset += data_size;
     }
 
     if (!compressed_data)
     {
-        fprintf(stderr, "[%s] Can't allocate memory\n", __FUNCTION__);
+        fprintf(stderr, "[ULCP] [%s] Error in compress\n", __FUNCTION__);
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
     compress_size = &offset;
 
-    int i = 0;
-    double *new_snapshot = (double *)data;
-    double *delta_snapshot = (double *)malloc(sizeof(double) * size);
+    void *delta_snapshot = NULL;
+    void *new_snapshot   = NULL;
 
-    for (i = 0; i < size; i++)
+    if (type == MPI_INT)
     {
-        ulcp_get_double_delta(&ulcp_base_snapshot[i], &new_snapshot[i], &delta_snapshot[i]);
-        ulcp_base_snapshot[i] = new_snapshot[i];
+        new_snapshot   = (int *)data;
+        delta_snapshot = (int *)malloc(sizeof(int) * size);
+
+        int *int_ulcp_base_snapshot = (int *)ulcp_base_snapshot;
+        int *int_new_snapshot = (int *)new_snapshot;
+        int *int_delta_snapshot = (int *)delta_snapshot;
+
+        for (i = 0; i < size; i++)
+        {
+
+            ulcp_get_delta_int(&int_ulcp_base_snapshot[i],
+                &int_new_snapshot[i],
+                &int_delta_snapshot[i]);
+
+            int_ulcp_base_snapshot[i] = int_new_snapshot[i];
+        }
+    }
+    else if (type == MPI_DOUBLE)
+    {
+        new_snapshot   = (double *)data;
+        delta_snapshot = (double *)malloc(sizeof(double) * size);
+        
+        double *double_ulcp_base_snapshot = (double *)ulcp_base_snapshot;
+        double *double_new_snapshot = (double *)new_snapshot;
+        double *double_delta_snapshot = (double *)delta_snapshot;
+
+        for (i = 0; i < size; i++)
+        {
+            ulcp_get_delta_double(&double_ulcp_base_snapshot[i],
+                &double_new_snapshot[i],
+                &double_delta_snapshot[i]);
+
+            double_ulcp_base_snapshot[i] = double_new_snapshot[i];
+        }
     }
 
     if (compress((Bytef*)compressed_data, compress_size, (Bytef*)delta_snapshot, data_size) != Z_OK)
@@ -215,17 +264,42 @@ void ulcp_snapshot_save_compressed_complex(MPI_File file,
     free(compressed_data);
 }
 
-void ulcp_snapshot_set_diff(MPI_Datatype type, int size)
+void ulcp_snapshot_set_diff(ulcp_action_t * action)
 {
-    int i = 0;
+    int i;
+    int size_of_elem = 0;
 
-    if (type == MPI_DOUBLE)
+    if (!action)
     {
-        ulcp_base_snapshot = (double *)malloc(sizeof(double) * size);
+        fprintf(stderr, "[ULCP] Bad pointer in %s\n", __FUNCTION__);
+        exit(-1);
     }
 
-    for (i = 0; i < size; i++)
+    if (action->mode == ULCP_SET_MODE_SIMPLE)
     {
-        ulcp_base_snapshot[i] = 0.0;
+        if (action->mpi_type == MPI_DOUBLE)
+        {
+            ulcp_base_snapshot = (double *)malloc(sizeof(double) * action->size);
+            size_of_elem = sizeof(double);
+        }
+    }
+    else if (action->mode == ULCP_SET_MODE_COMPLEX)
+    {
+        ulcp_base_snapshot = (void *)malloc(action->user_type * action->size);
+        size_of_elem = action->user_type;
+    }
+
+    if (!ulcp_base_snapshot)
+    {
+        fprintf(stderr, "[ULCP] Memory allocation error in %s\n", __FUNCTION__);
+        exit(-1);
+    }
+
+    void * tmp_ptr = ulcp_base_snapshot;
+
+    for (i = 0; i < action->size; i++)
+    {
+        bzero(tmp_ptr, size_of_elem);
+        tmp_ptr += size_of_elem;
     }
 }

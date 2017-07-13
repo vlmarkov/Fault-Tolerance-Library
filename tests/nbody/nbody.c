@@ -95,12 +95,9 @@ inline static void user_save_callback(int phase)
     ulcp_snapshot_save_compressed(local_snapshot, &ttotal, 1, MPI_DOUBLE, delta_idx++);
     ulcp_snapshot_save_compressed(local_snapshot, &iteration, 1, MPI_INT, delta_idx++);
 
-    ulcp_snapshot_save_compressed_complex(local_snapshot,
-    //ulcp_snapshot_delta_save_compressed(local_snapshot,
-                                        local,
-                                        num[0],
-                                        sizeof (particle_t),
-                                        delta_idx++);
+    ulcp_snapshot_save_compressed_complex(local_snapshot, local,
+                                          num[0], sizeof (particle_t),
+                                          delta_idx++);
 
 
     ulcp_close_file(&local_snapshot);
@@ -262,7 +259,13 @@ int main(int argc, char* argv[])
             ulpc_goto_checkpoint(checkpoint);
         }
 
-        //ulcp_snapshot_set_diff(MPI_DOUBLE, ((ny + 2) * (nx + 2)));
+        //ulcp_action_t action = {
+        //    .mode = ULCP_SET_MODE_COMPLEX,
+        //    .user_type = sizeof(particle_t),
+        //    .size = num[processor]
+        //};
+
+        //ulcp_snapshot_set_diff(&action);
     
         ulcp_save_data(&&phase_one, user_save_callback);
         ulpc_set_checkpoint(phase_one);
