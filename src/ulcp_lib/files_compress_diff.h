@@ -20,6 +20,12 @@ void ulcp_snapshot_save_compressed(MPI_File file,
 	                               MPI_Datatype type,
 	                               int block_idx);
 
+void ulcp_snapshot_save_compressed_complex(MPI_File file,
+                                   void *data,
+                                   int size,
+                                   int sizeof_type,
+                                   int block_idx);
+
 void ulcp_snapshot_set_diff(MPI_Datatype type, int size);
 
 #endif /* _ULCP_FILES_COMPRESS_DIFF_H_ */
