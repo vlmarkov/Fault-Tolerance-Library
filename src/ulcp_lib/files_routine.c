@@ -19,7 +19,7 @@ void ulcp_open_file(MPI_File* file, int snapshot_phase)
      */
 
     sprintf(file_path,"%s/%d", ULCP_SNAPSHOT_DIR_NAME, ulcp_get_comm_rank());
-    
+
     mkdir(file_path, 0777);
 
     sprintf(file_name,"%s/%d/%d_%d", ULCP_SNAPSHOT_DIR_NAME,
@@ -37,9 +37,8 @@ void ulcp_close_file(MPI_File* file)
     MPI_Status status;
 
     ulcp_snapshot_counter += 1;
-
-    ulcp_save_time_local = ulcp_wtime() - ulcp_save_time_local;
-    ulcp_save_time += ulcp_save_time_local;
+    ulcp_save_time_local   = ulcp_wtime() - ulcp_save_time_local;
+    ulcp_save_time        += ulcp_save_time_local;
 
     double elapsed_time = ulcp_wtime() - ulcp_start_time_local;
 
@@ -105,7 +104,7 @@ int ulcp_get_snapshot(char* last_snapshot)
     {
         char tmp[10] = { 0 };
         sprintf(tmp, "%c", line[0]);
-        
+
         if (atoi(tmp) == myrank)
         {
             strcpy(last_snapshot, line);

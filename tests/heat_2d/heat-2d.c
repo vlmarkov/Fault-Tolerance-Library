@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Number of rows %d less then number of py processes %d\n", rows, py);
             MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
         }
-        
+
         if (cols < px)
         {
             fprintf(stderr, "Number of cols %d less then number of px processes %d\n", cols, px);
@@ -254,8 +254,8 @@ int main(int argc, char *argv[])
 
         int args[2] = { rows, cols };
         MPI_Bcast(&args, NELEMS(args), MPI_INT, 0, MPI_COMM_WORLD);
-    } 
-    else 
+    }
+    else
     {
         int args[2];
         MPI_Bcast(&args, NELEMS(args), MPI_INT, 0, MPI_COMM_WORLD);
@@ -329,9 +329,10 @@ int main(int argc, char *argv[])
     }
 
     ulcp_action_t action = {
-        .mode = ULCP_SET_MODE_SIMPLE,
+        .mode     = ULCP_SET_MODE_SIMPLE,
         .mpi_type = MPI_DOUBLE,
-        .size = ((ny + 2) * (nx + 2)),
+        .size_of  = sizeof(double),
+        .size     = ((ny + 2) * (nx + 2)),
     };
 
     ulcp_snapshot_set_diff(&action);

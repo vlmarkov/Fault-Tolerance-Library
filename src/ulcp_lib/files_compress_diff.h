@@ -15,6 +15,8 @@ void ulcp_snapshot_delta_save_compressed(MPI_File file,
                                          MPI_Datatype type,
                                          int block_idx);
 
+void ulcp_snapshot_delta_save_compressed_complex(ulcp_action_save_t * action);
+
 void ulcp_snapshot_save_compressed(MPI_File file,
                                    void *data,
                                    int size,

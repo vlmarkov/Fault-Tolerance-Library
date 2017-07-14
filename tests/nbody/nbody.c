@@ -71,7 +71,6 @@ typedef struct {
 } particle_t;
 
 
-double       ttotal;   // Time measure
 int          iteration;// ...
 particle_t * local;    // Array containing our local particles
 int        * num;      // Number of particles on each processor
@@ -92,13 +91,21 @@ inline static void user_save_callback(int phase)
 
     ulcp_snapshot_save_compressed(local_snapshot, &particles, 1, MPI_INT, delta_idx++);
     ulcp_snapshot_save_compressed(local_snapshot, &iterations, 1, MPI_INT, delta_idx++);
-    ulcp_snapshot_save_compressed(local_snapshot, &ttotal, 1, MPI_DOUBLE, delta_idx++);
     ulcp_snapshot_save_compressed(local_snapshot, &iteration, 1, MPI_INT, delta_idx++);
 
-    ulcp_snapshot_save_compressed_complex(local_snapshot, local,
-                                          num[0], sizeof (particle_t),
-                                          delta_idx++);
+    //ulcp_snapshot_save_compressed_complex(local_snapshot, local,
+    //                                      num[0], sizeof (particle_t),
+    //                                      delta_idx++);
 
+    ulcp_action_save_t action_save = {
+        .file      = local_snapshot,
+        .data      = local,
+        .size_of   = sizeof (particle_t),
+        .size      = num[ulcp_get_comm_rank()],
+        .delta_idx = delta_idx++
+    };
+
+    ulcp_snapshot_delta_save_compressed_complex(&action_save);
 
     ulcp_close_file(&local_snapshot);
 }
@@ -108,7 +115,6 @@ inline static void user_save_callback(int phase)
 inline static int checkpoint_get(particle_t * grid,
                                  int          size,
                                  int          rank,
-                                 double     * ttotal,
                                  int        * niters)
 {
     int readNumParticles, readNumIterations;
@@ -142,13 +148,12 @@ inline static int checkpoint_get(particle_t * grid,
         fprintf(stdout, "[ULCP] Snapshot size not match\n");
         fclose(file);
         exit(1);
-    } 
+    }
     else
     {
         fprintf(stdout, "[ULCP] Snapshot size match\n");
     }
 
-    fread(ttotal, sizeof(double), 1,    file);
     fread(niters, sizeof(int),    1,    file);
     fread(grid,   sizeof(double), size, file);
 
@@ -182,14 +187,12 @@ int main(int argc, char* argv[])
 
     // Create the MPI data type for communicating particle data
     MPI_Type_contiguous(4, MPI_DOUBLE, &type);
-    MPI_Type_commit(&type);   
+    MPI_Type_commit(&type);
 
     // Determine the number of procesors being used and our processor number
     MPI_Comm_size(MPI_COMM_WORLD, &num_processors);
     MPI_Comm_rank(MPI_COMM_WORLD, &processor);
 
-    // Time measure
-    ttotal = MPI_Wtime();
 
     // Determine how the particles are allocated to the processors
     {
@@ -198,7 +201,6 @@ int main(int argc, char* argv[])
 
         for (int p = 0; p < num_processors; p++)
         {
-
             num[p] = (NumParticles / num_processors) + ((p < (NumParticles % num_processors)) ? 1 : 0);
         }
         buffer_size = num[0];
@@ -252,21 +254,21 @@ int main(int argc, char* argv[])
             int checkpoint = checkpoint_get(local,
                                             num[processor],
                                             processor,
-                                            &ttotal,
                                             &iteration);
 
             // Jumping to checkpoint
             ulpc_goto_checkpoint(checkpoint);
         }
 
-        //ulcp_action_t action = {
-        //    .mode = ULCP_SET_MODE_COMPLEX,
-        //    .user_type = sizeof(particle_t),
-        //    .size = num[processor]
-        //};
+        ulcp_action_t action = {
+            .mode     = ULCP_SET_MODE_COMPLEX,
+            .mpi_type = NULL,
+            .size_of  = sizeof(particle_t),
+            .size     = num[processor]
+        };
 
-        //ulcp_snapshot_set_diff(&action);
-    
+        ulcp_snapshot_set_diff(&action);
+
         ulcp_save_data(&&phase_one, user_save_callback);
         ulpc_set_checkpoint(phase_one);
 
@@ -371,7 +373,6 @@ int main(int argc, char* argv[])
                     }
                 }
 
-                
 
                 // Complete the send/receive pair for this pipeline stage
                 if (stage < (num_processors - 1))
@@ -470,7 +471,7 @@ int main(int argc, char* argv[])
         MPI_Gatherv(local, num[processor], type,
             particles, num, offset, type,
             MasterProcessor, MPI_COMM_WORLD);
-    
+
         free(local);
 
         if (processor == MasterProcessor)
@@ -478,11 +479,6 @@ int main(int argc, char* argv[])
             free(particles);
         }
     }
-
-    ttotal = MPI_Wtime() - ttotal;
-    fprintf(stdout, "Rank: %d, elapsed time %f sec\n", processor, ttotal);
-    fprintf(stdout, "Particles per processor %d, Iterations %d",
-        NumParticles/num_processors, NumIterations);
 
     // Free the particle distribution arrays
     free(num);

@@ -50,20 +50,22 @@ static void ulcp_get_delta_int(int *a, int *b, int *delta)
     *delta = *a ^ *b;
 }
 
-/*
-static void ulcp_get_delta_complex(void *a, void *b, void *delta, size_t size)
+
+static void ulcp_get_delta_complex(void *a, void *b, void *delta, int size)
 {
     int i;
     int *part_of_a     = (int *)a;
     int *part_of_b     = (int *)b;
     int *part_of_delta = (int *)delta;
 
+    size = size / sizeof(int);
+
     for (i = 0; i < size; i++)
     {        
         *part_of_delta++ = *part_of_a++ ^ *part_of_b++;
     }
 }
-*/
+
 
 void ulcp_snapshot_delta_save(MPI_File file, ulcp_t data)
 {
@@ -109,7 +111,8 @@ void ulcp_snapshot_delta_save_compressed(MPI_File file,
 
     if (!compressed_data)
     {
-        fprintf(stderr, "[ULCP] [%s] Error in compress\n", __FUNCTION__);
+        fprintf(stderr, "[ULCP] Memory allocation error in %s, by rank %d\n",
+            __FUNCTION__, ulcp_get_comm_rank());
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
@@ -141,7 +144,7 @@ void ulcp_snapshot_delta_save_compressed(MPI_File file,
     {
         new_snapshot   = (double *)data;
         delta_snapshot = (double *)malloc(sizeof(double) * size);
-        
+
         double *double_ulcp_base_snapshot = (double *)ulcp_base_snapshot;
         double *double_new_snapshot = (double *)new_snapshot;
         double *double_delta_snapshot = (double *)delta_snapshot;
@@ -158,7 +161,8 @@ void ulcp_snapshot_delta_save_compressed(MPI_File file,
 
     if (compress((Bytef*)compressed_data, compress_size, (Bytef*)delta_snapshot, data_size) != Z_OK)
     {
-        fprintf(stderr, "[%s] Error in compress\n",__FUNCTION__);
+        fprintf(stderr, "[ULCP] Can't compress in %s, by rank %d\n",
+            __FUNCTION__, ulcp_get_comm_rank());
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
@@ -169,8 +173,84 @@ void ulcp_snapshot_delta_save_compressed(MPI_File file,
 
     free(delta_snapshot);
     free(compressed_data);
+}
 
-    printf("<%s><%d>\n", __FUNCTION__, __LINE__);
+void ulcp_snapshot_delta_save_compressed_complex(ulcp_action_save_t * action)
+{
+    int i;
+    ulcp_t buffer;
+
+    uLong offset          = 12;
+    uLong data_size       = 0;
+    uLongf *compress_size = NULL;
+    void *compressed_data = NULL;
+    void *delta_snapshot  = NULL;
+    void *new_snapshot    = NULL;
+
+    if (!action)
+    {
+        fprintf(stderr, "[ULCP] Bad pointer in %s, by rank %d\n",
+            __FUNCTION__, ulcp_get_comm_rank());
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    data_size = action->size * action->size_of;
+
+    compressed_data = (void *)malloc(data_size + offset);
+    if (!compressed_data)
+    {
+        fprintf(stderr, "[ULCP] Memory allocation error in %s, by rank %d\n",
+            __FUNCTION__, ulcp_get_comm_rank());
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    offset += data_size;
+    compress_size = &offset;
+
+    new_snapshot   = action->data;
+    delta_snapshot = malloc(data_size);
+    if (!delta_snapshot)
+    {
+        fprintf(stderr, "[ULCP] Memory allocation error in %s, by rank %d\n",
+            __FUNCTION__, ulcp_get_comm_rank());
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    char *char_ulcp_base_snapshot = (char *)ulcp_base_snapshot;
+    char *char_new_snapshot       = (char *)new_snapshot;
+    char *char_delta_snapshot     = (char *)delta_snapshot;
+
+    for (i = 0; i < action->size; i++)
+    {
+
+        ulcp_get_delta_complex(char_ulcp_base_snapshot,
+                               char_new_snapshot,
+                               char_delta_snapshot,
+                               action->size_of);
+
+        memcpy(char_ulcp_base_snapshot, char_new_snapshot, action->size_of);
+
+        char_ulcp_base_snapshot += action->size_of;
+        char_new_snapshot       += action->size_of;
+        char_delta_snapshot     += action->size_of;
+    }
+
+    if (compress((Bytef*)compressed_data, compress_size,
+                    (Bytef*)delta_snapshot, data_size) != Z_OK)
+    {
+        fprintf(stderr, "[ULCP] Can't compress in %s, by rank %d\n",
+            __FUNCTION__, ulcp_get_comm_rank());
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    if (ulcp_is_data_packed(&buffer, compressed_data,
+            (int)*compress_size, MPI_CHAR, action->delta_idx))
+    {
+        ulcp_snapshot_delta_save(action->file, buffer);
+    }
+
+    free(delta_snapshot);
+    free(compressed_data);
 }
 
 void ulcp_snapshot_save_compressed(MPI_File file,
@@ -266,40 +346,22 @@ void ulcp_snapshot_save_compressed_complex(MPI_File file,
 
 void ulcp_snapshot_set_diff(ulcp_action_t * action)
 {
-    int i;
-    int size_of_elem = 0;
-
     if (!action)
     {
         fprintf(stderr, "[ULCP] Bad pointer in %s\n", __FUNCTION__);
-        exit(-1);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
-    if (action->mode == ULCP_SET_MODE_SIMPLE)
-    {
-        if (action->mpi_type == MPI_DOUBLE)
-        {
-            ulcp_base_snapshot = (double *)malloc(sizeof(double) * action->size);
-            size_of_elem = sizeof(double);
-        }
-    }
-    else if (action->mode == ULCP_SET_MODE_COMPLEX)
-    {
-        ulcp_base_snapshot = (void *)malloc(action->user_type * action->size);
-        size_of_elem = action->user_type;
-    }
-
+    ulcp_base_snapshot = (void *)malloc(action->size_of * action->size);
     if (!ulcp_base_snapshot)
     {
         fprintf(stderr, "[ULCP] Memory allocation error in %s\n", __FUNCTION__);
-        exit(-1);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
-    void * tmp_ptr = ulcp_base_snapshot;
+    // Memory zero out
+    memset(ulcp_base_snapshot, 0, action->size);
 
-    for (i = 0; i < action->size; i++)
-    {
-        bzero(tmp_ptr, size_of_elem);
-        tmp_ptr += size_of_elem;
-    }
+    fprintf(stdout, "[ULPC] Succeffuly set up base checkpoint in %s(), by rank %d\n",
+        __FUNCTION__, ulcp_get_comm_rank());
 }

@@ -34,9 +34,18 @@ typedef struct
 {
     int mode;
     MPI_Datatype mpi_type;
-    int user_type;
+    int size_of;
     int size;
 } ulcp_action_t;
+
+typedef struct
+{
+    MPI_File   file;
+    void     * data;
+    int        size_of;
+    int        size;
+    int        delta_idx;
+} ulcp_action_save_t;
 
 extern void **ulcp_checkpoint_table;
 extern void *ulcp_base_snapshot;

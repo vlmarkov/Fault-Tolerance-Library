@@ -20,4 +20,4 @@ main: main.c main.h
 	mpicc -g -Wall -Werror -c main.c -D ULFM_SUPPORT
 
 clean:
-	rm -f *.a
+	rm -f *.o *.a
