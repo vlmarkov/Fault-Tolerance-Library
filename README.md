@@ -17,7 +17,7 @@
 + **Delta snapshot encoding** - XOR operation based
 
 ## WIP
-+ **Implementing alternative recovery fault tolerance method**
++ **Implementing alternative recovery fault tolerance methods**
 + **Expanding test sample base**
 + **Reducing overhead**
 + **Improving compress**
