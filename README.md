@@ -10,7 +10,8 @@
 + [**n_body**](https://github.com/54markov/mpi_fault_tolerance/tree/master/tests/nbody "link to source files") - an [n-body simulation](https://en.wikipedia.org/wiki/N-body_simulation "wiki N-body simulation") approximates the motion of particles, often specifically particles that interact with one another through some type of physical forces.
 
 ## User-level checkpoint library
-+ Rollback Recovery - checkpoint/restart based 
-+ Failure	detection - ULFM based
-+ Snapshot creation - hard drive based (in place/ via NFS)
-+ Compress procedure - zlib based
++ **Rollback Recovery** - checkpoint/restart based 
++ **Failure	detection** - ULFM based
++ **Snapshot creation** - hard drive based (in place/ via NFS)
++ **Compress procedure** - zlib based
++ **Delta snapshot encoding** - XOR oeration based
