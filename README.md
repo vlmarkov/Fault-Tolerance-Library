@@ -15,3 +15,9 @@
 + **Snapshot creation** - hard drive based (in place/ via NFS)
 + **Compress procedure** - zlib based
 + **Delta snapshot encoding** - XOR operation based
+
+## WIP
++ **Expanding test sample base**
++ **Reducing overhead**
++ **Improving compress**
++ **Improving delta encoding**
