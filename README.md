@@ -14,4 +14,4 @@
 + **Failure	detection** - ULFM based
 + **Snapshot creation** - hard drive based (in place/ via NFS)
 + **Compress procedure** - zlib based
-+ **Delta snapshot encoding** - XOR oeration based
++ **Delta snapshot encoding** - XOR operation based
