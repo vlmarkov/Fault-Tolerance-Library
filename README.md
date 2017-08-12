@@ -13,8 +13,8 @@
 + **Rollback Recovery** - checkpoint/restart based 
 + **Failure	detection** - ULFM based
 + **Snapshot creation** - hard drive based (in place/ via NFS)
-+ **Compress procedure** - zlib based
-+ **Delta snapshot encoding** - XOR operation based
++ **Incremental chekpointing** - delta encoding based (XOR operation)
++ **Aditional compress procedure** - zlib based
 
 ## WIP
 + **Implementing alternative recovery fault tolerance methods**
