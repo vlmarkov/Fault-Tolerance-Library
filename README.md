@@ -14,7 +14,7 @@
 + **Failure	detection** - ULFM based
 + **Snapshot creation** - hard drive based (in place/ via NFS)
 + **Incremental chekpointing** - delta encoding based (XOR operation)
-+ **Aditional compress procedure** - [zlib](https://zlib.net/ official site) based
++ **Aditional compress procedure** - [zlib](https://zlib.net/ "official site") based
 
 ## WIP
 + **Implementing alternative recovery fault tolerance methods**
