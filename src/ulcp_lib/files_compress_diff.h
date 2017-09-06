@@ -31,4 +31,10 @@ void ulcp_snapshot_save_compressed_complex(MPI_File file,
 
 void ulcp_snapshot_set_diff(ulcp_action_t * action);
 
+void ulcp_snapshot_delta_save_zfp_compressed(MPI_File     file,
+                                             void        *data,
+                                             int          size,
+                                             MPI_Datatype type,
+                                             int          block_idx);
+
 #endif /* _ULCP_FILES_COMPRESS_DIFF_H_ */

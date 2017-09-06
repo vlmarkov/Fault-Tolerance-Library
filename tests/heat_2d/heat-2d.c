@@ -98,18 +98,21 @@ inline static void user_save_callback(int phase)
 
     int delta_idx = 1;
 
-    ulcp_snapshot_save_compressed(local_snapshot, &nx, 1, MPI_INT, delta_idx++);
-    ulcp_snapshot_save_compressed(local_snapshot, &ny, 1, MPI_INT, delta_idx++);
-    ulcp_snapshot_save_compressed(local_snapshot, &ttotal, 1, MPI_DOUBLE, delta_idx++);
-    ulcp_snapshot_save_compressed(local_snapshot, &thalo, 1, MPI_DOUBLE, delta_idx++);
+    ulcp_snapshot_save_compressed(local_snapshot, &nx,      1, MPI_INT,    delta_idx++);
+    ulcp_snapshot_save_compressed(local_snapshot, &ny,      1, MPI_INT,    delta_idx++);
+    ulcp_snapshot_save_compressed(local_snapshot, &ttotal,  1, MPI_DOUBLE, delta_idx++);
+    ulcp_snapshot_save_compressed(local_snapshot, &thalo,   1, MPI_DOUBLE, delta_idx++);
     ulcp_snapshot_save_compressed(local_snapshot, &treduce, 1, MPI_DOUBLE, delta_idx++);
-    ulcp_snapshot_save_compressed(local_snapshot, &niters, 1, MPI_INT, delta_idx++);
+    ulcp_snapshot_save_compressed(local_snapshot, &niters,  1, MPI_INT,    delta_idx++);
 
+#ifdef _ZLIB_COMPRESS_
     ulcp_snapshot_delta_save_compressed(local_snapshot,
-                                        local_grid,
-                                        ((ny + 2) * (nx + 2)),
-                                        MPI_DOUBLE,
-                                        delta_idx++);
+        local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE, delta_idx++);
+#endif /* _ZLIB_COMPRESS_ */
+
+
+    ulcp_snapshot_delta_save_zfp_compressed(local_snapshot,
+        local_grid, ((ny + 2) * (nx + 2)), MPI_DOUBLE, delta_idx++);
 
     ulcp_close_file(&local_snapshot);
 }

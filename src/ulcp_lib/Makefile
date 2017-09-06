@@ -11,7 +11,7 @@ files_routine: files_routine.c files_routine.h
 	mpicc -g -Wall -Werror -c files_routine.c -D ULFM_SUPPORT
 
 files_compress_diff: files_compress_diff.c files_compress_diff.h
-	mpicc -g -Wall -Werror -c files_compress_diff.c -lz -D ULFM_SUPPORT
+	mpicc -g -Wall -Werror -I../../3party-libs/zfp-0.5.1/include -c files_compress_diff.c -L../../3party-libs/zfp-0.5.1/lib/ -lz -lzfp -D ULFM_SUPPORT
 
 fault_tollerance: fault_tollerance.c fault_tollerance.h
 	mpicc -g -Wall -Werror -c fault_tollerance.c -lz -D ULFM_SUPPORT
