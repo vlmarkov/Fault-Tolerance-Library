@@ -12,7 +12,7 @@
 ## User-level checkpoint library
 + **Rollback recovery** - checkpoint/restart based 
 + **Failure	detection** - ULFM based
-+ **Snapshot creation** - hard drive based (in place/ via NFS)
++ **Snapshot creation** - hard drive based (in place/via NFS)
 + **Incremental chekpointing** - delta encoding based (XOR operation)
 + **Aditional compress procedure** - [zlib](https://zlib.net/ "official site") based
 
