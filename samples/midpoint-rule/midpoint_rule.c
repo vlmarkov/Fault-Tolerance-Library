@@ -40,9 +40,9 @@ int main(int argc, char **argv)
         }
 
         MPI_Allreduce(&s, &sq[k], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-        
+
         sq[k] *= h;
-        
+
         if (n > n0)
         {
             delta = fabs(sq[k] -sq[k ^ 1]) / 3.0;
