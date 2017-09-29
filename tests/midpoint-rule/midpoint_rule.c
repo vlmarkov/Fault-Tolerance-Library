@@ -41,6 +41,8 @@ void iterative_solver(MPI_Comm comm)
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &commsize);
 
+    int test_iter = 0;
+
     for (k = 0; delta > eps; n *= 2, k ^= 1)
     {
         iteration_start:
@@ -59,6 +61,12 @@ void iterative_solver(MPI_Comm comm)
         {
             s += func(a + h * (i + 0.5)); 
         }
+
+        if (rank == 0 && test_iter == 0)
+        {
+            raise(SIGKILL);
+        }
+        test_iter++;
 
         int rc = MPI_Allreduce(&s, &sq[k], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
