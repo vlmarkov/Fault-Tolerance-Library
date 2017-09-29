@@ -65,10 +65,7 @@ void iterative_solver(MPI_Comm comm)
         if (MPI_ERR_PROC_FAILED == rc)
         {
             MPIX_Comm_revoke(comm);
-            /*
-             * About to leave: let's be sure that everybody
-             * received the same information
-             */
+
             int allsucceeded = (rc == MPI_SUCCESS);
             MPIX_Comm_agree(comm, &allsucceeded);
             if (!allsucceeded)
@@ -77,7 +74,6 @@ void iterative_solver(MPI_Comm comm)
                  * We plan to join the shrink, thus the communicator
                  * should be marked as revoked
                  */
-                MPIX_Comm_revoke(comm);
                 MPIX_Comm_shrink(comm, &comm_spare);
                 MPI_Comm_free(&comm); // Release the revoked communicator
                 comm = comm_spare;
