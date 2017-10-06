@@ -1,0 +1,159 @@
+I'am rank 0004/0016, starting...
+I'am rank 0005/0016, starting...
+I'am rank 0006/0016, starting...
+I'am rank 0001/0016, starting...
+I'am rank 0010/0016, starting...
+I'am rank 0012/0016, starting...
+I'am rank 0013/0016, starting...
+I'am rank 0015/0016, starting...
+I'am rank 0008/0016, starting...
+I'am rank 0002/0016, starting...
+I'am rank 0009/0016, starting...
+I'am rank 0011/0016, starting...
+I'am rank 0007/0016, starting...
+I'am rank 0003/0016, starting...
+I'am rank 0000/0016, starting...
+I'am rank 0014/0016, starting...
+I'am rank 0001: committing suicide
+Rank 0002/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+I'am rank 0002: committing suicide
+Rank 0005/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0005/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0005/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0005/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0005/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0005/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0005/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0005/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0005/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0000/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0000/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0000/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0000/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0000/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0000/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0000/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0000/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0000/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0003/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0003/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0003/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0003/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0003/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0003/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0003/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0003/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0003/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0004/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0004/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0004/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0004/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0004/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0004/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0004/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0004/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0004/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0006/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0006/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0006/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0006/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0006/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0006/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0006/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0006/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0006/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0007/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0007/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0007/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0007/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0007/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0007/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0007/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0007/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0007/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+I'am rank 0003/0016, finishing...
+I'am rank 0006/0016, finishing...
+I'am rank 0000/0016, finishing...
+I'am rank 0007/0016, finishing...
+I'am rank 0004/0016, finishing...
+I'am rank 0005/0016, finishing...
+Rank 0010/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0010/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0010/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0010/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0010/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0010/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0010/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0010/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0010/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+I'am rank 0010/0016, finishing...
+Rank 0012/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0012/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0012/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0012/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0012/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0012/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0012/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0012/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0012/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+I'am rank 0012/0016, finishing...
+Rank 0011/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0011/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0011/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0011/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0011/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0011/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0011/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0011/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0011/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+I'am rank 0011/0016, finishing...
+Rank 0013/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0013/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0013/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0013/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0013/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0013/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0013/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0013/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0013/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+I'am rank 0013/0016, finishing...
+Rank 0015/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0015/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0015/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0015/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0015/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0015/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0015/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0015/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0015/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+I'am rank 0015/0016, finishing...
+Rank 0014/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0009/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0014/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0014/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0014/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0014/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0014/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0014/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0014/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0014/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+I'am rank 0014/0016, finishing...
+Rank 0009/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0009/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0009/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0009/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0009/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0009/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0009/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0009/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+I'am rank 0009/0016, finishing...
+Rank 0008/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0008/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0008/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0008/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0008/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0008/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0008/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0008/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+Rank 0008/0016: Notified of error MPI_ERR_PROC_FAILED: Process Failure
+I'am rank 0008/0016, finishing...
