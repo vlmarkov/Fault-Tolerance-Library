@@ -22,7 +22,9 @@ class TaskGrid
         ~TaskGrid();
 
         void show();
-        void repair(int dead);
+        void markDeadProc(int fail);
+        void repair();
+        bool tryToReassingRank(const int x, const int y);
     
     private:
         std::vector<std::vector<TaskCell> > taskGrid_;

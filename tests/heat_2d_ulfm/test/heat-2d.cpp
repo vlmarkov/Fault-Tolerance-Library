@@ -47,8 +47,9 @@
 #include "fault-tollerance.h"
 
 TaskGrid *taskGrid;
-
-static void errorHandler(MPI_Comm* pcomm, int* perr, ...) {
+/*
+static void errorHandler(MPI_Comm* pcomm, int* perr, ...)
+{
     MPI_Comm comm = *pcomm;
     int err = *perr;
     char errstr[MPI_MAX_ERROR_STRING];
@@ -81,9 +82,59 @@ static void errorHandler(MPI_Comm* pcomm, int* perr, ...) {
     for(i = 0; i < nf; i++)
     {
         printf("%d ", ranks_gc[i]);
-        taskGrid->repair(ranks_gc[i]);
+        taskGrid->markDeadProc(ranks_gc[i]);
     }
     printf("}\n");
+
+    taskGrid->repair();
+}
+*/
+static void errorHandler(MPI_Comm* pcomm, int* perr, ...)
+{
+    MPI_Comm comm = *pcomm;
+    int err = *perr;
+    char errstr[MPI_MAX_ERROR_STRING];
+    int i, rank, size, nf, len, eclass;
+    MPI_Group group_c, group_f;
+    int *ranks_gc, *ranks_gf;
+
+    MPI_Error_class(err, &eclass);
+    if(MPIX_ERR_PROC_FAILED != eclass)
+    {
+        MPI_Abort(comm, err);
+    }
+
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+
+    MPIX_Comm_failure_ack(comm);
+    MPIX_Comm_failure_get_acked(comm, &group_f);
+    MPI_Group_size(group_f, &nf);
+    MPI_Error_string(err, errstr, &len);
+
+    printf("Rank %d / %d: Notified of error %s. %d found dead: { ",
+           rank, size, errstr, nf);
+
+    ranks_gf = (int*)malloc(nf * sizeof(int));
+    ranks_gc = (int*)malloc(nf * sizeof(int));
+
+    MPI_Comm_group(comm, &group_c);
+
+    for(i = 0; i < nf; i++)
+    {
+        ranks_gf[i] = i;
+    }
+
+    MPI_Group_translate_ranks(group_f, nf, ranks_gf, group_c, ranks_gc);
+
+    for(i = 0; i < nf; i++)
+    {
+        printf("%d ", ranks_gc[i]);
+        taskGrid->markDeadProc(ranks_gc[i]);
+    }
+    printf("}\n");
+
+    taskGrid->repair();
 }
 
 int main(int argc, char *argv[])
@@ -220,10 +271,10 @@ int main(int argc, char *argv[])
         taskGrid->show();
     }
 
-    MPI_Comm comm = MPI_COMM_WORLD;
-    MPI_Comm comm_spare;
-
     double prof[3] = {ttotal, treduce, thalo};
+
+    MPI_Comm comm_spare;
+    MPI_Comm comm = MPI_COMM_WORLD;
 
     while (1)
     {
@@ -259,10 +310,49 @@ int main(int argc, char *argv[])
             raise(SIGKILL);
         }
 
+        if (rank == 4)
+        {
+            raise(SIGKILL);
+        }
+
+        if (rank == 3)
+        {
+            raise(SIGKILL);
+        }
+
+        if (rank == 7)
+        {
+            raise(SIGKILL);
+        }
+
+        /*
+         * Naive synchronization, (too strange...)
+         * otherway not each alive process will get actual 'dead-list'
+         */
+        sleep(1);
+
         treduce -= MPI_Wtime();
         int rc = MPI_Allreduce(MPI_IN_PLACE, &maxdiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
         if (MPI_ERR_PROC_FAILED == rc)
         {
+            MPIX_Comm_revoke(cartcomm);
+
+            int allsucceeded = (rc == MPI_SUCCESS);
+            MPIX_Comm_agree(cartcomm, &allsucceeded);
+            if (!allsucceeded)
+            {
+                /*
+                 * We plan to join the shrink, thus the communicator
+                 * should be marked as revoked
+                 */
+                MPIX_Comm_shrink(cartcomm, &comm_spare);
+                MPI_Comm_free(&cartcomm); // Release the revoked communicator
+                cartcomm = comm_spare;
+            }
+
+            MPI_Comm_rank(cartcomm, &rank);
+            MPI_Comm_size(cartcomm, &commsize);
+
             goto exit;
         }
         treduce += MPI_Wtime();
@@ -327,10 +417,11 @@ int main(int argc, char *argv[])
     }
 
 exit:
-    if (rank == 1)
-    {
-        taskGrid->show();
-    }
+    //if (rank == 1)
+    //{
+    sleep(rank);
+    taskGrid->show();
+    //}
 
     delete taskGrid;
 
