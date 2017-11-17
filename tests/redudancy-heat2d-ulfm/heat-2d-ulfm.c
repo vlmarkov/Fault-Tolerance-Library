@@ -124,6 +124,40 @@ int main(int argc, char *argv[])
     double *local_grid    = grid_task_local_grid_get(grid_task, rank);
     double *local_newgrid = grid_task_local_newgrid_get(grid_task, rank);
 
+    int    r_ranks[commsize];          // Redundancy ranks
+    double *r_local_grid[commsize];    // Redundancy local_grids
+    double *r_local_newgrid[commsize]; // Redundancy local_newgrids
+
+    memset(r_ranks, 0, sizeof(int) * commsize);
+    memset(r_local_grid, 0, sizeof(double *) * commsize);
+    memset(r_local_newgrid, 0, sizeof(double *) * commsize);
+
+    // Get redundancy ranks
+    int r_size = grid_task_redundancy_ranks_get(grid_task, rank, r_ranks);
+
+    // Get redundancy local_grid and local_newgrid
+    for (int i = 0; i < r_size; i++)
+    {
+        r_local_grid[i]    = grid_task_redundancy_local_grid_get(grid_task, r_ranks[i]);
+        r_local_newgrid[i] = grid_task_redundancy_local_newgrid_get(grid_task, r_ranks[i]);
+    }
+
+    int local_grid_size = (ny + 2) * (nx + 2);
+
+/*
+    for (int i = 0; i < r_size; i++)
+    {
+        if (r_local_grid[i] && r_local_newgrid[i])
+        {
+            printf("I'am rank %04d redundancy local_grid or local_newgrid - good\n", rank);
+        }
+        else
+        {
+            fprintf(stderr, "I'am rank %04d redundancy local_grid or local_newgrid - failed\n", rank);
+        }
+    }
+*/
+
     /*
      * Fill boundary points: 
      *   - left and right borders are zero filled
@@ -239,6 +273,29 @@ int main(int argc, char *argv[])
         MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
 
         thalo += MPI_Wtime();
+
+        // Exchnage redundancy local_grids
+        int r = 0;
+        MPI_Request r_reqs[2 *r_size];
+        for (int i = 0; i < r_size; i++)
+        {
+            double *r_grid = r_local_grid[i];
+            if (rank == 0)
+            {
+                //printf("I'am rank %04d redundancy irecv %04d\n", rank, r_ranks[i]);
+            }
+            MPI_Irecv(r_grid, local_grid_size, MPI_DOUBLE, r_ranks[i], 0, cartcomm, &r_reqs[r++]);
+        }
+
+        for (int i = 0; i < r_size; i++)
+        {
+            if (rank == 0)
+            {
+                //printf("I'am rank %04d redundancy isend %04d\n", rank, r_ranks[i]);
+            }
+            MPI_Isend(local_grid, local_grid_size, MPI_DOUBLE, r_ranks[i], 0, cartcomm, &r_reqs[r++]);
+        }
+        MPI_Waitall(2 *r_size, r_reqs, MPI_STATUS_IGNORE);
     }
 
     MPI_Type_free(&row);

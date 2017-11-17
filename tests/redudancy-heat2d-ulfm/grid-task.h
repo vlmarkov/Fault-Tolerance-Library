@@ -92,4 +92,20 @@ void grid_task_neighbors_get(const grid_task_t *grid,
                              int               *left,
                              int               *right);
 
+
+/*****************************************************************************/
+/*****************************************************************************/
+/*****************************************************************************/
+void grid_task_redundancy_ranks_send_show(const grid_task_t *grid, const int rank);
+void grid_task_redundancy_ranks_receive_show(const grid_task_t *grid, const int rank);
+
+
+void grid_task_show(const grid_task_t *grid);
+void grid_task_redundancy_show(const grid_task_t *grid);
+
+int grid_task_redundancy_ranks_get(const grid_task_t *grid, const int rank, int *redundancy);
+
+double *grid_task_redundancy_local_grid_get(const grid_task_t *grid, const int rank);
+double *grid_task_redundancy_local_newgrid_get(const grid_task_t *grid, const int rank);
+
 #endif /* _GRID_TASK_H_ */
