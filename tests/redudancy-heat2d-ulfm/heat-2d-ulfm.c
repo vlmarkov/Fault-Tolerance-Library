@@ -157,6 +157,54 @@ void redundancy_exchange(redundancy_cookie_t *cookie)
     }
 }
 
+static void errorHandler(MPI_Comm* pcomm, int* perr, ...)
+{
+    MPI_Comm comm = *pcomm;
+    int err = *perr;
+    char errstr[MPI_MAX_ERROR_STRING];
+    int i, rank, size, nf, len, eclass;
+    MPI_Group group_c, group_f;
+    int *ranks_gc, *ranks_gf;
+
+    MPI_Error_class(err, &eclass);
+    if (MPIX_ERR_PROC_FAILED != eclass)
+    {
+        MPI_Abort(comm, err);
+    }
+
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
+
+    MPIX_Comm_failure_ack(comm);
+    MPIX_Comm_failure_get_acked(comm, &group_f);
+    MPI_Group_size(group_f, &nf);
+    MPI_Error_string(err, errstr, &len);
+
+    printf("Rank %d / %d: Notified of error %s. %d found dead: { ",
+           rank, size, errstr, nf);
+
+    ranks_gf = (int*)malloc(nf * sizeof(int));
+    ranks_gc = (int*)malloc(nf * sizeof(int));
+
+    MPI_Comm_group(comm, &group_c);
+
+    for(i = 0; i < nf; i++)
+    {
+        ranks_gf[i] = i;
+    }
+
+    MPI_Group_translate_ranks(group_f, nf, ranks_gf, group_c, ranks_gc);
+
+    for(i = 0; i < nf; i++)
+    {
+        printf("%d ", ranks_gc[i]);
+    }
+    printf("}\n");
+
+    free(ranks_gf);
+    free(ranks_gc);
+}
+
 int main(int argc, char *argv[])
 {
     int rank;
@@ -165,6 +213,16 @@ int main(int argc, char *argv[])
     MPI_Init(&argc, &argv);
 
     double ttotal = -MPI_Wtime();
+
+    /*
+     * Create a new error handler for MPI_COMM_WORLD
+     * This overrides the default MPI_ERRORS_ARE_FATAL so that ranks in this
+     * communicator will not automatically abort if a failure occurs.
+     */
+    MPI_Comm comm_spare;
+    MPI_Errhandler errHandler;
+    MPI_Comm_create_errhandler(errorHandler, &errHandler);
+    MPI_Comm_set_errhandler(MPI_COMM_WORLD, errHandler);
 
     MPI_Comm_size(MPI_COMM_WORLD, &commsize);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -318,6 +376,7 @@ int main(int argc, char *argv[])
     double treduce = 0;
 
     int niters = 0;
+    int rc;
 
     while (1)
     {
@@ -336,7 +395,29 @@ int main(int argc, char *argv[])
 
         treduce -= MPI_Wtime();
         // Step 4: All reduce (may fail)
-        MPI_Allreduce(MPI_IN_PLACE, &maxdiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        rc = MPI_Allreduce(MPI_IN_PLACE, &maxdiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+        if (MPI_ERR_PROC_FAILED == rc)
+        {
+            MPIX_Comm_revoke(cartcomm);
+
+            int allsucceeded = (rc == MPI_SUCCESS);
+            MPIX_Comm_agree(cartcomm, &allsucceeded);
+            if (!allsucceeded)
+            {
+                /*
+                 * We plan to join the shrink, thus the communicator
+                 * should be marked as revoked
+                 */
+                MPIX_Comm_shrink(cartcomm, &comm_spare);
+                MPI_Comm_free(&cartcomm); // Release the revoked communicator
+                cartcomm = comm_spare;
+            }
+
+            MPI_Comm_rank(cartcomm, &rank);
+            MPI_Comm_size(cartcomm, &commsize);
+
+            goto exit;
+        }
         treduce += MPI_Wtime();
 
         if (maxdiff < EPS)
@@ -375,13 +456,57 @@ int main(int argc, char *argv[])
         halo_exchange(&halo_cookie);
 
         // Step 6: Wait all (may fail)
-        MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
+        rc = MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
+        if (MPI_ERR_PROC_FAILED == rc)
+        {
+            MPIX_Comm_revoke(cartcomm);
+
+            int allsucceeded = (rc == MPI_SUCCESS);
+            MPIX_Comm_agree(cartcomm, &allsucceeded);
+            if (!allsucceeded)
+            {
+                /*
+                 * We plan to join the shrink, thus the communicator
+                 * should be marked as revoked
+                 */
+                MPIX_Comm_shrink(cartcomm, &comm_spare);
+                MPI_Comm_free(&cartcomm); // Release the revoked communicator
+                cartcomm = comm_spare;
+            }
+
+            MPI_Comm_rank(cartcomm, &rank);
+            MPI_Comm_size(cartcomm, &commsize);
+
+            goto exit;
+        }
 
         // Step 7: Redundancy exchnage
         redundancy_exchange(&redundancy_cookie);
 
         // Step 8: Wait all (may fail)
-        MPI_Waitall(2 * r_size, r_reqs, MPI_STATUS_IGNORE);
+        rc = MPI_Waitall(2 * r_size, r_reqs, MPI_STATUS_IGNORE);
+        if (MPI_ERR_PROC_FAILED == rc)
+        {
+            MPIX_Comm_revoke(cartcomm);
+
+            int allsucceeded = (rc == MPI_SUCCESS);
+            MPIX_Comm_agree(cartcomm, &allsucceeded);
+            if (!allsucceeded)
+            {
+                /*
+                 * We plan to join the shrink, thus the communicator
+                 * should be marked as revoked
+                 */
+                MPIX_Comm_shrink(cartcomm, &comm_spare);
+                MPI_Comm_free(&cartcomm); // Release the revoked communicator
+                cartcomm = comm_spare;
+            }
+
+            MPI_Comm_rank(cartcomm, &rank);
+            MPI_Comm_size(cartcomm, &commsize);
+
+            goto exit;
+        }
 
         thalo += MPI_Wtime();
     }
@@ -421,6 +546,7 @@ int main(int argc, char *argv[])
         MPI_Reduce(prof, NULL, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     }
 
+exit:
     grid_task_free(grid_task);
 
     MPI_Finalize();
