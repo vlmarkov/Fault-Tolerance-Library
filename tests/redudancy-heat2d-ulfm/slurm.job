@@ -2,9 +2,4 @@
 
 #SBATCH --nodes=2 --ntasks-per-node=8
 
-mpiexec ./heat-2d-ulfm 1024 1024
-
-
-
-
-
+/home/students/mg165/markov/ulfm_src/ulfm_install/bin/mpiexec -am ft-enable-mpi ./heat-2d-ulfm 1024 1024

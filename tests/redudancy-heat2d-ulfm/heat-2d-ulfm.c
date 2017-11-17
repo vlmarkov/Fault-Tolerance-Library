@@ -32,6 +32,7 @@
 #include <inttypes.h>
 
 #include <mpi.h>
+#include <mpi-ext.h>
 
 #include "utils.h"
 #include "grid-task.h"
@@ -41,6 +42,120 @@
 #define NELEMS(x) (sizeof((x)) / sizeof((x)[0]))
 #define IND(i, j) ((i) * (nx + 2) + (j))
 
+typedef struct
+{
+    double      *buf;
+    int          count;
+    MPI_Datatype row;
+    MPI_Datatype col;
+    int          top;
+    int          bottom;
+    int          left;
+    int          right;
+    MPI_Comm     comm;
+    MPI_Request *reqs;
+    int nx;
+    int ny;
+} halo_cookie_t;
+
+typedef struct
+{
+    double      *send;
+    double     **receive;
+    int         *dest;
+    int          ranks;
+    int          count;
+    MPI_Comm     comm;
+    MPI_Request *reqs;
+} redundancy_cookie_t;
+
+void update_interior_points(double *newgrid, double *grid, const int ny, const int nx)
+{
+    for (int i = 1; i <= ny; i++)
+    {
+        for (int j = 1; j <= nx; j++)
+        {
+            newgrid[IND(i, j)] = (grid[IND(i - 1, j)] + grid[IND(i + 1, j)] +
+                                  grid[IND(i, j - 1)] + grid[IND(i, j + 1)]) * 0.25;
+        }
+    }
+}
+
+double check_termination_condition(double *newgrid, double *grid, const int ny, const int nx)
+{
+    double maxdiff = 0;
+    
+    for (int i = 1; i <= ny; i++)
+    {
+        for (int j = 1; j <= nx; j++)
+        {
+            int ind = IND(i, j);
+            maxdiff = fmax(maxdiff, fabs(grid[ind] - newgrid[ind]));
+        }
+    }
+
+    return maxdiff;
+}
+
+void halo_exchange(halo_cookie_t *cookie)
+{
+    int tag = 0;
+
+    double *buf = cookie->buf;
+    int count   = cookie->count;
+
+    MPI_Datatype row = cookie->row;
+    MPI_Datatype col = cookie->col;
+    
+    // Neighbors
+    int top = cookie->top;
+    int bottom = cookie->bottom;
+    int left   = cookie->left;
+    int right  = cookie->right;
+    
+    // Communicator
+    MPI_Comm comm = cookie->comm;
+
+    MPI_Request *reqs = cookie->reqs;
+
+    int nx = cookie->nx;
+    int ny = cookie->ny;
+
+    MPI_Irecv(&buf[IND(0, 1)],      count, row, top,    tag, comm, &reqs[0]); // top
+    MPI_Irecv(&buf[IND(ny + 1, 1)], count, row, bottom, tag, comm, &reqs[1]); // bottom
+    MPI_Irecv(&buf[IND(1, 0)],      count, col, left,   tag, comm, &reqs[2]); // left
+    MPI_Irecv(&buf[IND(1, nx + 1)], count, col, right,  tag, comm, &reqs[3]); // right
+
+    MPI_Isend(&buf[IND(1, 1)],      count, row, top,    tag, comm, &reqs[4]); // top
+    MPI_Isend(&buf[IND(ny, 1)],     count, row, bottom, tag, comm, &reqs[5]); // bottom
+    MPI_Isend(&buf[IND(1, 1)],      count, col, left,   tag, comm, &reqs[6]); // left
+    MPI_Isend(&buf[IND(1, nx)],     count, col, right,  tag, comm, &reqs[7]); // right
+}
+
+void redundancy_exchange(redundancy_cookie_t *cookie)
+{
+    int tag = 1;
+    int cnt = 0;
+
+    double *send      = cookie->send;
+    double **receive  = cookie->receive;
+    int *dest         = cookie->dest;
+    int ranks         = cookie->ranks;
+    int count         = cookie->count;
+    MPI_Comm comm     = cookie->comm;
+    MPI_Request *reqs = cookie->reqs;
+    
+    for (int i = 0; i < ranks; i++)
+    {
+        double *buf = receive[i];
+        MPI_Irecv(buf, count, MPI_DOUBLE, dest[i], tag, comm, &reqs[cnt++]);
+    }
+
+    for (int i = 0; i < ranks; i++)
+    {
+        MPI_Isend(send, count, MPI_DOUBLE, dest[i], tag, comm, &reqs[cnt++]);
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -133,7 +248,7 @@ int main(int argc, char *argv[])
     memset(r_local_newgrid, 0, sizeof(double *) * commsize);
 
     // Get redundancy ranks
-    int r_size = grid_task_redundancy_ranks_get(grid_task, rank, r_ranks);
+    const int r_size = grid_task_redundancy_ranks_get(grid_task, rank, r_ranks);
 
     // Get redundancy local_grid and local_newgrid
     for (int i = 0; i < r_size; i++)
@@ -142,21 +257,7 @@ int main(int argc, char *argv[])
         r_local_newgrid[i] = grid_task_redundancy_local_newgrid_get(grid_task, r_ranks[i]);
     }
 
-    int local_grid_size = (ny + 2) * (nx + 2);
-
-/*
-    for (int i = 0; i < r_size; i++)
-    {
-        if (r_local_grid[i] && r_local_newgrid[i])
-        {
-            printf("I'am rank %04d redundancy local_grid or local_newgrid - good\n", rank);
-        }
-        else
-        {
-            fprintf(stderr, "I'am rank %04d redundancy local_grid or local_newgrid - failed\n", rank);
-        }
-    }
-*/
+    const int local_grid_size = (ny + 2) * (nx + 2);
 
     /*
      * Fill boundary points: 
@@ -173,8 +274,8 @@ int main(int argc, char *argv[])
         for (int j = 1; j <= nx; j++)
         {
             // Translate col index to x coord in [0, 1]
-            double x = dx * (sj + j - 1);
-            int ind = IND(0, j);
+            double x           = dx * (sj + j - 1);
+            int ind            = IND(0, j);
             local_newgrid[ind] = local_grid[ind] = sin(PI * x);
         }
     }
@@ -185,8 +286,8 @@ int main(int argc, char *argv[])
         for (int j = 1; j <= nx; j++)
         {
             // Translate col index to x coord in [0, 1]
-            double x = dx * (sj + j - 1);
-            int ind = IND(ny + 1, j);
+            double x           = dx * (sj + j - 1);
+            int ind            = IND(ny + 1, j);
             local_newgrid[ind] = local_grid[ind] = sin(PI * x) * exp(-PI);
         }
     }
@@ -211,6 +312,7 @@ int main(int argc, char *argv[])
     MPI_Type_contiguous(nx, MPI_DOUBLE, &row);
     MPI_Type_commit(&row);
 
+    MPI_Request r_reqs[2 * r_size];
     MPI_Request reqs[8];
     double thalo   = 0;
     double treduce = 0;
@@ -221,34 +323,19 @@ int main(int argc, char *argv[])
     {
         niters++;
 
-        // Update interior points
-        for (int i = 1; i <= ny; i++)
-        {
-            for (int j = 1; j <= nx; j++)
-            {
-                local_newgrid[IND(i, j)] = 
-                    (local_grid[IND(i - 1, j)] + local_grid[IND(i + 1, j)] +
-                     local_grid[IND(i, j - 1)] + local_grid[IND(i, j + 1)]) * 0.25;
-            }
-        }
+        // Step 1: Update interior points
+        update_interior_points(local_newgrid, local_grid, ny, nx);
 
-        // Check termination condition
-        double maxdiff = 0;
-        for (int i = 1; i <= ny; i++)
-        {
-            for (int j = 1; j <= nx; j++)
-            {
-                int ind = IND(i, j);
-                maxdiff = fmax(maxdiff, fabs(local_grid[ind] - local_newgrid[ind]));
-            }
-        }
+        // Step 2: Check termination condition
+        double maxdiff = check_termination_condition(local_newgrid, local_grid, ny, nx);
 
-        // Swap grids (after termination local_grid will contain result)
+        // Step 3: Swap grids (after termination local_grid will contain result)
         double *p     = local_grid;
         local_grid    = local_newgrid;
         local_newgrid = p;
 
         treduce -= MPI_Wtime();
+        // Step 4: All reduce (may fail)
         MPI_Allreduce(MPI_IN_PLACE, &maxdiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
         treduce += MPI_Wtime();
 
@@ -257,52 +344,50 @@ int main(int argc, char *argv[])
             break;
         }
 
-        // Halo exchange: T = 4 * (a + b * (rows / py)) + 4 * (a + b * (cols / px))
+        halo_cookie_t halo_cookie = {
+            .buf    = local_grid,
+            .count  = 1,
+            .row    = row,
+            .col    = col,
+            .top    = top,
+            .bottom = bottom,
+            .left   = left,
+            .right  = right,
+            .comm   = cartcomm,
+            .reqs   = reqs,
+            .nx     = nx,
+            .ny     = ny 
+        };
+
+        redundancy_cookie_t redundancy_cookie = {
+            .send    = local_grid,
+            .receive = r_local_grid,
+            .dest    = r_ranks,
+            .ranks   = r_size,
+            .count   = local_grid_size,
+            .comm    = cartcomm,
+            .reqs    = r_reqs
+        };
+
         thalo -= MPI_Wtime();
 
-        MPI_Irecv(&local_grid[IND(0, 1)],      1, row, top,    0, cartcomm, &reqs[0]); // top
-        MPI_Irecv(&local_grid[IND(ny + 1, 1)], 1, row, bottom, 0, cartcomm, &reqs[1]); // bottom
-        MPI_Irecv(&local_grid[IND(1, 0)],      1, col, left,   0, cartcomm, &reqs[2]); // left
-        MPI_Irecv(&local_grid[IND(1, nx + 1)], 1, col, right,  0, cartcomm, &reqs[3]); // right
+        // Step 5: Halo exchange: T = 4 * (a + b * (rows / py)) + 4 * (a + b * (cols / px))
+        halo_exchange(&halo_cookie);
 
-        MPI_Isend(&local_grid[IND(1, 1)],      1, row, top,    0, cartcomm, &reqs[4]); // top
-        MPI_Isend(&local_grid[IND(ny, 1)],     1, row, bottom, 0, cartcomm, &reqs[5]); // bottom
-        MPI_Isend(&local_grid[IND(1, 1)],      1, col, left,   0, cartcomm, &reqs[6]); // left
-        MPI_Isend(&local_grid[IND(1, nx)],     1, col, right,  0, cartcomm, &reqs[7]); // right
-
+        // Step 6: Wait all (may fail)
         MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
 
+        // Step 7: Redundancy exchnage
+        redundancy_exchange(&redundancy_cookie);
+
+        // Step 8: Wait all (may fail)
+        MPI_Waitall(2 * r_size, r_reqs, MPI_STATUS_IGNORE);
+
         thalo += MPI_Wtime();
-
-        // Exchnage redundancy local_grids
-        int r = 0;
-        MPI_Request r_reqs[2 *r_size];
-        for (int i = 0; i < r_size; i++)
-        {
-            double *r_grid = r_local_grid[i];
-            if (rank == 0)
-            {
-                //printf("I'am rank %04d redundancy irecv %04d\n", rank, r_ranks[i]);
-            }
-            MPI_Irecv(r_grid, local_grid_size, MPI_DOUBLE, r_ranks[i], 0, cartcomm, &r_reqs[r++]);
-        }
-
-        for (int i = 0; i < r_size; i++)
-        {
-            if (rank == 0)
-            {
-                //printf("I'am rank %04d redundancy isend %04d\n", rank, r_ranks[i]);
-            }
-            MPI_Isend(local_grid, local_grid_size, MPI_DOUBLE, r_ranks[i], 0, cartcomm, &r_reqs[r++]);
-        }
-        MPI_Waitall(2 *r_size, r_reqs, MPI_STATUS_IGNORE);
     }
 
     MPI_Type_free(&row);
     MPI_Type_free(&col);
-
-    free(local_newgrid); // todo
-    free(local_grid); // todo
 
     ttotal += MPI_Wtime();
 
@@ -323,7 +408,7 @@ int main(int argc, char *argv[])
            (treduce + thalo) / ttotal, treduce, treduce / (treduce + thalo), 
            thalo, thalo / (treduce + thalo)); 
 
-    double prof[3] = {ttotal, treduce, thalo};
+    double prof[3] = { ttotal, treduce, thalo };
     if (rank == 0)
     {
         MPI_Reduce(MPI_IN_PLACE, prof, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
@@ -335,6 +420,8 @@ int main(int argc, char *argv[])
     {
         MPI_Reduce(prof, NULL, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     }
+
+    grid_task_free(grid_task);
 
     MPI_Finalize();
     return 0;
