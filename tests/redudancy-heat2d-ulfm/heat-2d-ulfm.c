@@ -44,29 +44,25 @@
 
 typedef struct
 {
-    double      *buf;
     int          count;
+    int          nx;
+    int          ny;
     MPI_Datatype row;
     MPI_Datatype col;
-    int          top;
-    int          bottom;
-    int          left;
-    int          right;
     MPI_Comm     comm;
+    task_t      *task;
     MPI_Request *reqs;
-    int nx;
-    int ny;
 } halo_cookie_t;
 
 typedef struct
 {
-    double      *send;
-    double     **receive;
-    int         *dest;
     int          ranks;
     int          count;
     MPI_Comm     comm;
     MPI_Request *reqs;
+    double      *send;
+    int         *dest;
+    double     **receive;
 } redundancy_cookie_t;
 
 void update_interior_points(double *newgrid, double *grid, const int ny, const int nx)
@@ -99,27 +95,21 @@ double check_termination_condition(double *newgrid, double *grid, const int ny, 
 
 void halo_exchange(halo_cookie_t *cookie)
 {
-    int tag = 0;
+    const int tag = 0;
 
-    double *buf = cookie->buf;
-    int count   = cookie->count;
-
-    MPI_Datatype row = cookie->row;
-    MPI_Datatype col = cookie->col;
-    
-    // Neighbors
-    int top = cookie->top;
-    int bottom = cookie->bottom;
-    int left   = cookie->left;
-    int right  = cookie->right;
-    
-    // Communicator
-    MPI_Comm comm = cookie->comm;
-
+    task_t *task      = cookie->task;
+    double *buf       = task->local_grid;
+    int top           = task->top;
+    int bottom        = task->bottom;
+    int left          = task->left;
+    int right         = task->right;
+    int count         = cookie->count;
+    int nx            = cookie->nx;
+    int ny            = cookie->ny;
+    MPI_Datatype row  = cookie->row;
+    MPI_Datatype col  = cookie->col;
+    MPI_Comm comm     = cookie->comm;
     MPI_Request *reqs = cookie->reqs;
-
-    int nx = cookie->nx;
-    int ny = cookie->ny;
 
     MPI_Irecv(&buf[IND(0, 1)],      count, row, top,    tag, comm, &reqs[0]); // top
     MPI_Irecv(&buf[IND(ny + 1, 1)], count, row, bottom, tag, comm, &reqs[1]); // bottom
@@ -134,7 +124,8 @@ void halo_exchange(halo_cookie_t *cookie)
 
 void redundancy_exchange(redundancy_cookie_t *cookie)
 {
-    int tag = 1;
+    const int tag = 1;
+
     int cnt = 0;
 
     double *send      = cookie->send;
@@ -144,7 +135,7 @@ void redundancy_exchange(redundancy_cookie_t *cookie)
     int count         = cookie->count;
     MPI_Comm comm     = cookie->comm;
     MPI_Request *reqs = cookie->reqs;
-    
+
     for (int i = 0; i < ranks; i++)
     {
         double *buf = receive[i];
@@ -294,26 +285,28 @@ int main(int argc, char *argv[])
 
     grid_task_init(grid_task);
 
-    double *local_grid    = grid_task_local_grid_get(grid_task, rank);
-    double *local_newgrid = grid_task_local_newgrid_get(grid_task, rank);
+    task_t *my_task = grid_task_get(grid_task, rank);
 
-    int    r_ranks[commsize];          // Redundancy ranks
-    double *r_local_grid[commsize];    // Redundancy local_grids
-    double *r_local_newgrid[commsize]; // Redundancy local_newgrids
+    task_t *real_task[commsize];
+    memset(real_task, 0, sizeof(task_t *) * commsize);
 
-    memset(r_ranks, 0, sizeof(int) * commsize);
-    memset(r_local_grid, 0, sizeof(double *) * commsize);
-    memset(r_local_newgrid, 0, sizeof(double *) * commsize);
+    int real_counter = grid_task_real_task_get(my_task, real_task);
 
-    // Get redundancy ranks
-    const int r_size = grid_task_redundancy_ranks_get(grid_task, rank, r_ranks);
+    double *local_grid_init    = real_task[0]->local_grid;
+    double *local_newgrid_init = real_task[0]->local_newgrid;
 
-    // Get redundancy local_grid and local_newgrid
-    for (int i = 0; i < r_size; i++)
-    {
-        r_local_grid[i]    = grid_task_redundancy_local_grid_get(grid_task, r_ranks[i]);
-        r_local_newgrid[i] = grid_task_redundancy_local_newgrid_get(grid_task, r_ranks[i]);
-    }
+    int redundancy_ranks[commsize];             // Redundancy ranks
+    double *redundancy_local_grid[commsize];    // Redundancy local_grids
+    double *redundancy_local_newgrid[commsize]; // Redundancy local_newgrids, todo
+
+    memset(redundancy_ranks, 0, sizeof(int) * commsize);
+    memset(redundancy_local_grid, 0, sizeof(double *) * commsize);
+    memset(redundancy_local_newgrid, 0, sizeof(double *) * commsize);
+
+    int redundancy_counter = grid_task_redundancy_task_get(my_task,
+                                                           redundancy_ranks,
+                                                           redundancy_local_grid,
+                                                           redundancy_local_newgrid);
 
     const int local_grid_size = (ny + 2) * (nx + 2);
 
@@ -334,7 +327,7 @@ int main(int argc, char *argv[])
             // Translate col index to x coord in [0, 1]
             double x           = dx * (sj + j - 1);
             int ind            = IND(0, j);
-            local_newgrid[ind] = local_grid[ind] = sin(PI * x);
+            local_newgrid_init[ind] = local_grid_init[ind] = sin(PI * x);
         }
     }
 
@@ -346,15 +339,13 @@ int main(int argc, char *argv[])
             // Translate col index to x coord in [0, 1]
             double x           = dx * (sj + j - 1);
             int ind            = IND(ny + 1, j);
-            local_newgrid[ind] = local_grid[ind] = sin(PI * x) * exp(-PI);
+            local_newgrid_init[ind] = local_grid_init[ind] = sin(PI * x) * exp(-PI);
         }
     }
 
-    /*
-     * Neighbours
-     */
-    int left, right, top, bottom;
-    grid_task_neighbors_get(grid_task, rank, &top, &bottom, &left, &right);
+    // Do sync ??
+    real_task[0]->local_grid = local_grid_init;
+    real_task[0]->local_newgrid = local_newgrid_init;
 
     /*
      * Left and right borders type
@@ -370,7 +361,6 @@ int main(int argc, char *argv[])
     MPI_Type_contiguous(nx, MPI_DOUBLE, &row);
     MPI_Type_commit(&row);
 
-    MPI_Request r_reqs[2 * r_size];
     MPI_Request reqs[8];
     double thalo   = 0;
     double treduce = 0;
@@ -382,135 +372,146 @@ int main(int argc, char *argv[])
     {
         niters++;
 
-        // Step 1: Update interior points
-        update_interior_points(local_newgrid, local_grid, ny, nx);
-
-        // Step 2: Check termination condition
-        double maxdiff = check_termination_condition(local_newgrid, local_grid, ny, nx);
-
-        // Step 3: Swap grids (after termination local_grid will contain result)
-        double *p     = local_grid;
-        local_grid    = local_newgrid;
-        local_newgrid = p;
-
-        treduce -= MPI_Wtime();
-        // Step 4: All reduce (may fail)
-        rc = MPI_Allreduce(MPI_IN_PLACE, &maxdiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-        if (MPI_ERR_PROC_FAILED == rc)
+        // Loop by for process's tasks
+        for (int i = 0; i < real_counter; i++)
         {
-            MPIX_Comm_revoke(cartcomm);
+            double *local_grid    = real_task[i]->local_grid;
+            double *local_newgrid = real_task[i]->local_newgrid;
 
-            int allsucceeded = (rc == MPI_SUCCESS);
-            MPIX_Comm_agree(cartcomm, &allsucceeded);
-            if (!allsucceeded)
+            // Step 1: Update interior points
+            update_interior_points(local_newgrid, local_grid, ny, nx);
+
+            // Step 2: Check termination condition
+            double maxdiff = check_termination_condition(local_newgrid, local_grid, ny, nx);
+
+            // Step 3: Swap grids (after termination local_grid will contain result)
+            double *p     = local_grid;
+            local_grid    = local_newgrid;
+            local_newgrid = p;
+
+            // Do sync
+            real_task[i]->local_grid    = local_grid;
+            real_task[i]->local_newgrid = local_newgrid;
+
+            treduce -= MPI_Wtime();
+            // Step 4: All reduce (may fail)
+            rc = MPI_Allreduce(MPI_IN_PLACE, &maxdiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+            if (MPI_ERR_PROC_FAILED == rc)
             {
-                /*
-                 * We plan to join the shrink, thus the communicator
-                 * should be marked as revoked
-                 */
-                MPIX_Comm_shrink(cartcomm, &comm_spare);
-                MPI_Comm_free(&cartcomm); // Release the revoked communicator
-                cartcomm = comm_spare;
+                MPIX_Comm_revoke(cartcomm);
+
+                int allsucceeded = (rc == MPI_SUCCESS);
+                MPIX_Comm_agree(cartcomm, &allsucceeded);
+                if (!allsucceeded)
+                {
+                    /*
+                     * We plan to join the shrink, thus the communicator
+                     * should be marked as revoked
+                     */
+                    MPIX_Comm_shrink(cartcomm, &comm_spare);
+                    MPI_Comm_free(&cartcomm); // Release the revoked communicator
+                    cartcomm = comm_spare;
+                }
+
+                MPI_Comm_rank(cartcomm, &rank);
+                MPI_Comm_size(cartcomm, &commsize);
+
+                goto exit;
+            }
+            treduce += MPI_Wtime();
+
+            if (maxdiff < EPS)
+            {
+                goto finish;
+                break;
             }
 
-            MPI_Comm_rank(cartcomm, &rank);
-            MPI_Comm_size(cartcomm, &commsize);
+            thalo -= MPI_Wtime();
 
-            goto exit;
-        }
-        treduce += MPI_Wtime();
+            halo_cookie_t halo_cookie = {
+                .task   = real_task[i],
+                .count  = 1,
+                .row    = row,
+                .col    = col,
+                .comm   = cartcomm,
+                .reqs   = reqs,
+                .nx     = nx,
+                .ny     = ny,
+            };
 
-        if (maxdiff < EPS)
-        {
-            break;
-        }
+            // Step 5: Halo exchange: T = 4 * (a + b * (rows / py)) + 4 * (a + b * (cols / px))
+            halo_exchange(&halo_cookie);
 
-        halo_cookie_t halo_cookie = {
-            .buf    = local_grid,
-            .count  = 1,
-            .row    = row,
-            .col    = col,
-            .top    = top,
-            .bottom = bottom,
-            .left   = left,
-            .right  = right,
-            .comm   = cartcomm,
-            .reqs   = reqs,
-            .nx     = nx,
-            .ny     = ny 
-        };
-
-        redundancy_cookie_t redundancy_cookie = {
-            .send    = local_grid,
-            .receive = r_local_grid,
-            .dest    = r_ranks,
-            .ranks   = r_size,
-            .count   = local_grid_size,
-            .comm    = cartcomm,
-            .reqs    = r_reqs
-        };
-
-        thalo -= MPI_Wtime();
-
-        // Step 5: Halo exchange: T = 4 * (a + b * (rows / py)) + 4 * (a + b * (cols / px))
-        halo_exchange(&halo_cookie);
-
-        // Step 6: Wait all (may fail)
-        rc = MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
-        if (MPI_ERR_PROC_FAILED == rc)
-        {
-            MPIX_Comm_revoke(cartcomm);
-
-            int allsucceeded = (rc == MPI_SUCCESS);
-            MPIX_Comm_agree(cartcomm, &allsucceeded);
-            if (!allsucceeded)
+            // Step 6: Wait all (may fail)
+            rc = MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
+            if (MPI_ERR_PROC_FAILED == rc)
             {
-                /*
-                 * We plan to join the shrink, thus the communicator
-                 * should be marked as revoked
-                 */
-                MPIX_Comm_shrink(cartcomm, &comm_spare);
-                MPI_Comm_free(&cartcomm); // Release the revoked communicator
-                cartcomm = comm_spare;
+                MPIX_Comm_revoke(cartcomm);
+
+                int allsucceeded = (rc == MPI_SUCCESS);
+                MPIX_Comm_agree(cartcomm, &allsucceeded);
+                if (!allsucceeded)
+                {
+                    /*
+                     * We plan to join the shrink, thus the communicator
+                     * should be marked as revoked
+                     */
+                    MPIX_Comm_shrink(cartcomm, &comm_spare);
+                    MPI_Comm_free(&cartcomm); // Release the revoked communicator
+                    cartcomm = comm_spare;
+                }
+
+                MPI_Comm_rank(cartcomm, &rank);
+                MPI_Comm_size(cartcomm, &commsize);
+
+                goto exit;
             }
 
-            MPI_Comm_rank(cartcomm, &rank);
-            MPI_Comm_size(cartcomm, &commsize);
+            MPI_Request r_reqs[2 * redundancy_counter];
 
-            goto exit;
-        }
+            redundancy_cookie_t redundancy_cookie = {
+                .send    = local_grid,
+                .receive = redundancy_local_grid,
+                .dest    = redundancy_ranks,
+                .ranks   = redundancy_counter,
+                .count   = local_grid_size,
+                .comm    = cartcomm,
+                .reqs    = r_reqs
+            };
 
-        // Step 7: Redundancy exchnage
-        redundancy_exchange(&redundancy_cookie);
+            // Step 7: Redundancy exchnage
+            redundancy_exchange(&redundancy_cookie);
 
-        // Step 8: Wait all (may fail)
-        rc = MPI_Waitall(2 * r_size, r_reqs, MPI_STATUS_IGNORE);
-        if (MPI_ERR_PROC_FAILED == rc)
-        {
-            MPIX_Comm_revoke(cartcomm);
-
-            int allsucceeded = (rc == MPI_SUCCESS);
-            MPIX_Comm_agree(cartcomm, &allsucceeded);
-            if (!allsucceeded)
+            // Step 8: Wait all (may fail)
+            rc = MPI_Waitall(2 * redundancy_counter, r_reqs, MPI_STATUS_IGNORE);
+            if (MPI_ERR_PROC_FAILED == rc)
             {
-                /*
-                 * We plan to join the shrink, thus the communicator
-                 * should be marked as revoked
-                 */
-                MPIX_Comm_shrink(cartcomm, &comm_spare);
-                MPI_Comm_free(&cartcomm); // Release the revoked communicator
-                cartcomm = comm_spare;
+                MPIX_Comm_revoke(cartcomm);
+
+                int allsucceeded = (rc == MPI_SUCCESS);
+                MPIX_Comm_agree(cartcomm, &allsucceeded);
+                if (!allsucceeded)
+                {
+                    /*
+                     * We plan to join the shrink, thus the communicator
+                     * should be marked as revoked
+                     */
+                    MPIX_Comm_shrink(cartcomm, &comm_spare);
+                    MPI_Comm_free(&cartcomm); // Release the revoked communicator
+                    cartcomm = comm_spare;
+                }
+
+                MPI_Comm_rank(cartcomm, &rank);
+                MPI_Comm_size(cartcomm, &commsize);
+
+                goto exit;
             }
 
-            MPI_Comm_rank(cartcomm, &rank);
-            MPI_Comm_size(cartcomm, &commsize);
-
-            goto exit;
+            thalo += MPI_Wtime();
         }
-
-        thalo += MPI_Wtime();
     }
 
+finish:
     MPI_Type_free(&row);
     MPI_Type_free(&col);
 

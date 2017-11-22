@@ -9,20 +9,25 @@ typedef enum
     BORDER    = MPI_PROC_NULL, /* -1 */
 } grid_task_e;
 
-typedef struct
+typedef struct task task_t;
+
+struct task
 {
     int     rank;          // Assigned proc rank
     int     top;           // Neighbor top
     int     bottom;        // Neighbor down
     int     left;          // Neighbor left
     int     right;         // Neighbor right
-
-    int     redundancy[16]; // Assigned proc rank todo
-    int     r_counter;
-
+    int     redundancy_capacity;
+    int     redundancy_counter;
+    int     real_capacity;
+    int     real_counter;
+    task_t **real_task;
+    task_t **redundancy_task;
     double *local_grid;
     double *local_newgrid;
-} task_t;
+}t;
+
 
 typedef struct
 {
@@ -107,5 +112,14 @@ int grid_task_redundancy_ranks_get(const grid_task_t *grid, const int rank, int 
 
 double *grid_task_redundancy_local_grid_get(const grid_task_t *grid, const int rank);
 double *grid_task_redundancy_local_newgrid_get(const grid_task_t *grid, const int rank);
+
+task_t *grid_task_get(const grid_task_t *grid, const int rank);
+
+int grid_task_redundancy_task_get(const task_t *task,
+                                  int          *ranks,
+                                  double      **grid,
+                                  double      **newgrid);
+
+int grid_task_real_task_get(const task_t *my_task, task_t **tasks);
 
 #endif /* _GRID_TASK_H_ */

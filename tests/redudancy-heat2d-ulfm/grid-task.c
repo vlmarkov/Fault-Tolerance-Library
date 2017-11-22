@@ -24,8 +24,15 @@ void grid_task_free(grid_task_t *grid)
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
-    for (int i = 1; i < grid->rows_per_proc; i++)
+    for (int i = 0; i < grid->cols_per_proc; i++)
     {
+        for (int j = 0; j < grid->rows_per_proc; j++)
+        {
+            free(grid->tasks[i][j].local_grid);
+            free(grid->tasks[i][j].local_newgrid);
+            free(grid->tasks[i][j].redundancy_task);
+            free(grid->tasks[i][j].real_task);
+        }
         free(grid->tasks[i]);
     }
 
@@ -70,6 +77,7 @@ grid_task_t *grid_task_allocate(const int cols,
 
     grid->proc_per_node = p;
 
+    // Allocate memory for grid-tasks
     grid->tasks = (task_t **)malloc(sizeof(task_t *) * n);
     if (!grid->tasks)
     {
@@ -78,6 +86,7 @@ grid_task_t *grid_task_allocate(const int cols,
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
+    // Allocate memory for each row in grid-tasks
     for (int i = 0; i < n; i++)
     {
         task_t *new_row = (task_t *)malloc(sizeof(task_t) * m);
@@ -92,13 +101,37 @@ grid_task_t *grid_task_allocate(const int cols,
         grid->tasks[i] = new_row;
     }
 
+    /*
+     * Allocate memory for local_grid and
+     * local_newgrid and redundancy_task in each task
+     */
     for (int i = 0; i < n; i++)
     {
         for (int j = 0; j < m; j++)
         {
-            task_t *task = &(grid->tasks[i][j]);
-            task->local_grid    = xcalloc((ny + 2) * (nx + 2), sizeof(*task->local_grid));
-            task->local_newgrid = xcalloc((ny + 2) * (nx + 2), sizeof(*task->local_newgrid));
+            task_t *task          = &(grid->tasks[i][j]);
+
+            task->local_grid      = xcalloc((ny + 2) * (nx + 2), sizeof(*task->local_grid));
+
+            task->local_newgrid   = xcalloc((ny + 2) * (nx + 2), sizeof(*task->local_newgrid));
+
+            task->redundancy_task = (task_t **)malloc(sizeof(task_t *) * commsize);
+            if (!task->redundancy_task)
+            {
+                grid_task_free(grid);
+                fprintf(stderr, "<%s> Fail to allocate memory for redundancy-tasks\n", __FUNCTION__);
+                MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+            }
+            memset(task->redundancy_task, 0, sizeof(sizeof(task_t *) * commsize));
+
+            task->real_task = (task_t **)malloc(sizeof(task_t *) * commsize);
+            if (!task->real_task)
+            {
+                grid_task_free(grid);
+                fprintf(stderr, "<%s> Fail to allocate memory for redundancy-tasks\n", __FUNCTION__);
+                MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+            }
+            memset(task->real_task, 0, sizeof(sizeof(task_t *) * commsize));
         }
     }
 
@@ -124,22 +157,29 @@ void grid_task_init(grid_task_t *grid)
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
-    // Zero-out (compiller issue!)
+    int commsize = (grid->cols_per_proc * grid->rows_per_proc);
+
     for (int i = 0; i < grid->cols_per_proc; i++)
     {
         for (int j = 0; j < grid->rows_per_proc; j++)
         {
-            grid->tasks[i][j].r_counter = 0;
+            grid->tasks[i][j].redundancy_counter  = 0;
+            grid->tasks[i][j].redundancy_capacity = commsize;
+            grid->tasks[i][j].real_counter        = 1;
+            grid->tasks[i][j].real_capacity       = commsize;
+            grid->tasks[i][j].real_task[0]        = &(grid->tasks[i][j]);
+            grid->tasks[i][j].rank                = counter++;
         }
     }
+
+    counter = 0;
 
     for (int i = 0; i < grid->cols_per_proc; i++)
     {
         for (int j = 0; j < grid->rows_per_proc; j++)
         {
             // Each struct task contains redudancy list
-            grid_task_redundancy_ranks_set(grid, counter, i, j);
-            grid->tasks[i][j].rank = counter++;
+            grid_task_redundancy_ranks_set(grid, counter++, i, j);
         }
     }
 
@@ -195,8 +235,17 @@ void grid_task_redundancy_ranks_set(grid_task_t *grid,
                 rj = rj - grid->rows_per_proc;
             }
 
-            grid->tasks[ri][rj].redundancy[grid->tasks[ri][rj].r_counter] = rank;
-            grid->tasks[ri][rj].r_counter += 1;
+            const int capacity = grid->tasks[ri][rj].redundancy_capacity;
+            const int idx      = grid->tasks[ri][rj].redundancy_counter;
+
+            if (idx == capacity)
+            {
+                fprintf(stderr, "<%s> Bad redundancy-counter\n", __FUNCTION__);
+                MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+            }
+
+            grid->tasks[ri][rj].redundancy_task[idx] = grid_task_get(grid, rank);
+            grid->tasks[ri][rj].redundancy_counter  += 1;
             
             rj += grid->proc_per_node;
         }
@@ -606,14 +655,16 @@ void grid_task_redundancy_ranks_send_show(const grid_task_t *grid, const int ran
         {
             if (rank == grid->tasks[i][j].rank)
             {
-                char buf[256] = { 0 };
                 int rc = 0;
-                for (int r = 0; r < grid->tasks[i][j].r_counter; r++)
+                char buf[256] = { 0 };
+                int size = grid->tasks[i][j].redundancy_counter;
+                for (int r = 0; r < size; r++)
                 {
                     // Not include self
-                    if (rank != grid->tasks[i][j].redundancy[r])
+                    if (rank != grid->tasks[i][j].redundancy_task[r]->rank)
                     {
-                        rc += sprintf(buf + rc, "%04d ", grid->tasks[i][j].redundancy[r]);
+                        rc += sprintf(buf + rc, "%04d ",
+                                      grid->tasks[i][j].redundancy_task[r]->rank);
                     }
                 }
                 printf("I'am rank %04d, redundancy ranks to send   : %s\n", rank, buf);
@@ -652,14 +703,16 @@ void grid_task_redundancy_ranks_receive_show(const grid_task_t *grid, const int 
         {
             if (rank == grid->tasks[i][j].rank)
             {
-                char buf[256] = { 0 };
                 int rc = 0;
-                for (int r = 0; r < grid->tasks[i][j].r_counter; r++)
+                char buf[256] = { 0 };
+                int size = grid->tasks[i][j].redundancy_counter;
+                for (int r = 0; r < size; r++)
                 {
                     // Not include self
-                    if (rank != grid->tasks[i][j].redundancy[r])
+                    if (rank != grid->tasks[i][j].redundancy_task[r]->rank)
                     {
-                        rc += sprintf(buf + rc, "%04d ", grid->tasks[i][j].redundancy[r]);
+                        rc += sprintf(buf + rc, "%04d ",
+                                      grid->tasks[i][j].redundancy_task[r]->rank);
                     }
                 }
                 printf("I'am rank %04d, redundancy ranks to receive: %s\n", rank, buf);
@@ -704,10 +757,11 @@ static void grid_task_show_(const grid_task_t *grid, const int redundancy)
             }
             else
             {
+                int size = tasks[i][j].redundancy_counter;
                 printf("[%04d]:{", tasks[i][j].rank);
-                for (int r = 0; r < tasks[i][j].r_counter; r++)
+                for (int r = 0; r < size; r++)
                 {
-                    printf("%04d ", tasks[i][j].redundancy[r]);
+                    printf("%04d ", tasks[i][j].redundancy_task[r]->rank);
                 }
                 printf("}");
             }
@@ -783,12 +837,13 @@ int grid_task_redundancy_ranks_get(const grid_task_t *grid, const int rank, int 
         {
             if (rank == grid->tasks[i][j].rank)
             {
-                for (int r = 0; r < grid->tasks[i][j].r_counter; r++)
+                int size = grid->tasks[i][j].redundancy_counter;
+                for (int r = 0; r < size; r++)
                 {
                     // Not include self
-                    if (rank != grid->tasks[i][j].redundancy[r])
+                    if (rank != grid->tasks[i][j].redundancy_task[r]->rank)
                     {
-                        redundancy[cnt] = grid->tasks[i][j].redundancy[r];
+                        redundancy[cnt] = grid->tasks[i][j].redundancy_task[r]->rank;
                         cnt++;
                     }
                 }
@@ -818,4 +873,80 @@ double *grid_task_redundancy_local_grid_get(const grid_task_t *grid, const int r
 double *grid_task_redundancy_local_newgrid_get(const grid_task_t *grid, const int rank)
 {
     return grid_task_local_newgrid_get(grid, rank);
+}
+
+/*****************************************************************************/
+/* Task getter                                                               */
+/*****************************************************************************/
+task_t *grid_task_get(const grid_task_t *grid, const int rank)
+{
+    if (!grid)
+    {
+        fprintf(stderr, "<%s> Bad grid pointer\n", __FUNCTION__);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    if (!grid->tasks)
+    {
+        fprintf(stderr, "<%s> Bad tasks pointer\n", __FUNCTION__);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < grid->cols_per_proc; i++)
+    {
+        for (int j = 0; j < grid->rows_per_proc; j++)
+        {
+            if (rank == grid->tasks[i][j].rank)
+            {
+                return &grid->tasks[i][j];
+            }
+        }
+    }
+
+    fprintf(stderr, "<%s> Can't find task\n", __FUNCTION__);
+
+    MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+
+    return NULL; // Never reached
+}
+
+int grid_task_redundancy_task_get(const task_t *task,
+                                  int *ranks,
+                                  double **grid,
+                                  double **newgrid)
+{
+    if (!task)
+    {
+        fprintf(stderr, "<%s> Bad task pointer\n", __FUNCTION__);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    int size = task->redundancy_counter;
+
+    for (int i = 0; i < size; i++)
+    {
+        ranks[i]   = task->redundancy_task[i]->rank;
+        grid[i]    = task->redundancy_task[i]->local_grid;
+        newgrid[i] = task->redundancy_task[i]->local_newgrid;
+    }
+
+    return size;
+}
+
+int grid_task_real_task_get(const task_t *my_task, task_t **tasks)
+{
+    if (!my_task)
+    {
+        fprintf(stderr, "<%s> Bad task pointer\n", __FUNCTION__);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    int size = my_task->real_counter;
+
+    for (int i = 0; i < size; i++)
+    {
+        tasks[i] = my_task->real_task[i];
+    }
+
+    return size;
 }
