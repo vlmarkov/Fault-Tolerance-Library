@@ -871,12 +871,6 @@ void grid_task_task_show(const grid_task_t *grid)
             printf("}\n");
 
             printf("Task->real_task     : { ");
-            for (int r = 0; r < 1; r++)
-                printf("%04d ", tasks[i][j].real_task[r]->rank);
-            printf("}\n"); 
-
-
-            printf("Task->real_task     : { ");
             for (int r = 0; r < tasks[i][j].real_counter; r++)
                 printf("%04d ", tasks[i][j].real_task[r]->rank);
             printf("}\n"); 
@@ -1011,10 +1005,17 @@ int grid_task_redundancy_task_get(const task_t *task,
         exit(EXIT_FAILURE);
     }
 
-    int counter = 0;
+    for (int i = 0; i < task->redundancy_capacity; i++)
+    {
+        ranks[i]   = 0;
+        grid[i]    = 0;
+        newgrid[i] = 0;
+    }
 
+    int counter = 0;
     for (int i = 0; i < task->redundancy_counter; i++)
     {
+/*
         // Ignore self
         if (((task->x    == task->redundancy_task[i]->x)  &&
              (task->y    == task->redundancy_task[i]->y)) ||
@@ -1029,6 +1030,12 @@ int grid_task_redundancy_task_get(const task_t *task,
             newgrid[counter] = task->redundancy_task[i]->local_newgrid;
             counter++;
         }
+*/
+
+        ranks[counter]   = task->redundancy_task[i]->rank;
+        grid[counter]    = task->redundancy_task[i]->local_grid;
+        newgrid[counter] = task->redundancy_task[i]->local_newgrid;
+        counter++;
     }
 
     return counter;
@@ -1069,7 +1076,7 @@ void grid_task_kill_rank(grid_task_t *grid, const int rank)
 
 void grid_task_repair(grid_task_t *grid)
 {
-    printf("<%s> Invoke!\n", __FUNCTION__);
+    //printf("<%s> Invoke!\n", __FUNCTION__);
 
     for (int i = 0; i < grid->cols_per_proc; i++)
     {
@@ -1116,5 +1123,5 @@ void grid_task_repair(grid_task_t *grid)
         }
     }
 
-    printf("<%s> Done!\n", __FUNCTION__);
+    //printf("<%s> Done!\n", __FUNCTION__);
 }

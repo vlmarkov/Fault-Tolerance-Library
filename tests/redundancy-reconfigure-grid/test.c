@@ -19,10 +19,21 @@ void test(const int row, const int col, const int nx, const int ny, const int co
 
     grid_task_show(grid_task);
 
-    grid_task_kill_rank(grid_task, 15);
-    grid_task_kill_rank(grid_task, 14);
+    task_t *my_task_0 = grid_task_get(grid_task, 0);
+    task_t *my_task_1 = grid_task_get(grid_task, 1);
+
+    grid_task_kill_rank(grid_task, 2);
+    grid_task_kill_rank(grid_task, 3);
+    grid_task_kill_rank(grid_task, 6);
+    grid_task_kill_rank(grid_task, 7);
+    grid_task_kill_rank(grid_task, 8);
+    grid_task_kill_rank(grid_task, 9);
     grid_task_kill_rank(grid_task, 10);
     grid_task_kill_rank(grid_task, 11);
+    grid_task_kill_rank(grid_task, 12);
+    grid_task_kill_rank(grid_task, 13);
+    grid_task_kill_rank(grid_task, 14);
+    grid_task_kill_rank(grid_task, 15);
 
     grid_task_show(grid_task);
 
@@ -31,6 +42,14 @@ void test(const int row, const int col, const int nx, const int ny, const int co
     grid_task_task_show(grid_task);
 
     grid_task_show(grid_task);
+
+
+
+    grid_task_redundancy_ranks_send_show(my_task_0);
+    grid_task_redundancy_ranks_receive_show(my_task_0);
+    grid_task_redundancy_ranks_send_show(my_task_1);
+    grid_task_redundancy_ranks_receive_show(my_task_1);
+
     
     //grid_task_redundancy_show(grid_task);
 

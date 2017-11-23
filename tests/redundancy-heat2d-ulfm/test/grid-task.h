@@ -1,12 +1,12 @@
 #ifndef _GRID_TASK_H_
 #define _GRID_TASK_H_
 
-//#include "mpi.h"
+#include "mpi.h"
 
 typedef enum
 {
-    DEAD_PROC = -2,
-    BORDER    = /*MPI_PROC_NULL,*/ -1,
+    DEAD_PROC = -999,
+    BORDER    = MPI_PROC_NULL, /*-1,*/
 } grid_task_e;
 
 typedef struct task task_t;
