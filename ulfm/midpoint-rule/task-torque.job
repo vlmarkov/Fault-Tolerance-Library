@@ -1,0 +1,9 @@
+#PBS -N midpoint-rule
+#PBS -l nodes=2:ppn=8
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+
+mpiexec ./midpoint-rule
+
+mpiexec ./midpoint-rule-ulfm
