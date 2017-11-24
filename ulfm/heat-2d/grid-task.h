@@ -152,6 +152,8 @@ int grid_task_redundancy_task_get(const task_t *task,
                                   double **grid,
                                   double **newgrid);
 
+int grid_task_redundancy_counter_get(const task_t *task);
+
 int grid_task_real_task_get(const task_t *my_task, task_t **tasks);
 
 #endif /* _GRID_TASK_H_ */

@@ -1025,6 +1025,17 @@ int grid_task_redundancy_task_get(const task_t *task,
     return counter;
 }
 
+int grid_task_redundancy_counter_get(const task_t *task)
+{
+    if (!task)
+    {
+        fprintf(stderr, "<%s> Bad task pointer\n", __FUNCTION__);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    return task->redundancy_counter;
+}
+
 /*****************************************************************************/
 /* Real task getter                                                          */
 /*****************************************************************************/

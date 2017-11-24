@@ -29,6 +29,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
 #include <inttypes.h>
 
 #include <mpi.h>
@@ -37,14 +39,12 @@
 #include "utils.h"
 #include "grid-task.h"
 
-#include <signal.h>
-#include <unistd.h>
-
 
 #define EPS       0.001
 #define PI        3.14159265358979323846
 #define NELEMS(x) (sizeof((x)) / sizeof((x)[0]))
 #define IND(i, j) ((i) * (nx + 2) + (j))
+
 
 typedef struct
 {
@@ -69,7 +69,8 @@ typedef struct
     double     **receive;
 } redundancy_cookie_t;
 
-void update_interior_points(double *new, double *grid, const int ny, const int nx)
+
+static void update_interior_points(double *new, double *grid, const int ny, const int nx)
 {
     for (int i = 1; i <= ny; i++)
     {
@@ -81,10 +82,10 @@ void update_interior_points(double *new, double *grid, const int ny, const int n
     }
 }
 
-double check_termination_condition(double *new, double *grid, const int ny, const int nx)
+static double check_termination_condition(double *new, double *grid, const int ny, const int nx)
 {
     double maxdiff = 0;
-    
+
     for (int i = 1; i <= ny; i++)
     {
         for (int j = 1; j <= nx; j++)
@@ -97,7 +98,7 @@ double check_termination_condition(double *new, double *grid, const int ny, cons
     return maxdiff;
 }
 
-int halo_exchange(halo_cookie_t *cookie, int cnt)
+static int halo_exchange(halo_cookie_t *cookie, int cnt)
 {
     const int tag = 0;
 
@@ -128,7 +129,7 @@ int halo_exchange(halo_cookie_t *cookie, int cnt)
     return cnt;
 }
 
-int redundancy_exchange(redundancy_cookie_t *cookie, int cnt)
+static int redundancy_exchange(redundancy_cookie_t *cookie, int cnt)
 {
     const int tag = 1;
 
@@ -154,12 +155,11 @@ int redundancy_exchange(redundancy_cookie_t *cookie, int cnt)
     return cnt;
 }
 
-static void error_handler(MPI_Comm* pcomm, int* perr, grid_task_t *grid_task)
+static void error_handler(MPI_Comm *pcomm, int err, grid_task_t *grid_task)
 {
     MPI_Comm comm = *pcomm;
-    int err = *perr;
     char errstr[MPI_MAX_ERROR_STRING];
-    int i, rank, size, nf, len, eclass;
+    int rank, size, nf, len, eclass;
     MPI_Group group_c, group_f;
     int *ranks_gc, *ranks_gf;
 
@@ -176,8 +176,7 @@ static void error_handler(MPI_Comm* pcomm, int* perr, grid_task_t *grid_task)
 
     if (MPIX_ERR_PROC_FAILED != eclass)
     {
-        fprintf(stderr, "Rank %d got missmatch error %s\n",
-                rank, errstr);
+        fprintf(stderr, "Rank %d got missmatch error %s\n", rank, errstr);
         MPI_Abort(comm, err);
     }
 
@@ -186,7 +185,7 @@ static void error_handler(MPI_Comm* pcomm, int* perr, grid_task_t *grid_task)
 
     MPI_Comm_group(comm, &group_c);
 
-    for(i = 0; i < nf; i++)
+    for (int i = 0; i < nf; i++)
     {
         ranks_gf[i] = i;
     }
@@ -196,7 +195,7 @@ static void error_handler(MPI_Comm* pcomm, int* perr, grid_task_t *grid_task)
     printf("Rank %d / %d: Notified of error %s. %d found dead: { ",
            rank, size, errstr, nf);
 
-    for(i = 0; i < nf; i++)
+    for (int i = 0; i < nf; i++)
     {
         printf("%d ", ranks_gc[i]);
         grid_task_kill_rank(grid_task, ranks_gc[i]);
@@ -205,6 +204,26 @@ static void error_handler(MPI_Comm* pcomm, int* perr, grid_task_t *grid_task)
 
     free(ranks_gf);
     free(ranks_gc);
+}
+
+static MPI_Comm repair_communicator(MPI_Comm comm, int err)
+{
+    int allsucceeded = (err == MPI_SUCCESS);
+    MPIX_Comm_agree(comm, &allsucceeded);
+    if (!allsucceeded)
+    {
+        MPI_Comm comm_spare;
+        MPIX_Comm_shrink(comm, &comm_spare); // Shrink the communicator
+        MPI_Comm_free(&comm);                // Release the rcommunicator
+        comm = comm_spare;                   // Assign shrink
+    }
+    else
+    {
+        fprintf(stderr, "Can't repair communicator\n");
+        MPI_Abort(comm, err);
+    }
+
+    return comm;
 }
 
 int main(int argc, char *argv[])
@@ -312,10 +331,11 @@ int main(int argc, char *argv[])
     memset(redundancy_local_grid, 0, sizeof(double *) * commsize);
     memset(redundancy_local_newgrid, 0, sizeof(double *) * commsize);
 
-    int redundancy_counter = grid_task_redundancy_task_get(my_task,
-                                                           redundancy_ranks,
-                                                           redundancy_local_grid,
-                                                           redundancy_local_newgrid);
+    int redundancy_counter =
+        grid_task_redundancy_task_get(my_task,
+                                      redundancy_ranks,
+                                      redundancy_local_grid,
+                                      redundancy_local_newgrid);
 
     const int local_grid_size = (ny + 2) * (nx + 2);
 
@@ -412,16 +432,16 @@ restart_step:
         }
 
         /*
-         * Test
+         * Killing test
          */
         if (niters == 2 && rank == 15)
         {
-            raise(SIGKILL);
+            //raise(SIGKILL);
         }
 
         if (niters == 3 && rank == 14)
         {
-            raise(SIGKILL);
+            //raise(SIGKILL);
         }
 
         // Step 4: All reduce (may fail)
@@ -431,57 +451,34 @@ restart_step:
 
         if (MPI_ERR_PROC_FAILED == rc)
         {
-            error_handler(&comm, &rc, grid_task);
+            error_handler(&comm, rc, grid_task);
+            comm = repair_communicator(comm, rc);
+            // Repair grid and tasks
+            grid_task_repair(grid_task);
 
-            /* 
-             * About to leave: let's be sure that everybody
-             * received the same information
-             */
-            int allsucceeded = (rc == MPI_SUCCESS);
-            MPIX_Comm_agree(comm, &allsucceeded);
-            if (!allsucceeded)
+            real_counter = grid_task_real_task_get(my_task, real_task);
+
+            redundancy_counter = grid_task_redundancy_task_get(my_task,
+                                                               redundancy_ranks,
+                                                               redundancy_local_grid,
+                                                               redundancy_local_newgrid);
+
+            // Swap grids (after repair) loop
+            for (int i = 0; i < real_counter; i++)
             {
-                /* 
-                 * We plan to join the shrink, thus the communicator
-                 * should be marked as revoked
-                 */
-                MPI_Comm comm_spare;
-                MPIX_Comm_shrink(comm, &comm_spare);
+                double *local_grid    = real_task[i]->local_grid;
+                double *local_newgrid = real_task[i]->local_newgrid;
 
-                /*
-                 * Release the revoked communicator
-                 */
-                MPI_Comm_free(&comm);
-                comm = comm_spare;
+                double *p     = local_newgrid;
+                local_newgrid = local_grid;
+                local_grid    = p;
 
-                // Repair grid and tasks
-                grid_task_repair(grid_task);
-
-                real_counter = 
-                    grid_task_real_task_get(my_task, real_task);
-
-                redundancy_counter =
-                    grid_task_redundancy_task_get(my_task,
-                        redundancy_ranks, redundancy_local_grid,
-                        redundancy_local_newgrid);
-
-                // Swap grids (after repair) loop
-                for (int i = 0; i < real_counter; i++)
-                {
-                    double *local_grid    = real_task[i]->local_grid;
-                    double *local_newgrid = real_task[i]->local_newgrid;
-
-                    double *p     = local_newgrid;
-                    local_newgrid = local_grid;
-                    local_grid    = p;
-
-                    // Do sync
-                    real_task[i]->local_grid    = local_grid;
-                    real_task[i]->local_newgrid = local_newgrid;
-                }
-
-                goto restart_step;
+                // Do sync
+                real_task[i]->local_grid    = local_grid;
+                real_task[i]->local_newgrid = local_newgrid;
             }
+
+            goto restart_step;
         }
 
         if (maxdiff < EPS)
@@ -513,27 +510,34 @@ restart_step:
              */
             exchange = halo_exchange(&halo_cookie, exchange);
         }
+
         // Step 6: Wait all (may fail)
-        MPI_Waitall(8 * real_counter, reqs, MPI_STATUS_IGNORE); // TODO
-
-        thalo += MPI_Wtime();
-
-        int tmp = 0;
-        for (int i = 0; i < real_counter; i++)
+        rc = MPI_Waitall(8 * real_counter, reqs, MPI_STATUS_IGNORE);
+        if (MPI_ERR_PROC_FAILED == rc)
         {
-            tmp += grid_task_redundancy_task_get(real_task[i],
-                                                 redundancy_ranks,
-                                                 redundancy_local_grid,
-                                                 redundancy_local_newgrid);
+            error_handler(&comm, rc, grid_task);
+            comm = repair_communicator(comm, rc);
+            // Repair grid and tasks
+            grid_task_repair(grid_task);
+
+            // TODO
         }
 
-        MPI_Request rreqs[2 * tmp];
+        int rtasks = 0;
+        for (int i = 0; i < real_counter; i++)
+        {
+            rtasks += grid_task_redundancy_counter_get(real_task[i]);
+        }
+
+        MPI_Request rreqs[2 * rtasks];
         exchange = 0;
         for (int i = 0; i < real_counter; i++)
         {
-            redundancy_counter = grid_task_redundancy_task_get(
-                real_task[i], redundancy_ranks,
-                redundancy_local_grid, redundancy_local_newgrid);
+            redundancy_counter =
+                grid_task_redundancy_task_get(real_task[i],
+                                              redundancy_ranks,
+                                              redundancy_local_grid,
+                                              redundancy_local_newgrid);
 
             redundancy_cookie_t redundancy_cookie = {
                 .send    = real_task[i]->local_grid,
@@ -550,7 +554,18 @@ restart_step:
         }
 
         // Step 8: Wait all (may fail)
-        MPI_Waitall(2 * tmp, rreqs, MPI_STATUS_IGNORE); // TODO
+        rc = MPI_Waitall(2 * rtasks, rreqs, MPI_STATUS_IGNORE);
+        if (MPI_ERR_PROC_FAILED == rc)
+        {
+            error_handler(&comm, rc, grid_task);
+            comm = repair_communicator(comm, rc);
+            // Repair grid and tasks
+            grid_task_repair(grid_task);
+
+            // TODO
+        }
+
+        thalo += MPI_Wtime();
     }
 
     MPI_Type_free(&row);
