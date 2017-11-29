@@ -1,0 +1,13 @@
+./configure --prefix=/home/students/mg165/markov/ulfm_src \
+       --enable-mpi-ext=ftmpi --with-ft=mpi \
+       --disable-io-romio --enable-contrib-no-build=vt \
+       --with-platform=optimized \
+       CC=gcc CXX=g++
+
+
+./configure --prefix=/home/user/Рабочий стол/Fault-Tolerance-Library/3party-libs/ulfm_src \
+       --enable-mpi-ext=ftmpi --with-ft=mpi \
+       --disable-io-romio --enable-contrib-no-build=vt \
+       --with-platform=optimized \
+       CC=gcc CXX=g++
+
