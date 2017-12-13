@@ -1,3 +1,6 @@
+
+// NOT working 13.12.2017
+
 /***************************************************************************************/
 /* heat-2d.c: MPI implementation of Laplace equation solver by Jacobi iteration method.*/
 /*                                                                                     */ 
