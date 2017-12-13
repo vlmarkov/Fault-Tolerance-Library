@@ -1,18 +1,24 @@
 NAME := heat-2d
 ELF := $(NAME)
-SRC := $(NAME).c
+SRC := $(NAME)
 
 CC := mpicc
 CFLAGS := -std=c99 -Wall -O2
 LDFLAGS := -lm
 
-all: heat-2d
+all: data-redundancy compute-redundancy
 
-heat-2d: utils grid
+data-redundancy: utils grid
 	mkdir -p build
 	cp slurm.job build/slurm.job
 	cp torque.job build/torque.job
-	$(CC) -g -Wall -o build/$(ELF) $(SRC) build/utils.o build/grid-task.o $(CFLAGS) $(LDFLAGS)
+	$(CC) -g -Wall -o build/$(ELF)-data-redundancy $(SRC)-data-redundancy.c build/utils.o build/grid-task.o $(CFLAGS) $(LDFLAGS)
+
+compute-redundancy: utils grid
+	mkdir -p build
+	cp slurm.job build/slurm.job
+	cp torque.job build/torque.job
+	$(CC) -g -Wall -o build/$(ELF)-compute-redundancy $(SRC)-compute-redundancy.c build/utils.o build/grid-task.o $(CFLAGS) $(LDFLAGS)
 
 utils:
 	mkdir -p build

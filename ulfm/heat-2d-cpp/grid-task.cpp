@@ -110,9 +110,9 @@ grid_task_t *grid_task_allocate(const int cols,
         {
             task_t *task          = &(grid->tasks[i][j]);
 
-            task->local_grid      = xcalloc((ny + 2) * (nx + 2), sizeof(*task->local_grid));
+            task->local_grid      = (double *)xcalloc((ny + 2) * (nx + 2), sizeof(*task->local_grid));
 
-            task->local_newgrid   = xcalloc((ny + 2) * (nx + 2), sizeof(*task->local_newgrid));
+            task->local_newgrid   = (double *)xcalloc((ny + 2) * (nx + 2), sizeof(*task->local_newgrid));
 
             task->redundancy_task = (task_t **)malloc(sizeof(task_t *) * commsize);
             if (!task->redundancy_task)
@@ -244,8 +244,12 @@ void grid_task_repair(grid_task_t *grid)
                         }
 
                         dead_task->rank = repair_task->rank;
-                        repair_task->real_task[counter] = dead_task;
-                        repair_task->real_counter++;
+
+                        if (grid->mode == DATA_REDUNDANCY)
+                        {
+                            repair_task->real_task[counter] = dead_task;
+                            repair_task->real_counter++;
+                        }
 
                         break;
                     }
@@ -300,21 +304,19 @@ void grid_task_redundancy_task_set(grid_task_t *grid,
         {
             rj = check_overflow(rj, grid->rows_per_proc);
 
-            if (grid->mode == DATA_REDUNDANCY)
+            const int capacity = grid->tasks[ri][rj].redundancy_capacity;
+            const int idx      = grid->tasks[ri][rj].redundancy_counter;
+
+            if (idx == capacity)
             {
-                const int capacity = grid->tasks[ri][rj].redundancy_capacity;
-                const int idx      = grid->tasks[ri][rj].redundancy_counter;
-
-                if (idx == capacity)
-                {
-                    fprintf(stderr, "<%s> Bad redundancy-counter\n", __FUNCTION__);
-                    MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-                }
-
-                grid->tasks[ri][rj].redundancy_task[idx] = grid_task_get(grid, rank);
-                grid->tasks[ri][rj].redundancy_counter  += 1;
+                fprintf(stderr, "<%s> Bad redundancy-counter\n", __FUNCTION__);
+                MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
             }
-            else if (grid->mode == COMPUTE_REDUNDANCY)
+
+            grid->tasks[ri][rj].redundancy_task[idx] = grid_task_get(grid, rank);
+            grid->tasks[ri][rj].redundancy_counter  += 1;
+            
+            if (grid->mode == COMPUTE_REDUNDANCY)
             {
                 const int capacity = grid->tasks[ri][rj].real_capacity;
                 const int idx      = grid->tasks[ri][rj].real_counter;
