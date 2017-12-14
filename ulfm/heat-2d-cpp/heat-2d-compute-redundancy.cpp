@@ -60,10 +60,10 @@ typedef struct
     MPI_Request *reqs;
 } halo_cookie_t;
 
-static void update_interior_points(double    *newGrid,
-                                   double    *oldGrid,
-                                   const int  ny,
-                                   const int  nx)
+static void updateInteriorPoints(double    *newGrid,
+                                 double    *oldGrid,
+                                 const int  ny,
+                                 const int  nx)
 {
     for (int i = 1; i <= ny; i++)
     {
@@ -77,10 +77,10 @@ static void update_interior_points(double    *newGrid,
     }
 }
 
-static double check_termination_condition(double    *newGrid,
-                                          double    *oldGrid,
-                                          const int  ny,
-                                          const int  nx)
+static double checkTerminationCondition(double    *newGrid,
+                                        double    *oldGrid,
+                                        const int  ny,
+                                        const int  nx)
 {
     double maxdiff = 0;
 
@@ -96,10 +96,8 @@ static double check_termination_condition(double    *newGrid,
     return maxdiff;
 }
 
-static int halo_exchange(halo_cookie_t *cookie, int cnt)
+static int haloExchange(halo_cookie_t *cookie, int cnt, int tag)
 {
-    const int tag = 0;
-
     task_t *task      = cookie->task;
     double *buf       = task->local_grid;
     int top           = task->top;
@@ -113,16 +111,26 @@ static int halo_exchange(halo_cookie_t *cookie, int cnt)
     MPI_Datatype col  = cookie->col;
     MPI_Comm comm     = cookie->comm;
     MPI_Request *reqs = cookie->reqs;
-
-    MPI_Irecv(&buf[IND(0, 1)],      count, row, top,    tag, comm, &reqs[cnt++]); // top
-    MPI_Irecv(&buf[IND(ny + 1, 1)], count, row, bottom, tag, comm, &reqs[cnt++]); // bottom
-    MPI_Irecv(&buf[IND(1, 0)],      count, col, left,   tag, comm, &reqs[cnt++]); // left
-    MPI_Irecv(&buf[IND(1, nx + 1)], count, col, right,  tag, comm, &reqs[cnt++]); // right
-
-    MPI_Isend(&buf[IND(1, 1)],      count, row, top,    tag, comm, &reqs[cnt++]); // top
-    MPI_Isend(&buf[IND(ny, 1)],     count, row, bottom, tag, comm, &reqs[cnt++]); // bottom
-    MPI_Isend(&buf[IND(1, 1)],      count, col, left,   tag, comm, &reqs[cnt++]); // left
-    MPI_Isend(&buf[IND(1, nx)],     count, col, right,  tag, comm, &reqs[cnt++]); // right
+/*
+    printf("Rank %02d top(%02d) bottom(%02d) left(%02d) right(%02d)\n",
+        task->rank, top, bottom, left, right);
+*/
+    MPI_Irecv(&buf[IND(0, 1)],      count,
+        row, top,    tag, comm, &reqs[cnt++]); // top
+    MPI_Irecv(&buf[IND(ny + 1, 1)], count,
+        row, bottom, tag, comm, &reqs[cnt++]); // bottom
+    MPI_Irecv(&buf[IND(1, 0)],      count,
+        col, left,   tag, comm, &reqs[cnt++]); // left
+    MPI_Irecv(&buf[IND(1, nx + 1)], count,
+        col, right,  tag, comm, &reqs[cnt++]); // right
+    MPI_Isend(&buf[IND(1, 1)],      count,
+        row, top,    tag, comm, &reqs[cnt++]); // top
+    MPI_Isend(&buf[IND(ny, 1)],     count,
+        row, bottom, tag, comm, &reqs[cnt++]); // bottom
+    MPI_Isend(&buf[IND(1, 1)],      count,
+        col, left,   tag, comm, &reqs[cnt++]); // left
+    MPI_Isend(&buf[IND(1, nx)],     count,
+        col, right,  tag, comm, &reqs[cnt++]); // right
 
     return cnt;
 }
@@ -390,14 +398,20 @@ restart_step:
         for (int i = 0; i < real_counter; i++)
         {
             // Step 1: Update interior points
-            update_interior_points(real_task[i]->local_newgrid,
-                                   real_task[i]->local_grid,
-                                   ny, nx);
+            updateInteriorPoints(real_task[i]->local_newgrid,
+                                 real_task[i]->local_grid,
+                                 ny, nx);
 
             // Step 2: Check termination condition
-            maxdiff += check_termination_condition(real_task[i]->local_newgrid,
-                                                   real_task[i]->local_grid,
-                                                   ny, nx);
+            double tmp = checkTerminationCondition(
+                real_task[i]->local_newgrid,
+                real_task[i]->local_grid,
+                ny, nx);
+
+            if (tmp > maxdiff)
+            {
+                maxdiff = tmp;
+            }
 
             /*
              * Step 3: Swap grids
@@ -464,12 +478,13 @@ restart_step:
 
         thalo -= MPI_Wtime();
 
-        int exchange = 0;
-        MPI_Request reqs[8 * real_counter];
-
         for (int i = 0; i < real_counter; i++)
         {
+            int exchange = 0;
             MPI_Request reqs[8];
+
+            memset(reqs, 0, sizeof(MPI_Request) * 8);
+
             halo_cookie_t halo_cookie;
 
             halo_cookie.task   = real_task[i];
@@ -485,11 +500,15 @@ restart_step:
              * Step 5: Halo exchange:
              * T = 4 * (a + b * (rows / py)) + 4 * (a + b * (cols / px))
              */
-            exchange = halo_exchange(&halo_cookie, exchange);
+            exchange = haloExchange(&halo_cookie, exchange, i);    
+
+            printf("Rank %02d after haloExchange\n", rank);
+
+            // Step 6: Wait all
+            rc = MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
+            printf("rc = %d\n", rc);
         }
 
-        // Step 6: Wait all
-        rc = MPI_Waitall(8 * real_counter, reqs, MPI_STATUS_IGNORE);
         thalo += MPI_Wtime();
 
         /*

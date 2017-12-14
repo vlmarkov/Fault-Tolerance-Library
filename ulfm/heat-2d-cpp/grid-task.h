@@ -27,7 +27,7 @@ class Redundancy
         Redundancy();
         ~Redundancy();
 
-        task_t * getSelfTask();
+        task_t *getSelfTask();
 
         void addReal(task_t *t);
         void addRedundancy(task_t *t);
@@ -103,7 +103,7 @@ class GridTask
         /*********************************************************************/
         /* Redundancy task setter                                            */
         /*********************************************************************/
-        void redundancyTaskSet(const int rank, const int row, const int col);
+        void redundancyTaskSet(const int row, const int col);
         /*********************************************************************/
         /* Raal task setter                                                  */
         /*********************************************************************/

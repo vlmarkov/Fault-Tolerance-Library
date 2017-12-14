@@ -10,7 +10,7 @@ int main(int argc, char const *argv[])
     GridTask gt(1024, 1024, 256, 256, 16);
 
     gt.init(GRID_TASK_COMPUTE_REDUNDANCY);
-
+/*
     gt.kill(15);
 
     gt.repair();
@@ -26,7 +26,7 @@ int main(int argc, char const *argv[])
     gt.kill(13);
 
     gt.repair();
-
+*/
     gt.show();
 
     return 0;

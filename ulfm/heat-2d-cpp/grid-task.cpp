@@ -88,14 +88,12 @@ void GridTask::init(grid_task_e mode)
         }
     }
 
-    counter = 0;
-
     for (int i = 0; i < this->cols_per_proc; i++)
     {
         for (int j = 0; j < this->rows_per_proc; j++)
         {
             // Each struct task contains redudancy list
-            this->redundancyTaskSet(counter++, i, j);
+            this->redundancyTaskSet(i, j);
         }
     }
 
@@ -166,50 +164,23 @@ void GridTask::neighborRightSet(const int x, const int y)
 /*****************************************************************************/
 /* Redundancy ranks setter                                                   */
 /*****************************************************************************/
-void GridTask::redundancyTaskSet(const int rank, const int row, const int col)
+void GridTask::redundancyTaskSet(const int row, const int col)
 {
-    const int x_times = this->cols_per_proc / this->proc_per_node;
-    const int y_times = this->rows_per_proc / this->proc_per_node;
+    int commsize = this->rows_per_proc * this->cols_per_proc;
+    int addRank  = this->tasks[row][col].rank;
 
-    int ri = row + this->proc_per_node;
-    for (int x = 0; x < x_times; x++)
+    for (int i = 0; i < 3; i++)
     {
-        ri = checkOverflow(ri, this->cols_per_proc);
-
-        int rj = col + this->proc_per_node;
-        for (int y = 0; y < y_times; y++)
+        if (addRank - 4 >= 0)
         {
-            rj = checkOverflow(rj, this->rows_per_proc);
-
-            if (this->mode == GRID_TASK_COMPUTE_REDUNDANCY)
-            {
-                /*
-                 * Do not include self
-                 */
-                task_t *selfTask = this->tasks[ri][rj].redundancy.getSelfTask();
-                if (!selfTask)
-                {
-
-#ifdef MPI_SUPPORT
-                    MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-#else
-                    exit(EXIT_FAILURE);
-#endif /* MPI_SUPPORT */
-
-                }
-
-                int selfRank = selfTask->rank;
-                if (selfRank != rank)
-                {
-                    this->tasks[ri][rj].redundancy.addReal(this->taskGet(rank));
-                    this->tasks[ri][rj].redundancy.addRedundancy(this->taskGet(rank));
-                }
-            }
-
-            rj += this->proc_per_node;
+            addRank -= 4;
         }
-
-        ri += this->proc_per_node;
+        else
+        {
+            addRank -= 4;
+            addRank = commsize + addRank;
+        }
+        this->tasks[row][col].redundancy.addReal(this->taskGet(addRank));
     }
 }
 
