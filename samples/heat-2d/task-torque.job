@@ -1,0 +1,10 @@
+#PBS -N heat
+#PBS -l nodes=2:ppn=8
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+
+mpiexec ./heat-2d 1024 1024
+
+
+

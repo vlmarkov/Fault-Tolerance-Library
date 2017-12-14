@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#SBATCH --nodes=2 --ntasks-per-node=8
+
+mpiexec ./heat-2d 1024 1024
+
+
+
+
+
