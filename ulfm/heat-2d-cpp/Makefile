@@ -16,12 +16,12 @@ data-redundancy: utils grid
 	$(SRC)-data-redundancy.cpp build/utils.o \
 	build/grid-task.o $(CFLAGS) $(LDFLAGS) -std=c++0x -D MPI_SUPPORT
 
-compute-redundancy: utils grid
+compute-redundancy: utils grid redundancy
 	mkdir -p build
 	cp slurm.job build/slurm.job
 	cp torque.job build/torque.job
 	$(CXX) -o build/$(ELF)-compute-redundancy \
-	$(SRC)-compute-redundancy.cpp build/utils.o \
+	$(SRC)-compute-redundancy.cpp build/utils.o build/redundancy.o \
 	build/grid-task.o $(CFLAGS) $(LDFLAGS) -std=c++0x -D MPI_SUPPORT
 
 utils:
@@ -34,9 +34,14 @@ grid:
 	$(CXX) -c -o build/grid-task.o grid-task.cpp \
 	$(CFLAGS) $(LDFLAGS) -std=c++0x -D MPI_SUPPORT
 
+redundancy:
+	mkdir -p build
+	$(CXX) -c -o build/redundancy.o redundancy.cpp \
+	$(CFLAGS) $(LDFLAGS) -std=c++0x -D MPI_SUPPORT
+
 debug:
 	mkdir -p build
-	g++ $(CFLAGS) -c -o build/debug test.cpp grid-task.cpp \
+	g++ $(CFLAGS) -o build/debug test.cpp grid-task.cpp utils.cpp redundancy.cpp \
 	$(LDFLAGS) -std=c++0x
 
 clean:

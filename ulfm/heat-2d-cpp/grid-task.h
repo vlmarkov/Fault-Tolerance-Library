@@ -21,6 +21,34 @@ typedef enum
 
 typedef struct task task_t;
 
+class Redundancy
+{
+    public:
+        Redundancy();
+        ~Redundancy();
+
+        task_t * getSelfTask();
+
+        void addReal(task_t *t);
+        void addRedundancy(task_t *t);
+
+        std::vector<task_t *> getReal();
+        std::vector<task_t *> getRedundancy();
+
+        int getRealSize();
+        int getRedundancySize();
+
+        void printRealRank();
+        void printRealRankDetail();
+        void printRedundancyRank();
+
+        int repair();
+
+    private:
+        std::vector<task_t *> real;
+        std::vector<task_t *> redundancy;
+};
+
 struct task
 {
     int     x;                   // Grid coordinates
@@ -30,15 +58,12 @@ struct task
     int     bottom;              // Neighbor down
     int     left;                // Neighbor left
     int     right;               // Neighbor right
-    int     redundancy_capacity; // Capacity
-    int     redundancy_counter;  // Actual size
-    int     real_capacity;       // Capacity
-    int     real_counter;        // Actual size
+
     double *local_grid;          // Local-grid
     double *local_newgrid;       // Local-grid (new)
 
-    std::vector<task_t *> real_task;
-    std::vector<task_t *> redundancy_task;
+    Redundancy redundancy;
+
 };
 
 class GridTask
@@ -82,7 +107,7 @@ class GridTask
         /*********************************************************************/
         /* Raal task setter                                                  */
         /*********************************************************************/
-        int realTaskGet(const task_t *my_task, task_t **tasks);
+        int realTaskGet(task_t *my_task, task_t **tasks);
         /*********************************************************************/
         /* Show/print method                                                 */
         /*********************************************************************/
