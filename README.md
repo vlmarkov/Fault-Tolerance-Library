@@ -8,6 +8,9 @@
 ## Test Samples
 + **head-2d** - [Laplace equation](https://en.wikipedia.org/wiki/Laplace%27s_equation "wiki Laplace equation") solver by [Jacobi iteration method](https://en.wikipedia.org/wiki/Jacobi_method "wiki Jacobi iteration method")
 + **n-body** - an [n-body simulation](https://en.wikipedia.org/wiki/N-body_simulation "wiki N-body simulation") approximates the motion of particles, often specifically particles that interact with one another through some type of physical forces.
++ **midpoint-rule**
++ **monte-carlo**
++ **nprimes**
 
 ## User-level checkpoint library
 + **Rollback recovery** - checkpoint/restart based 
