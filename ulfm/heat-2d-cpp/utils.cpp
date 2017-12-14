@@ -1,22 +1,35 @@
 #include "utils.h"
 
+#ifdef MPI_SUPPORT
 #include <mpi.h>
-#include <stdio.h>
+#endif /* MPI_SUPPORT */
 
-void *xcalloc(size_t nmemb, size_t size)
+#include <iostream>
+
+void *xCalloc(size_t nmemb, size_t size)
 {
     void *p = calloc(nmemb, size);
 
     if (!p)
     {
-        fprintf(stderr, "<%s> No enough memory\n", __FUNCTION__);
+        // TODO: is there memory leak ?
+
+        std::cerr << "<" << __FUNCTION__ << ">"
+                  << " No enough memory"
+                  << std::endl;
+
+#ifdef MPI_SUPPORT
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+        exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
     }
 
     return p;
 }
 
-int get_block_size(int n, int rank, int nprocs)
+int getBlockSize(int n, int rank, int nprocs)
 {
     int s = n / nprocs;
 
@@ -28,13 +41,13 @@ int get_block_size(int n, int rank, int nprocs)
     return s;
 }
 
-int get_sum_of_prev_blocks(int n, int rank, int nprocs)
+int getSumOfPrevBlocks(int n, int rank, int nprocs)
 {
     int rem = n % nprocs;
     return n / nprocs * rank + ((rank >= rem) ? rem : rank);
 }
 
-int check_overflow(int idx, int border)
+int checkOverflow(int idx, int border)
 {
     if (idx > border - 1)
     {

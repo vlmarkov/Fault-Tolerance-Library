@@ -170,7 +170,7 @@ static void error_handler(MPI_Comm *pcomm, int err, GridTask &gridTask)
     for (int i = 0; i < nf; i++)
     {
         printf("%d ", ranks_gc[i]);
-        gridTask.killRank(ranks_gc[i]);
+        gridTask.kill(ranks_gc[i]);
     }
     printf("}\n");
 
@@ -280,8 +280,8 @@ int main(int argc, char *argv[])
      * Allocate memory for local 2D subgrids with halo cells
      * [0..ny + 1][0..nx + 1]
      */
-    int ny = get_block_size(rows, ranky, py);
-    int nx = get_block_size(cols, rankx, px);
+    int ny = getBlockSize(rows, ranky, py);
+    int nx = getBlockSize(cols, rankx, px);
 
     GridTask gridTask(cols, rows, nx, ny, commsize);
 
@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
      * Each proccessor will be have 1 + n (task to compute)
      * - n by defaul is 3 tasks
      */
-    gridTask.init(COMPUTE_REDUNDANCY);
+    gridTask.init(GRID_TASK_COMPUTE_REDUNDANCY);
 
     task_t *my_task = gridTask.taskGet(rank);
 
@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
          *   - bottom border: u(x, 1) = sin(pi * x) * exp(-pi)
          */
         double dx = 1.0 / (cols - 1.0); 
-        int    sj = get_sum_of_prev_blocks(cols, rankx, px);
+        int    sj = getSumOfPrevBlocks(cols, rankx, px);
 
         if (ranky == 0)
         {

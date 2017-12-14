@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <iostream>
 
 GridTask::GridTask(const int cols,
                    const int rows,
@@ -19,8 +20,16 @@ GridTask::GridTask(const int cols,
 
     if ((n < 4) || (m < 4) || (p < 2))
     {
-        fprintf(stderr, "<%s> Not supproted grid size\n", __FUNCTION__);
+        std::cerr << "<" << __FUNCTION__ << ">"
+                  << "  Not supproted grid size"
+                  << std::endl;
+
+#ifdef MPI_SUPPORT
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+        exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
     }
 
     this->cols          = cols;
@@ -38,8 +47,7 @@ GridTask::GridTask(const int cols,
     }
 
     /*
-     * Allocate memory for local_grid and
-     * local_newgrid and redundancy_task in each task
+     * Allocate memory for local_grid and local_newgrid
      */
     for (int i = 0; i < n; i++)
     {
@@ -48,10 +56,10 @@ GridTask::GridTask(const int cols,
             task_t *task = &(this->tasks[i][j]);
 
             task->local_grid = (double *)
-                xcalloc((ny + 2) * (nx + 2), sizeof(*task->local_grid));
+                xCalloc((ny + 2) * (nx + 2), sizeof(*task->local_grid));
 
             task->local_newgrid = (double *)
-                xcalloc((ny + 2) * (nx + 2), sizeof(*task->local_newgrid));
+                xCalloc((ny + 2) * (nx + 2), sizeof(*task->local_newgrid));
 
             task->redundancy_task = std::vector<task_t *>(commsize, NULL);
             task->real_task = std::vector<task_t *>(commsize, NULL);
@@ -59,7 +67,10 @@ GridTask::GridTask(const int cols,
     }
 }
 
-GridTask::~GridTask() { }
+GridTask::~GridTask()
+{
+    // TODO: memory free
+}
 
 void GridTask::init(grid_task_e mode)
 {
@@ -115,7 +126,7 @@ void GridTask::neighborTopSet(const int x, const int y)
 {
     if (x == 0)
     {
-        this->tasks[x][y].top = BORDER;
+        this->tasks[x][y].top = GRID_TASK_BORDER;
     }
     else if (x > 0)
     {
@@ -127,7 +138,7 @@ void GridTask::neighborBottomSet(const int x, const int y)
 {
     if (x == (this->cols_per_proc - 1))
     {
-        this->tasks[x][y].bottom = BORDER;
+        this->tasks[x][y].bottom = GRID_TASK_BORDER;
     }
     else if (x < (this->cols_per_proc - 1))
     {
@@ -139,7 +150,7 @@ void GridTask::neighborLeftSet(const int x, const int y)
 {
     if (y == 0)
     {
-        this->tasks[x][y].left = BORDER;
+        this->tasks[x][y].left = GRID_TASK_BORDER;
     }
     else if (y > 0)
     {
@@ -151,7 +162,7 @@ void GridTask::neighborRightSet(const int x, const int y)
 {
     if (y == (this->rows_per_proc - 1))
     {
-        this->tasks[x][y].right = BORDER;
+        this->tasks[x][y].right = GRID_TASK_BORDER;
     }
     else if (y < (this->rows_per_proc - 1))
     {
@@ -170,34 +181,50 @@ void GridTask::redundancyTaskSet(const int rank, const int row, const int col)
     int ri = row + this->proc_per_node;
     for (int x = 0; x < x_times; x++)
     {
-        ri = check_overflow(ri, this->cols_per_proc);
+        ri = checkOverflow(ri, this->cols_per_proc);
 
         int rj = col + this->proc_per_node;
         for (int y = 0; y < y_times; y++)
         {
-            rj = check_overflow(rj, this->rows_per_proc);
+            rj = checkOverflow(rj, this->rows_per_proc);
 
             const int capacity = this->tasks[ri][rj].redundancy_capacity;
             const int idx      = this->tasks[ri][rj].redundancy_counter;
 
             if (idx == capacity)
             {
-                fprintf(stderr, "<%s> Bad redundancy-counter\n", __FUNCTION__);
+                std::cerr << "<" << __FUNCTION__ << ">"
+                          << " Bad redundancy-counter"
+                          << std::endl;
+
+#ifdef MPI_SUPPORT
                 MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+                exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
             }
 
             this->tasks[ri][rj].redundancy_task[idx] = this->taskGet(rank);
             this->tasks[ri][rj].redundancy_counter  += 1;
             
-            if (this->mode == COMPUTE_REDUNDANCY)
+            if (this->mode == GRID_TASK_COMPUTE_REDUNDANCY)
             {
                 const int capacity = this->tasks[ri][rj].real_capacity;
                 const int idx      = this->tasks[ri][rj].real_counter;
 
                 if (idx == capacity)
                 {
-                    fprintf(stderr, "<%s> Bad redundancy-counter\n", __FUNCTION__);
+                    std::cerr << "<" << __FUNCTION__ << ">"
+                              << " Bad redundancy-counter"
+                              << std::endl;
+
+#ifdef MPI_SUPPORT
                     MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+                    exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
                 }
 
                 /*
@@ -233,8 +260,17 @@ task_t *GridTask::taskGet(const int rank)
         }
     }
 
-    fprintf(stderr, "<%s> Can't find task\n", __FUNCTION__);
-    MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    std::cerr << "<" << __FUNCTION__ << ">"
+              << "Can't find task by rank "
+              << rank
+              << std::endl;
+
+#ifdef MPI_SUPPORT
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+        exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
     return NULL; // Never reached
 }
 
@@ -242,11 +278,19 @@ int GridTask::realTaskGet(const task_t *my_task, task_t **tasks)
 {
     if (!my_task)
     {
-        fprintf(stderr, "<%s> Bad task pointer\n", __FUNCTION__);
+        std::cerr << "<" << __FUNCTION__ << ">"
+                  << " Bad task pointer"
+                  << std::endl;
+
+#ifdef MPI_SUPPORT
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+        exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
     }
 
-    int size = my_task->real_counter;
+    int size = my_task->real_counter; // TODO
 
     for (int i = 0; i < size; i++)
     {
@@ -303,26 +347,34 @@ void GridTask::repair()
     {
         for (int j = 0; j < this->rows_per_proc; j++)
         {
-            if (this->tasks[i][j].rank == DEAD_PROC)
+            if (this->tasks[i][j].rank == GRID_TASK_DEAD_PROC)
             {
                 task_t *dead_task = &this->tasks[i][j];
                 for (int r = 0; r < dead_task->redundancy_counter; r++)
                 {
                     task_t *repair_task = dead_task->redundancy_task[r];
 
-                    if (repair_task->rank != DEAD_PROC)
+                    if (repair_task->rank != GRID_TASK_DEAD_PROC)
                     {
                         const int counter  = repair_task->real_counter;
                         const int capacity = repair_task->real_capacity;
                         if (counter == capacity)
                         {
-                            fprintf(stderr, "<%s> Repair failed\n", __FUNCTION__);
+                            std::cerr << "<" << __FUNCTION__ << ">"
+                                      << "Repair failed"
+                                      << std::endl;
+
+#ifdef MPI_SUPPORT
                             MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+                            exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
                         }
 
                         dead_task->rank = repair_task->rank;
 
-                        if (this->mode == DATA_REDUNDANCY)
+                        if (this->mode == GRID_TASK_DATA_REDUNDANCY)
                         {
                             repair_task->real_task[counter] = dead_task;
                             repair_task->real_counter++;
@@ -348,15 +400,15 @@ void GridTask::repair()
     }
 }
 
-void GridTask::killRank(const int killed)
+void GridTask::kill(const int rank)
 {
     for (int i = 0; i < this->cols_per_proc; i++)
     {
         for (int j = 0; j < this->rows_per_proc; j++)
         {
-            if (this->tasks[i][j].rank == killed)
+            if (this->tasks[i][j].rank == rank)
             {
-                this->tasks[i][j].rank = DEAD_PROC;
+                this->tasks[i][j].rank = GRID_TASK_DEAD_PROC;
             }
         }
     }

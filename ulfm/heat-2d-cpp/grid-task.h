@@ -1,16 +1,22 @@
 #ifndef _GRID_TASK_H_
 #define _GRID_TASK_H_
 
+#ifdef MPI_SUPPORT
 #include "mpi.h"
+#endif /* MPI_SUPPORT */
 
 #include <vector>
 
 typedef enum
 {
-    DEAD_PROC          = -999,
-    DATA_REDUNDANCY    = -998,
-    COMPUTE_REDUNDANCY = -997,
-    BORDER             = MPI_PROC_NULL
+    GRID_TASK_DEAD_PROC          = -999,
+    GRID_TASK_DATA_REDUNDANCY    = -998,
+    GRID_TASK_COMPUTE_REDUNDANCY = -997,
+#ifdef MPI_SUPPORT
+    GRID_TASK_BORDER             = MPI_PROC_NULL
+#else
+    GRID_TASK_BORDER             = -996
+#endif /* MPI_SUPPORT */
 } grid_task_e;
 
 typedef struct task task_t;
@@ -53,7 +59,7 @@ class GridTask
         /*********************************************************************/
         /* Main kill process's task method                                   */
         /*********************************************************************/
-        void killRank(const int killed);
+        void kill(const int rank);
         /*********************************************************************/
         /* Main repair method                                                */
         /*********************************************************************/
