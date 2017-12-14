@@ -16,9 +16,12 @@
 + **Incremental chekpointing** - delta encoding based (XOR operation)
 + **Aditional compress procedure** - [zlib](https://zlib.net/ "official site") based
 
+## ULFM
++ **Survivability**
++ **Fault-tollerance**
+
 ## WIP
 + **Implementing alternative recovery fault tolerance methods**
 + **Expanding test sample base**
 + **Reducing overhead**
-+ **Improving compress**
-+ **Improving delta encoding**
++ **Improving impementation**

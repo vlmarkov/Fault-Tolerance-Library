@@ -69,8 +69,10 @@ static void update_interior_points(double    *newGrid,
     {
         for (int j = 1; j <= nx; j++)
         {
-            newGrid[IND(i, j)] = (oldGrid[IND(i - 1, j)] + oldGrid[IND(i + 1, j)] +
-                            oldGrid[IND(i, j - 1)] + oldGrid[IND(i, j + 1)]) * 0.25;
+            newGrid[IND(i, j)] = (oldGrid[IND(i - 1, j)] +
+                                  oldGrid[IND(i + 1, j)] +
+                                  oldGrid[IND(i, j - 1)] + 
+                                  oldGrid[IND(i, j + 1)]) * 0.25;
         }
     }
 }
@@ -184,7 +186,7 @@ static MPI_Comm repair_communicator(MPI_Comm comm, int err)
     {
         MPI_Comm comm_spare;
         MPIX_Comm_shrink(comm, &comm_spare); // Shrink the communicator
-        MPI_Comm_free(&comm);                // Release the rcommunicator
+        MPI_Comm_free(&comm);                // Release the communicator
         comm = comm_spare;                   // Assign shrink
     }
     else
@@ -207,8 +209,9 @@ int main(int argc, char *argv[])
 
     /*
      * Create a new error handler for MPI_COMM_WORLD
-     * This overrides the default MPI_ERRORS_ARE_FATAL so that ranks in this
-     * communicator will not automatically abort if a failure occurs.
+     * This overrides the default MPI_ERRORS_ARE_FATAL
+     * so that ranks in this communicator will not
+     * automatically abort if a failure occurs.
      */
     MPI_Comm comm = MPI_COMM_WORLD;
     MPI_Comm_set_errhandler(comm, MPI_ERRORS_RETURN);
@@ -274,7 +277,8 @@ int main(int argc, char *argv[])
     }
 
     /* 
-     * Allocate memory for local 2D subgrids with halo cells [0..ny + 1][0..nx + 1]
+     * Allocate memory for local 2D subgrids with halo cells
+     * [0..ny + 1][0..nx + 1]
      */
     int ny = get_block_size(rows, ranky, py);
     int nx = get_block_size(cols, rankx, px);
@@ -376,6 +380,7 @@ restart_step:
 
         if (niters > 1000)
         {
+            fprintf(stderr, "Overflow accepted iterations\n");
             break;
         }
 
@@ -420,12 +425,19 @@ restart_step:
         rc = MPI_Allreduce(MPI_IN_PLACE, &maxdiff, 1, MPI_DOUBLE, MPI_MAX, comm);
         treduce += MPI_Wtime();
 
+        /*
+         * Collective operation may fail so
+         * ULFM provide repair operation
+         */
         if (MPI_ERR_PROC_FAILED == rc)
         {
+            // Handle error
             error_handler(&comm, rc, gridTask);
+
+            // Repair communicator
             comm = repair_communicator(comm, rc);
-            
-            // Repair grid and tasks
+
+            // Repair grid-task
             gridTask.repair();
 
             real_counter = gridTask.realTaskGet(my_task, real_task);
@@ -475,14 +487,19 @@ restart_step:
              */
             exchange = halo_exchange(&halo_cookie, exchange);
         }
-        // Step 6: Wait all (may fail)
+
+        // Step 6: Wait all
         rc = MPI_Waitall(8 * real_counter, reqs, MPI_STATUS_IGNORE);
+        thalo += MPI_Wtime();
+
+        /*
+         * Collective operation may fail so
+         * ULFM provide repair operation
+         */
         if (MPI_ERR_PROC_FAILED == rc)
         {
             exit(EXIT_FAILURE); // TODO
         }
-
-        thalo += MPI_Wtime();
     }
 
     MPI_Type_free(&row);
@@ -492,7 +509,7 @@ restart_step:
 
     if (rank == 0)
     {
-        printf("# Heat 2D (mpi): grid: rows %d, cols %d, procs %d (px %d, py %d)\n", 
+    printf("# Heat 2D (mpi): grid: rows %d, cols %d, procs %d (px %d, py %d)\n",
                rows, cols, commsize, px, py);
     }
 
@@ -508,15 +525,17 @@ restart_step:
            thalo, thalo / (treduce + thalo)); 
 
     double prof[3] = { ttotal, treduce, thalo };
+
     if (rank == 0)
     {
         MPI_Reduce(MPI_IN_PLACE, prof, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
         sleep(1); // Small delay to print last
 
-        printf("# procs %d : grid %d %d : niters %d : total time %.6f :" 
+        printf("# procs %d : grid %d %d : niters %d : total time %.6f :"
                " mpi time %.6f : allred %.6f : halo %.6f\n", 
-               commsize, rows, cols, niters, prof[0], prof[1] + prof[2], prof[1], prof[2]);
+               commsize, rows, cols, niters, prof[0],
+               prof[1] + prof[2], prof[1], prof[2]);
     }
     else
     {
