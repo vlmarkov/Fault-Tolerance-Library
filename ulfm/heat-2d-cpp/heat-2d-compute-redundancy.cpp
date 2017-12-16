@@ -57,6 +57,7 @@ typedef struct
     MPI_Datatype col;
     MPI_Comm     comm;
     task_t      *task;
+    task_t      *neighbors;
     MPI_Request *reqs;
 } halo_cookie_t;
 
@@ -96,14 +97,17 @@ static double checkTerminationCondition(double    *newGrid,
     return maxdiff;
 }
 
-static int haloExchange(halo_cookie_t *cookie, int cnt, int tag)
+static int haloExchange(halo_cookie_t *cookie, int cnt)
 {
+    const int tag     = 0;
+
     task_t *task      = cookie->task;
+    task_t *neighbors = cookie->neighbors;
     double *buf       = task->local_grid;
-    int top           = task->top;
-    int bottom        = task->bottom;
-    int left          = task->left;
-    int right         = task->right;
+    int top           = neighbors->top;
+    int bottom        = neighbors->bottom;
+    int left          = neighbors->left;
+    int right         = neighbors->right;
     int count         = cookie->count;
     int nx            = cookie->nx;
     int ny            = cookie->ny;
@@ -111,37 +115,50 @@ static int haloExchange(halo_cookie_t *cookie, int cnt, int tag)
     MPI_Datatype col  = cookie->col;
     MPI_Comm comm     = cookie->comm;
     MPI_Request *reqs = cookie->reqs;
-/*
-    printf("Rank %02d top(%02d) bottom(%02d) left(%02d) right(%02d)\n",
-        task->rank, top, bottom, left, right);
-*/
+
     MPI_Irecv(&buf[IND(0, 1)],      count,
         row, top,    tag, comm, &reqs[cnt++]); // top
+
     MPI_Irecv(&buf[IND(ny + 1, 1)], count,
         row, bottom, tag, comm, &reqs[cnt++]); // bottom
+
     MPI_Irecv(&buf[IND(1, 0)],      count,
         col, left,   tag, comm, &reqs[cnt++]); // left
+
     MPI_Irecv(&buf[IND(1, nx + 1)], count,
         col, right,  tag, comm, &reqs[cnt++]); // right
+
     MPI_Isend(&buf[IND(1, 1)],      count,
         row, top,    tag, comm, &reqs[cnt++]); // top
+
     MPI_Isend(&buf[IND(ny, 1)],     count,
         row, bottom, tag, comm, &reqs[cnt++]); // bottom
+
     MPI_Isend(&buf[IND(1, 1)],      count,
         col, left,   tag, comm, &reqs[cnt++]); // left
+
     MPI_Isend(&buf[IND(1, nx)],     count,
         col, right,  tag, comm, &reqs[cnt++]); // right
 
     return cnt;
 }
 
-static void error_handler(MPI_Comm *pcomm, int err, GridTask &gridTask)
+static void errorHandler(MPI_Comm *pcomm, int err, GridTask &gridTask)
 {
     MPI_Comm comm = *pcomm;
-    char errstr[MPI_MAX_ERROR_STRING];
-    int rank, size, nf, len, eclass;
-    MPI_Group group_c, group_f;
-    int *ranks_gc, *ranks_gf;
+
+    char errStr[MPI_MAX_ERROR_STRING] = { 0 };
+
+    int rank   = 0;
+    int size   = 0;
+    int nf     = 0;
+    int len    = 0;
+    int eclass = 0;
+
+    MPI_Group groupC, groupF;
+
+    int *ranksGc = NULL;
+    int *ranksGf = NULL;
 
     MPI_Error_class(err, &eclass);
 
@@ -149,57 +166,63 @@ static void error_handler(MPI_Comm *pcomm, int err, GridTask &gridTask)
     MPI_Comm_size(comm, &size);
 
     MPIX_Comm_failure_ack(comm);
-    MPIX_Comm_failure_get_acked(comm, &group_f);
+    MPIX_Comm_failure_get_acked(comm, &groupF);
 
-    MPI_Group_size(group_f, &nf);
-    MPI_Error_string(err, errstr, &len);
+    MPI_Group_size(groupF, &nf);
+    MPI_Error_string(err, errStr, &len);
 
-    if (MPIX_ERR_PROC_FAILED != eclass)
+    if (MPI_ERR_PROC_FAILED  != eclass)
     {
-        fprintf(stderr, "Rank %d got missmatch error %s\n", rank, errstr);
-        MPI_Abort(comm, err);
+        std::cerr << "Rank " << rank
+                  << " got missmatch error "
+                  << errStr << std::endl;
+        return;
+        //MPI_Abort(comm, err);
     }
 
-    ranks_gf = (int*)malloc(nf * sizeof(int));
-    ranks_gc = (int*)malloc(nf * sizeof(int));
+    ranksGf = (int*)malloc(nf * sizeof(int));
+    ranksGc = (int*)malloc(nf * sizeof(int));
 
-    MPI_Comm_group(comm, &group_c);
+    MPI_Comm_group(comm, &groupC);
 
     for (int i = 0; i < nf; i++)
     {
-        ranks_gf[i] = i;
+        ranksGf[i] = i;
     }
 
-    MPI_Group_translate_ranks(group_f, nf, ranks_gf, group_c, ranks_gc);
+    MPI_Group_translate_ranks(groupF,
+        nf, ranksGf, groupC, ranksGc);
 
-    printf("Rank %d / %d: Notified of error %s. %d found dead: { ",
-           rank, size, errstr, nf);
+    std::cout << "Rank " << rank << "/" << size - 1
+            << ": Notified of error " << errStr << ". "
+            << nf << " found dead: [ ";
 
     for (int i = 0; i < nf; i++)
     {
-        printf("%d ", ranks_gc[i]);
-        gridTask.kill(ranks_gc[i]);
+        std::cout << ranksGc[i] << " ";
+        gridTask.kill(ranksGc[i]);
     }
-    printf("}\n");
+    std::cout << "]" << std::endl;
 
-    free(ranks_gf);
-    free(ranks_gc);
+    free(ranksGc);
+    free(ranksGf);
 }
 
-static MPI_Comm repair_communicator(MPI_Comm comm, int err)
+static MPI_Comm repairCommunicator(MPI_Comm comm, int err)
 {
-    int allsucceeded = (err == MPI_SUCCESS);
-    MPIX_Comm_agree(comm, &allsucceeded);
-    if (!allsucceeded)
+    int allSucceeded = (err == MPI_SUCCESS);
+    MPIX_Comm_agree(comm, &allSucceeded);
+    if (!allSucceeded)
     {
-        MPI_Comm comm_spare;
-        MPIX_Comm_shrink(comm, &comm_spare); // Shrink the communicator
-        MPI_Comm_free(&comm);                // Release the communicator
-        comm = comm_spare;                   // Assign shrink
+        MPI_Comm commSpare;
+        MPIX_Comm_revoke(comm);
+        MPIX_Comm_shrink(comm, &commSpare); // Shrink the communicator
+        MPI_Comm_free(&comm);               // Release the communicator
+        comm = commSpare;                   // Assign shrink
     }
     else
     {
-        fprintf(stderr, "Can't repair communicator\n");
+        std::cerr << "Can't repair communicator" << std::endl;
         MPI_Abort(comm, err);
     }
 
@@ -208,8 +231,8 @@ static MPI_Comm repair_communicator(MPI_Comm comm, int err)
 
 int main(int argc, char *argv[])
 {
-    int rank;
-    int commsize;
+    int rank = 0;
+    int commsize = 0;
 
     MPI_Init(&argc, &argv);
 
@@ -299,19 +322,23 @@ int main(int argc, char *argv[])
      */
     gridTask.init(GRID_TASK_COMPUTE_REDUNDANCY);
 
-    task_t *my_task = gridTask.taskGet(rank);
+    task_t *myTask = gridTask.taskGet(rank);
 
-    task_t *real_task[commsize];
-    memset(real_task, 0, sizeof(task_t *) * commsize);
+    task_t *realTask[commsize];
+    task_t *replaceTask[commsize];
 
-    int real_counter = gridTask.realTaskGet(my_task, real_task);
+    memset(realTask, 0, sizeof(task_t *) * commsize);
+    memset(replaceTask, 0, sizeof(task_t *) * commsize);
 
-    for (int i = 0; i < real_counter; ++i)
+    int realCounter    = gridTask.realTaskGet(myTask, realTask);
+    int replaceCounter = gridTask.replaceTaskGet(myTask, replaceTask);
+
+    for (int i = 0; i < realCounter; ++i)
     {
-        double *grid    = real_task[i]->local_grid;
-        double *newgrid = real_task[i]->local_newgrid;
-        rankx           = real_task[i]->x;
-        ranky           = real_task[i]->y;
+        double *grid    = realTask[i]->local_grid;
+        double *newgrid = realTask[i]->local_newgrid;
+        rankx           = realTask[i]->x;
+        ranky           = realTask[i]->y;
 
         /*
          * Fill boundary points: 
@@ -347,13 +374,13 @@ int main(int argc, char *argv[])
         }
 
         // Do sync
-        real_task[i]->local_grid    = grid;
-        real_task[i]->local_newgrid = newgrid;
+        realTask[i]->local_grid    = grid;
+        realTask[i]->local_newgrid = newgrid;
     }
 
     // Restore ranks for statistic
-    rankx = real_task[0]->x;
-    ranky = real_task[0]->y;
+    rankx = realTask[0]->x;
+    ranky = realTask[0]->y;
 
     /*
      * Left and right borders type
@@ -375,12 +402,12 @@ int main(int argc, char *argv[])
     int niters = 0;
     double maxdiff = 0.0;
     int rc;
-
+/*
     if (rank == 0)
     {
         gridTask.show();
     }
-
+*/
     while (1)
     {
         niters++;
@@ -388,24 +415,24 @@ restart_step:
 
         if (niters > 1000)
         {
-            fprintf(stderr, "Overflow accepted iterations\n");
+            std::cerr << "Overflow accepted iterations" << std::endl;
             break;
         }
 
         maxdiff = 0.0;
 
         // Loop by for process's tasks
-        for (int i = 0; i < real_counter; i++)
+        for (int i = 0; i < realCounter; i++)
         {
             // Step 1: Update interior points
-            updateInteriorPoints(real_task[i]->local_newgrid,
-                                 real_task[i]->local_grid,
+            updateInteriorPoints(realTask[i]->local_newgrid,
+                                 realTask[i]->local_grid,
                                  ny, nx);
 
             // Step 2: Check termination condition
             double tmp = checkTerminationCondition(
-                real_task[i]->local_newgrid,
-                real_task[i]->local_grid,
+                realTask[i]->local_newgrid,
+                realTask[i]->local_grid,
                 ny, nx);
 
             if (tmp > maxdiff)
@@ -417,8 +444,8 @@ restart_step:
              * Step 3: Swap grids
              * (after termination local_grid will contain result)
              */
-            std::swap(real_task[i]->local_grid,
-                      real_task[i]->local_newgrid);
+            std::swap(realTask[i]->local_grid,
+                      realTask[i]->local_newgrid);
         }
 
         /*
@@ -446,27 +473,31 @@ restart_step:
         if (MPI_ERR_PROC_FAILED == rc)
         {
             // Handle error
-            error_handler(&comm, rc, gridTask);
+            errorHandler(&comm, rc, gridTask);
 
             // Repair communicator
-            comm = repair_communicator(comm, rc);
+            comm = repairCommunicator(comm, rc);
 
             // Repair grid-task
             gridTask.repair();
 
-            real_counter = gridTask.realTaskGet(my_task, real_task);
+            realCounter    = gridTask.realTaskGet(myTask, realTask);
+            replaceCounter = gridTask.replaceTaskGet(myTask, replaceTask);
 
             // Swap grids (after repair) loop
-            for (int i = 0; i < real_counter; i++)
+            for (int i = 0; i < realCounter; i++)
             {
-                std::swap(real_task[i]->local_newgrid,
-                          real_task[i]->local_grid);
+                std::swap(realTask[i]->local_newgrid,
+                          realTask[i]->local_grid);
             }
 
-            if (rank == 0)
+            if (rank == 5)
             {
                 gridTask.show();
             }
+
+            std::cout << "Rank " << rank
+                      << " go to restart step" << std::endl;
 
             goto restart_step;
         }
@@ -478,38 +509,72 @@ restart_step:
 
         thalo -= MPI_Wtime();
 
-        for (int i = 0; i < real_counter; i++)
+        if (replaceCounter > 0)
         {
             int exchange = 0;
-            MPI_Request reqs[8];
+            MPI_Request reqs[(8 * realCounter) * replaceCounter];
+            for (int i = 0; i < replaceCounter; i++)
+            {
+                task_t *replaces[commsize];
+                memset(replaces, 0, sizeof(task_t *) * commsize);
 
-            memset(reqs, 0, sizeof(MPI_Request) * 8);
+                gridTask.realTaskGet(replaceTask[i], replaces);
 
+                for (int j = 0; j < realCounter; j++)
+                {
+                    halo_cookie_t halo_cookie;
+
+                    halo_cookie.task      = replaces[j];
+                    halo_cookie.neighbors = replaceTask[i];
+                    halo_cookie.count     = 1;
+                    halo_cookie.row       = row;
+                    halo_cookie.col       = col;
+                    halo_cookie.comm      = comm;
+                    halo_cookie.reqs      = reqs;
+                    halo_cookie.nx        = nx;
+                    halo_cookie.ny        = ny;
+
+                    /*
+                     * Step 5: Halo exchange:
+                     * T = 4 * (a + b * (rows / py)) + 4 * (a + b * (cols / px))
+                     */
+                    exchange = haloExchange(&halo_cookie, exchange);
+                }
+            }
+            std::cout << "Rank " << rank << " -->**MPI_Waitall" << std::endl;
+            rc = MPI_Waitall(((8 * realCounter) * replaceCounter),
+                             reqs, MPI_STATUS_IGNORE);
+            std::cout << "Rank " << rank << " <--**MPI_Waitall (complete)" << std::endl;
+        }
+
+        int exchange = 0;
+        MPI_Request reqs[8 * realCounter];
+        for (int i = 0; i < realCounter; i++)
+        {
             halo_cookie_t halo_cookie;
 
-            halo_cookie.task   = real_task[i];
-            halo_cookie.count  = 1;
-            halo_cookie.row    = row;
-            halo_cookie.col    = col;
-            halo_cookie.comm   = comm;
-            halo_cookie.reqs   = reqs;
-            halo_cookie.nx     = nx;
-            halo_cookie.ny     = ny;
+            halo_cookie.task      = realTask[i];
+            halo_cookie.neighbors = realTask[0];
+            halo_cookie.count     = 1;
+            halo_cookie.row       = row;
+            halo_cookie.col       = col;
+            halo_cookie.comm      = comm;
+            halo_cookie.reqs      = reqs;
+            halo_cookie.nx        = nx;
+            halo_cookie.ny        = ny;
 
             /*
              * Step 5: Halo exchange:
              * T = 4 * (a + b * (rows / py)) + 4 * (a + b * (cols / px))
              */
-            exchange = haloExchange(&halo_cookie, exchange, i);    
-
-            printf("Rank %02d after haloExchange\n", rank);
-
-            // Step 6: Wait all
-            rc = MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
-            printf("rc = %d\n", rc);
+            exchange = haloExchange(&halo_cookie, exchange);
         }
 
+        std::cout << "Rank " << rank << " -->MPI_Waitall" << std::endl;
+        // Step 6: Wait all
+        rc = MPI_Waitall(8 * realCounter, reqs, MPI_STATUS_IGNORE);
         thalo += MPI_Wtime();
+        std::cout << "Rank " << rank << " <--MPI_Waitall (complete)" << std::endl;
 
         /*
          * Collective operation may fail so
@@ -521,6 +586,8 @@ restart_step:
         }
     }
 
+exit:
+
     MPI_Type_free(&row);
     MPI_Type_free(&col);
 
@@ -528,8 +595,12 @@ restart_step:
 
     if (rank == 0)
     {
-    printf("# Heat 2D (mpi): grid: rows %d, cols %d, procs %d (px %d, py %d)\n",
+        printf("# Heat 2D (mpi): grid: rows %d, cols %d, procs %d (px %d, py %d)\n",
                rows, cols, commsize, px, py);
+    }
+    else
+    {
+        sleep(1); // Small delay to print
     }
 
     int namelen;

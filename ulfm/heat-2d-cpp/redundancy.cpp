@@ -19,6 +19,11 @@ void Redundancy::addReal(task_t *t)
     this->real.push_back(t);
 }
 
+void Redundancy::addReplace(task_t *t)
+{
+    this->replace.push_back(t);
+}
+
 void Redundancy::addRedundancy(task_t *t)
 {
     this->redundancy.push_back(t);
@@ -29,6 +34,11 @@ std::vector<task_t *> Redundancy::getReal()
     return this->real;
 }
 
+std::vector<task_t *> Redundancy::getReplace()
+{
+    return this->replace;
+}
+
 std::vector<task_t *> Redundancy::getRedundancy()
 {
     return this->redundancy;
@@ -37,6 +47,11 @@ std::vector<task_t *> Redundancy::getRedundancy()
 int Redundancy::getRealSize()
 {
     return this->real.size();
+}
+
+int Redundancy::getReplaceSize()
+{
+    return this->replace.size();
 }
 
 int Redundancy::getRedundancySize()
@@ -68,6 +83,17 @@ void Redundancy::printRedundancyRank()
     for (int i = 0; i < (int)this->redundancy.size(); ++i)
     {
         std::cout << this->redundancy[i]->rank << " ";
+    }
+}
+
+void Redundancy::printReplaceRankDetail()
+{
+    for (int i = 0; i < (int)this->replace.size(); ++i)
+    {
+        std::cout << this->replace[i]->rank << "("
+                  << this->replace[i]->x << ":"
+                  << this->replace[i]->y << ")"
+                  << " ";
     }
 }
 

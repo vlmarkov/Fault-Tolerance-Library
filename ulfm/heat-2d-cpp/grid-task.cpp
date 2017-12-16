@@ -2,6 +2,8 @@
 #include "utils.h"
 
 #include <cmath>
+#include <cstdlib>
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -71,15 +73,16 @@ GridTask::~GridTask()
 
 void GridTask::init(grid_task_e mode)
 {
-    int counter = 0;
+    int addRank = 0;
 
     this->mode = mode;
 
+    // Init each task
     for (int i = 0; i < this->cols_per_proc; i++)
     {
         for (int j = 0; j < this->rows_per_proc; j++)
         {
-            this->tasks[i][j].rank = counter++;
+            this->tasks[i][j].rank = addRank++;
             this->tasks[i][j].x    = i;
             this->tasks[i][j].y    = j;
 
@@ -88,16 +91,18 @@ void GridTask::init(grid_task_e mode)
         }
     }
 
+    addRank = 0;
+
+    // Set redundancy ranks for each task
     for (int i = 0; i < this->cols_per_proc; i++)
     {
         for (int j = 0; j < this->rows_per_proc; j++)
         {
-            // Each struct task contains redudancy list
-            this->redundancyTaskSet(i, j);
+            this->redundancyTaskSetBalanced(i, j, addRank++);
         }
     }
 
-    // Neighbors rank set
+    // Set neighbors rank for each task
     for (int i = 0; i < this->cols_per_proc; i++)
     {
         for (int j = 0; j < this->rows_per_proc; j++)
@@ -164,7 +169,7 @@ void GridTask::neighborRightSet(const int x, const int y)
 /*****************************************************************************/
 /* Redundancy ranks setter                                                   */
 /*****************************************************************************/
-void GridTask::redundancyTaskSet(const int row, const int col)
+void GridTask::redundancyTaskSetSimple(const int row, const int col)
 {
     int commsize = this->rows_per_proc * this->cols_per_proc;
     int addRank  = this->tasks[row][col].rank;
@@ -181,6 +186,42 @@ void GridTask::redundancyTaskSet(const int row, const int col)
             addRank = commsize + addRank;
         }
         this->tasks[row][col].redundancy.addReal(this->taskGet(addRank));
+    }
+}
+
+void GridTask::redundancyTaskSetBalanced(const int row,
+                                         const int col,
+                                         const int addRank)
+{
+    const int x_times = this->cols_per_proc / this->proc_per_node;
+    const int y_times = this->rows_per_proc / this->proc_per_node;
+
+    int ri = row + this->proc_per_node;
+    for (int x = 0; x < x_times; x++)
+    {
+        int rj = col + this->proc_per_node;
+
+        ri = checkOverflow(ri, this->cols_per_proc);
+
+        for (int y = 0; y < y_times; y++)
+        {
+            rj = checkOverflow(rj, this->rows_per_proc);
+
+            /*
+             * Do not include self
+             */
+            task_t *self = this->tasks[ri][rj].redundancy.getSelfTask();
+            if (self->rank != addRank)
+            {
+                task_t *addTask = this->taskGet(addRank);
+                this->tasks[ri][rj].redundancy.addReal(addTask);
+                this->tasks[ri][rj].redundancy.addRedundancy(addTask);
+            }
+
+            rj += this->proc_per_node;
+        }
+
+        ri += this->proc_per_node;
     }
 }
 
@@ -240,37 +281,130 @@ int GridTask::realTaskGet(task_t *my_task, task_t **tasks)
     return size;
 }
 
+int GridTask::replaceTaskGet(task_t *my_task, task_t **tasks)
+{
+    if (!my_task)
+    {
+        std::cerr << "<" << __FUNCTION__ << ">"
+                  << " Bad task pointer"
+                  << std::endl;
+
+#ifdef MPI_SUPPORT
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+        exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
+    }
+
+    int size = my_task->redundancy.getReplaceSize();
+    std::vector<task_t *> t = my_task->redundancy.getReplace();
+    for (int i = 0; i < size; i++)
+    {
+        tasks[i] = t[i];
+    }
+
+    return size;
+}
+
 void GridTask::show()
 {
     for (int i = 0; i < this->cols_per_proc; i++)
     {
         for (int j = 0; j < this->rows_per_proc; j++)
         {
-            printf("Task->coordinates   : %04d:%04d\n", i, j);
-            printf("Task->rank          : %04d\n", this->tasks[i][j].rank);
-            printf("Task->top           : %04d\n", this->tasks[i][j].top);
-            printf("Task->bottom        : %04d\n", this->tasks[i][j].bottom);
-            printf("Task->left          : %04d\n", this->tasks[i][j].left);
-            printf("Task->right         : %04d\n", this->tasks[i][j].right);
-            printf("Task->red_counter   : %04d\n", this->tasks[i][j].redundancy.getRedundancySize());
-            printf("Task->real_counter  : %04d\n", this->tasks[i][j].redundancy.getRealSize());
+            std::cout << "Task(" << i << ", " << j << ")"
+                      << " rank (mpi)          : "
+                      << this->tasks[i][j].rank
+                      << std::endl;
 
-            printf("Task->red_task      : { ");
+            std::cout << "Task(" << i << ", " << j << ")"
+                      << " top rank (mpi)      : ";
+            if (this->tasks[i][j].top == GRID_TASK_BORDER)
+            {
+                std::cout << "MPI_PROC_NULL";
+            }
+            else
+            {
+                std::cout << this->tasks[i][j].top;
+            }
+            std::cout << std::endl;
+
+            std::cout << "Task(" << i << ", " << j << ")"
+                      << " bottom rank (mpi)   : ";
+            if (this->tasks[i][j].bottom == GRID_TASK_BORDER)
+            {
+                std::cout << "MPI_PROC_NULL";
+            }
+            else
+            {
+                std::cout << this->tasks[i][j].bottom;
+            }
+            std::cout << std::endl;
+
+            std::cout << "Task(" << i << ", " << j << ")"
+                      << " left rank (mpi)     : ";
+            if (this->tasks[i][j].left == GRID_TASK_BORDER)
+            {
+                std::cout << "MPI_PROC_NULL";
+            }
+            else
+            {
+                std::cout << this->tasks[i][j].left;
+            }
+            std::cout << std::endl;
+
+            std::cout << "Task(" << i << ", " << j << ")"
+                      << " right rank (mpi)    : ";
+            if (this->tasks[i][j].right == GRID_TASK_BORDER)
+            {
+                std::cout << "MPI_PROC_NULL";
+            }
+            else
+            {
+                std::cout << this->tasks[i][j].right;
+            }
+            std::cout << std::endl;
+
+            std::cout << "Task(" << i << ", " << j << ")"
+                      << " real tasks          : "
+                      << this->tasks[i][j].redundancy.getRealSize()
+                      << std::endl;
+
+            std::cout << "Task(" << i << ", " << j << ")"
+                      << " red. tasks          : "
+                      << this->tasks[i][j].redundancy.getRedundancySize()
+                      << std::endl;
+
+            std::cout << "Task(" << i << ", " << j << ")"
+                      << " rep. tasks          : "
+                      << this->tasks[i][j].redundancy.getReplaceSize()
+                      << std::endl;
+
+            std::cout << "Task(" << i << ", " << j << ")"
+                      <<  " red. task (vector)  : [ ";
             this->tasks[i][j].redundancy.printRedundancyRank();
-            printf("}\n");
+            std::cout << "]" << std::endl;
 
-            printf("Task->real_task     : { ");
+            std::cout << "Task(" << i << ", " << j << ")"
+                      <<  " real task (vector)  : [ ";
             this->tasks[i][j].redundancy.printRealRank();
-            printf("}\n"); 
+            std::cout << "]" << std::endl;
 
-            printf("Task->real_task*    : { ");
+            std::cout << "Task(" << i << ", " << j << ")"
+                      <<  " real task* (vector) : [ ";
             this->tasks[i][j].redundancy.printRealRankDetail();
-            printf("}\n"); 
-            printf("\n");
+            std::cout << "]" << std::endl;
+
+            std::cout << "Task(" << i << ", " << j << ")"
+                      <<  " rep. task* (vector) : [ ";
+            this->tasks[i][j].redundancy.printReplaceRankDetail();
+            std::cout << "]" << std::endl;
+            std::cout << std::endl;
         }
-        printf("------------------------\n");
+        std::cout << "---------------------------------------" << std::endl;
     }
-    printf("\n");
+    std::cout << std::endl;
 }
 
 void GridTask::repair()
@@ -283,12 +417,12 @@ void GridTask::repair()
             if (this->tasks[i][j].rank == GRID_TASK_DEAD_PROC)
             {
                 // Step 2 : Get pointer to dead task
-                task_t *dead_task = &this->tasks[i][j];
+                task_t *deadTask = &this->tasks[i][j];
 
                 // Step 3 : Find replace in redundancy tasks
-                dead_task->rank = dead_task->redundancy.repair();
+                deadTask->rank = deadTask->redundancy.repair();
 
-                if (dead_task->rank == GRID_TASK_BORDER) // null processor
+                if (deadTask->rank == GRID_TASK_BORDER) // null processor
                 {
                     std::cerr << "<" << __FUNCTION__ << ">"
                               << " Repair failed"
@@ -301,6 +435,9 @@ void GridTask::repair()
 #endif /* MPI_SUPPORT */
 
                 }
+
+                task_t *replaceTask = this->taskGet(deadTask->rank);
+                replaceTask->redundancy.addReplace(deadTask);
             }
         }
     }

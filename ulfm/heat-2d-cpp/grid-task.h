@@ -30,22 +30,27 @@ class Redundancy
         task_t *getSelfTask();
 
         void addReal(task_t *t);
+        void addReplace(task_t *t);
         void addRedundancy(task_t *t);
 
         std::vector<task_t *> getReal();
+        std::vector<task_t *> getReplace();
         std::vector<task_t *> getRedundancy();
 
         int getRealSize();
+        int getReplaceSize();
         int getRedundancySize();
 
         void printRealRank();
         void printRealRankDetail();
         void printRedundancyRank();
+        void printReplaceRankDetail();
 
         int repair();
 
     private:
         std::vector<task_t *> real;
+        std::vector<task_t *> replace;
         std::vector<task_t *> redundancy;
 };
 
@@ -101,13 +106,17 @@ class GridTask
         /*********************************************************************/
         task_t *taskGet(const int rank);
         /*********************************************************************/
-        /* Redundancy task setter                                            */
+        /* Redundancy task setters                                           */
         /*********************************************************************/
-        void redundancyTaskSet(const int row, const int col);
+        void redundancyTaskSetSimple(const int row, const int col);
+        void redundancyTaskSetBalanced(const int row,
+                                       const int col,
+                                       const int addRank);
         /*********************************************************************/
         /* Raal task setter                                                  */
         /*********************************************************************/
         int realTaskGet(task_t *my_task, task_t **tasks);
+        int replaceTaskGet(task_t *my_task, task_t **tasks);
         /*********************************************************************/
         /* Show/print method                                                 */
         /*********************************************************************/
