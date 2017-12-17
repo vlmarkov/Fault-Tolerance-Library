@@ -33,6 +33,12 @@ class Redundancy
         void addReplace(task_t *t);
         void addRedundancy(task_t *t);
 
+        void realReorder();
+        void redundancyReorder();
+
+        void realSwapLast();
+        void redundancySwapLast();
+
         std::vector<task_t *> getReal();
         std::vector<task_t *> getReplace();
         std::vector<task_t *> getRedundancy();
@@ -102,6 +108,15 @@ class GridTask
         void neighborLeftSet(const int x, const int y);
         void neighborRightSet(const int x, const int y);
         /*********************************************************************/
+        /* Neighbor getter                                                   */
+        /*********************************************************************/
+        int neighborGet(const int rank, const int step);
+
+        int neighborGetTop(const task_t *t, const int step);
+        int neighborGetBottom(const task_t *t, const int step);
+        int neighborGetLeft(const task_t *t, const int step);
+        int neighborGetRight(const task_t *t, const int step);
+        /*********************************************************************/
         /* Task getters                                                      */
         /*********************************************************************/
         task_t *taskGet(const int rank);
@@ -112,6 +127,9 @@ class GridTask
         void redundancyTaskSetBalanced(const int row,
                                        const int col,
                                        const int addRank);
+        void redundancyTaskBalancedRedored(const int row,
+                                           const int col,
+                                           const int reorderRank);
         /*********************************************************************/
         /* Raal task setter                                                  */
         /*********************************************************************/

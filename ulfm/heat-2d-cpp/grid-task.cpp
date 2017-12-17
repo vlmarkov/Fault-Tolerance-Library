@@ -102,6 +102,17 @@ void GridTask::init(grid_task_e mode)
         }
     }
 
+    addRank = 0;
+
+    // Reorder redundancy ranks for each task
+    for (int i = 0; i < this->cols_per_proc; i++)
+    {
+        for (int j = 0; j < this->rows_per_proc; j++)
+        {
+            this->redundancyTaskBalancedRedored(i, j, addRank++);
+        }
+    }
+
     // Set neighbors rank for each task
     for (int i = 0; i < this->cols_per_proc; i++)
     {
@@ -166,6 +177,185 @@ void GridTask::neighborRightSet(const int x, const int y)
     }
 }
 
+/*********************************************************************/
+/* Neighbor getters                                                  */
+/*********************************************************************/
+int GridTask::neighborGet(const int rank, const int step)
+{
+    if (rank == GRID_TASK_BORDER)
+    {
+        return GRID_TASK_BORDER;
+    }
+
+    task_t *task = this->taskGet(rank);
+
+    if (step > task->redundancy.getRealSize())
+    {
+        std::cerr << "<" << __FUNCTION__ << ">"
+              << "Can't get neighbor" << std::endl;
+
+#ifdef MPI_SUPPORT
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+        exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
+    }
+
+    std::vector<task_t *> neighbors = task->redundancy.getReal();
+
+    return neighbors[step]->rank;
+}
+
+int GridTask::neighborGetTop(const task_t *t, const int step)
+{
+    int x = t->x;
+    int y = t->y;
+
+    if (x == 0)
+    {
+        return GRID_TASK_BORDER;
+    }
+
+    task_t *top = &this->tasks[x - 1][y];
+
+    if (!top)
+    {
+        return GRID_TASK_BORDER;
+    }
+    else
+    {
+        if (step > top->redundancy.getRealSize())
+        {
+            std::cerr << "<" << __FUNCTION__ << ">"
+                  << "Can't get neighbor" << std::endl;
+
+#ifdef MPI_SUPPORT
+            MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+            exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
+        }
+
+        std::vector<task_t *> neighbors = top->redundancy.getReal();
+
+        return neighbors[step]->rank;
+    }
+}
+
+int GridTask::neighborGetBottom(const task_t *t, const int step)
+{
+    int x = t->x;
+    int y = t->y;
+
+    if (x + 1 >= (int)this->tasks.size())
+    {
+        return GRID_TASK_BORDER;
+    }
+
+    task_t *bottom = &this->tasks[x + 1][y];
+
+    if (!bottom)
+    {
+        return GRID_TASK_BORDER;
+    }
+    else
+    {
+        if (step > bottom->redundancy.getRealSize())
+        {
+            std::cerr << "<" << __FUNCTION__ << ">"
+                  << "Can't get neighbor" << std::endl;
+
+#ifdef MPI_SUPPORT
+            MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+            exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
+        }
+
+        std::vector<task_t *> neighbors = bottom->redundancy.getReal();
+
+        return neighbors[step]->rank;
+    }
+}
+
+int GridTask::neighborGetRight(const task_t *t, const int step)
+{
+    int x = t->x;
+    int y = t->y;
+
+    if (y + 1 >= (int)this->tasks[x].size())
+    {
+        return GRID_TASK_BORDER;
+    }
+
+    task_t *right = &this->tasks[x][y + 1];
+
+    if (!right)
+    {
+        return GRID_TASK_BORDER;
+    }
+    else
+    {
+        if (step > right->redundancy.getRealSize())
+        {
+            std::cerr << "<" << __FUNCTION__ << ">"
+                  << "Can't get neighbor" << std::endl;
+
+#ifdef MPI_SUPPORT
+            MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+            exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
+        }
+
+        std::vector<task_t *> neighbors = right->redundancy.getReal();
+
+        return neighbors[step]->rank;
+    }
+}
+
+int GridTask::neighborGetLeft(const task_t *t, const int step)
+{
+    int x = t->x;
+    int y = t->y;
+
+    if (y == 0)
+    {
+        return GRID_TASK_BORDER;
+    }
+
+    task_t *left = &this->tasks[x][y - 1];
+
+    if (!left)
+    {
+        return GRID_TASK_BORDER;
+    }
+    else
+    {
+        if (step > left->redundancy.getRealSize())
+        {
+            std::cerr << "<" << __FUNCTION__ << ">"
+                  << "Can't get neighbor" << std::endl;
+
+#ifdef MPI_SUPPORT
+            MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+#else
+            exit(EXIT_FAILURE);
+#endif /* MPI_SUPPORT */
+
+        }
+
+        std::vector<task_t *> neighbors = left->redundancy.getReal();
+
+        return neighbors[step]->rank;
+    }
+}
+
+
 /*****************************************************************************/
 /* Redundancy ranks setter                                                   */
 /*****************************************************************************/
@@ -223,6 +413,68 @@ void GridTask::redundancyTaskSetBalanced(const int row,
 
         ri += this->proc_per_node;
     }
+}
+
+void GridTask::redundancyTaskBalancedRedored(const int row,
+                                             const int col,
+                                             const int reorderRank)
+{
+    static int invokeCnt = -1;
+
+    const int commsize = this->rows_per_proc * this->cols_per_proc;
+
+    invokeCnt++;
+
+    if (reorderRank == (commsize / 2))
+    {
+        invokeCnt = -this->proc_per_node;
+    }
+
+    if (reorderRank + 1 > (commsize / 2))
+    {
+        this->tasks[row][col].redundancy.realReorder();
+        this->tasks[row][col].redundancy.redundancyReorder();
+    }
+
+    if (reorderRank + 1 > (commsize / 2))
+    {
+        if (invokeCnt >= 0 && invokeCnt < this->proc_per_node)
+        {
+/*
+            std::cout << "2st half Swap rank "
+                      << reorderRank
+                      << " cnt " << invokeCnt << std::endl;
+*/
+            this->tasks[row][col].redundancy.realSwapLast();
+            this->tasks[row][col].redundancy.redundancySwapLast();
+
+            if (invokeCnt + 2 > this->proc_per_node)
+            {
+                invokeCnt = -this->proc_per_node - 1;
+            }
+        }
+    }
+    else
+    {
+        if (invokeCnt >= 0 && invokeCnt < this->proc_per_node)
+        {
+/*
+            std::cout << "1st half Swap rank "
+                      << reorderRank
+                      << " cnt " << invokeCnt << std::endl;
+*/
+            this->tasks[row][col].redundancy.realSwapLast();
+            this->tasks[row][col].redundancy.redundancySwapLast();
+
+            if (invokeCnt + 2 > this->proc_per_node)
+            {
+                invokeCnt = -this->proc_per_node - 1;
+            }
+        }
+    }
+/*
+    std::cout << "invokeCnt " << invokeCnt << std::endl;
+*/
 }
 
 /*****************************************************************************/

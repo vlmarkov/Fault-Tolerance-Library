@@ -29,6 +29,50 @@ void Redundancy::addRedundancy(task_t *t)
     this->redundancy.push_back(t);
 }
 
+void Redundancy::realReorder()
+{
+    std::vector<task_t *> newReal;
+
+    newReal.push_back(this->real[0]);
+
+    for (int i = (int)this->real.size() - 1; i > 0; --i)
+    {
+        newReal.push_back(this->real[i]);
+    }
+
+    this->real = newReal;
+}
+
+void Redundancy::redundancyReorder()
+{
+    std::vector<task_t *> newRedundancy;
+
+    newRedundancy.push_back(this->redundancy[0]);
+
+    for (int i = (int)this->redundancy.size() - 1; i > 0; --i)
+    {
+        newRedundancy.push_back(this->redundancy[i]);
+    }
+
+    this->redundancy = newRedundancy;
+}
+
+void Redundancy::realSwapLast()
+{
+    int last = this->real.size() - 1;
+    int prev = last - 1;
+
+    std::swap(this->real[last], this->real[prev]);
+}
+
+void Redundancy::redundancySwapLast()
+{
+    int last = this->redundancy.size() - 1;
+    int prev = last - 1;
+
+    std::swap(this->redundancy[last], this->redundancy[prev]);
+}
+
 std::vector<task_t *> Redundancy::getReal()
 {
     return this->real;

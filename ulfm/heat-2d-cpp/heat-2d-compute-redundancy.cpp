@@ -97,17 +97,18 @@ static double checkTerminationCondition(double    *newGrid,
     return maxdiff;
 }
 
-static int haloExchange(halo_cookie_t *cookie, int cnt)
+static int haloExchange(halo_cookie_t *cookie,
+                        GridTask      &gridTask,
+                        int            myRank,
+                        int            cnt,
+                        int            step,
+                        char           mode)
 {
-    const int tag     = 0;
+    const int tag = 0;
 
     task_t *task      = cookie->task;
     task_t *neighbors = cookie->neighbors;
     double *buf       = task->local_grid;
-    int top           = neighbors->top;
-    int bottom        = neighbors->bottom;
-    int left          = neighbors->left;
-    int right         = neighbors->right;
     int count         = cookie->count;
     int nx            = cookie->nx;
     int ny            = cookie->ny;
@@ -116,29 +117,54 @@ static int haloExchange(halo_cookie_t *cookie, int cnt)
     MPI_Comm comm     = cookie->comm;
     MPI_Request *reqs = cookie->reqs;
 
-    MPI_Irecv(&buf[IND(0, 1)],      count,
-        row, top,    tag, comm, &reqs[cnt++]); // top
+    /*
+     * Pay attention to MPI-ranks who send or recv messages
+     */
+/*
+    int top    = (neighbors->top == GRID_TASK_BORDER)   ? GRID_TASK_BORDER : task->top;
+    int bottom = (neighbors->bottom == GRID_TASK_BORDER)? GRID_TASK_BORDER : task->bottom;
+    int left   = (neighbors->left == GRID_TASK_BORDER)  ? GRID_TASK_BORDER : task->left;
+    int right  = (neighbors->right == GRID_TASK_BORDER) ? GRID_TASK_BORDER : task->right;
+*/
+/*
+    int top    = neighbors->top;
+    int bottom = neighbors->bottom;
+    int left   = neighbors->left;
+    int right  = neighbors->right;
+*/
 
-    MPI_Irecv(&buf[IND(ny + 1, 1)], count,
-        row, bottom, tag, comm, &reqs[cnt++]); // bottom
+    int top    = gridTask.neighborGetTop(task, step);
+    int bottom = gridTask.neighborGetBottom(task, step);
+    int left   = gridTask.neighborGetLeft(task, step);
+    int right  = gridTask.neighborGetRight(task, step);
 
-    MPI_Irecv(&buf[IND(1, 0)],      count,
-        col, left,   tag, comm, &reqs[cnt++]); // left
+    printf("<%s> <*%c> <%d> MPI-rank(%02d), Task(%02d)(%02d, %02d), "
+           "Neighbors: U(%02d) D(%02d) L(%02d) R(%02d)\n",
+             __FUNCTION__, mode,  step, myRank, task->rank, task->x, task->y,
+            task->top, task->bottom, task->left, task->right);
 
-    MPI_Irecv(&buf[IND(1, nx + 1)], count,
-        col, right,  tag, comm, &reqs[cnt++]); // right
+    printf("<%s> <%c> <%d> MPI-rank(%02d), Task(%02d)(%02d, %02d), "
+           "Neighbors: U(%02d) D(%02d) L(%02d) R(%02d)\n",
+             __FUNCTION__, mode,  step, myRank, task->rank, task->x, task->y,
+            top, bottom, left, right);
 
-    MPI_Isend(&buf[IND(1, 1)],      count,
-        row, top,    tag, comm, &reqs[cnt++]); // top
+    // Non-blocking recv from TOP neighbor
+    MPI_Irecv(&buf[IND(0, 1)],      count, row, top,    tag, comm, &reqs[cnt++]);
+    // Non-blocking recv from BOTTOM neighbor
+    MPI_Irecv(&buf[IND(ny + 1, 1)], count, row, bottom, tag, comm, &reqs[cnt++]);
+    // Non-blocking recv from LEFT neighbor
+    MPI_Irecv(&buf[IND(1, 0)],      count, col, left,   tag, comm, &reqs[cnt++]);
+    // Non-blocking recv from RIGHT neighbor
+    MPI_Irecv(&buf[IND(1, nx + 1)], count, col, right,  tag, comm, &reqs[cnt++]);
 
-    MPI_Isend(&buf[IND(ny, 1)],     count,
-        row, bottom, tag, comm, &reqs[cnt++]); // bottom
-
-    MPI_Isend(&buf[IND(1, 1)],      count,
-        col, left,   tag, comm, &reqs[cnt++]); // left
-
-    MPI_Isend(&buf[IND(1, nx)],     count,
-        col, right,  tag, comm, &reqs[cnt++]); // right
+    // Non-blocking send to TOP neighbor
+    MPI_Isend(&buf[IND(1, 1)],      count, row, top,    tag, comm, &reqs[cnt++]);
+    // Non-blocking send to BOTTOM neighbor
+    MPI_Isend(&buf[IND(ny, 1)],     count, row, bottom, tag, comm, &reqs[cnt++]);
+    // Non-blocking send to LEFT neighbor
+    MPI_Isend(&buf[IND(1, 1)],      count, col, left,   tag, comm, &reqs[cnt++]);
+    // Non-blocking send to RIGHT neighbor
+    MPI_Isend(&buf[IND(1, nx)],     count, col, right,  tag, comm, &reqs[cnt++]);
 
     return cnt;
 }
@@ -215,7 +241,7 @@ static MPI_Comm repairCommunicator(MPI_Comm comm, int err)
     if (!allSucceeded)
     {
         MPI_Comm commSpare;
-        MPIX_Comm_revoke(comm);
+        //MPIX_Comm_revoke(comm);
         MPIX_Comm_shrink(comm, &commSpare); // Shrink the communicator
         MPI_Comm_free(&comm);               // Release the communicator
         comm = commSpare;                   // Assign shrink
@@ -402,12 +428,12 @@ int main(int argc, char *argv[])
     int niters = 0;
     double maxdiff = 0.0;
     int rc;
-/*
+
     if (rank == 0)
     {
         gridTask.show();
     }
-*/
+
     while (1)
     {
         niters++;
@@ -451,16 +477,27 @@ restart_step:
         /*
          * Killing test
          */
+
         if (niters == 2 && rank == 15)
         {
-            //raise(SIGKILL);
+            std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
+            raise(SIGKILL);
         }
 
-        if (niters == 3 && rank == 14)
+
+        if (niters == 3 && rank == 13)
         {
-            //raise(SIGKILL);
+            std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
+            raise(SIGKILL);
         }
 
+/*
+        if (niters == 4 && rank == 7)
+        {
+            std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
+            raise(SIGKILL);
+        }
+*/
         // Step 4: All reduce (may fail)
         treduce -= MPI_Wtime();
         rc = MPI_Allreduce(MPI_IN_PLACE, &maxdiff, 1, MPI_DOUBLE, MPI_MAX, comm);
@@ -495,10 +532,10 @@ restart_step:
             {
                 gridTask.show();
             }
-
+/*
             std::cout << "Rank " << rank
                       << " go to restart step" << std::endl;
-
+*/
             goto restart_step;
         }
 
@@ -533,12 +570,22 @@ restart_step:
                     halo_cookie.reqs      = reqs;
                     halo_cookie.nx        = nx;
                     halo_cookie.ny        = ny;
-
+/*
+                    printf("Rank %04d(%02d, %02d)"
+                           " top %04d bottom %04d, left %04d right %04d\n",
+                        replaces[j]->rank,
+                        replaces[j]->x,
+                        replaces[j]->y,
+                        replaceTask[i]->top,
+                        replaceTask[i]->bottom,
+                        replaceTask[i]->left,
+                        replaceTask[i]->right);
+*/
                     /*
                      * Step 5: Halo exchange:
                      * T = 4 * (a + b * (rows / py)) + 4 * (a + b * (cols / px))
                      */
-                    exchange = haloExchange(&halo_cookie, exchange);
+                    exchange = haloExchange(&halo_cookie, gridTask, rank, exchange, j, 'R');
                 }
             }
             std::cout << "Rank " << rank << " -->**MPI_Waitall" << std::endl;
@@ -562,13 +609,28 @@ restart_step:
             halo_cookie.reqs      = reqs;
             halo_cookie.nx        = nx;
             halo_cookie.ny        = ny;
-
+/*
+            if (rank == 5)
+            {
+                printf("*Rank %04d(%02d, %02d)"
+                           " top %04d bottom %04d, left %04d right %04d\n",
+                        realTask[i]->rank,
+                        realTask[i]->x,
+                        realTask[i]->y,
+                        realTask[0]->top,
+                        realTask[0]->bottom,
+                        realTask[0]->left,
+                        realTask[0]->right);
+            }
+*/
             /*
              * Step 5: Halo exchange:
              * T = 4 * (a + b * (rows / py)) + 4 * (a + b * (cols / px))
              */
-            exchange = haloExchange(&halo_cookie, exchange);
+            exchange = haloExchange(&halo_cookie, gridTask, rank, exchange, i, ' ');
         }
+
+        //goto exit;
 
         std::cout << "Rank " << rank << " -->MPI_Waitall" << std::endl;
         // Step 6: Wait all
@@ -582,8 +644,16 @@ restart_step:
          */
         if (MPI_ERR_PROC_FAILED == rc)
         {
-            exit(EXIT_FAILURE); // TODO
+            std::cerr << "Not handled error" << std::endl;
+            goto exit; // TODO
         }
+/*
+        if (niters == 5)
+        {
+            std::cerr << "Rank " << rank << " Reach test step" << std::endl;
+            goto exit; // TODO
+        }
+*/
     }
 
 exit:
