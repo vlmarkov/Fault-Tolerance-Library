@@ -153,9 +153,26 @@ void Grid::setTags(Task& task, int tag)
     task.addTag(tag + (this->py_ * this->px_));
 }
 
-void setRedundancy(Task& task)
+Task* Grid::getTask(int rank)
 {
+    for (int i = 0; i < this->py_; ++i)
+    {
+        for (int j = 0; j < this->px_; ++j)
+        {
+            if (rank == *this->tasks_[i][j].getMpiRankPtr())
+            {
+                return &this->tasks_[i][j];
+            }
+        }
+    }
 
+    throw std::string("Can't find task by mpi rank");
+    return NULL;
+}
+
+void Grid::repair()
+{
+    // TODO
 }
 
 void Grid::kill(int rank)

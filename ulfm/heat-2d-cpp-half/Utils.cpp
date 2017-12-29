@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "Utils.h"
 
 #ifdef MPI_SUPPORT
 #include <mpi.h>
@@ -12,8 +12,6 @@ void *xCalloc(size_t nmemb, size_t size)
 
     if (!p)
     {
-        // TODO: is there memory leak ?
-
         std::cerr << "<" << __FUNCTION__ << ">"
                   << " No enough memory"
                   << std::endl;

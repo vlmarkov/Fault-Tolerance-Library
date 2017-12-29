@@ -29,6 +29,24 @@ class Task
         void addRrank(int* rank);
         void addRtask(Task* task); 
 
+        double* getLocalGrid();
+        double* getLocalNewGrid();
+
+        void setLocalGrid(double* ptr);
+        void setLocalNewGrid(double* ptr);
+
+        int getUpNeighbor();
+        int getDownNeighbor();
+        int getLeftNeighbor();
+        int getRightNeighbor();
+
+        int getUpTag();
+        int getDownTag();
+        int getLeftTag();
+        int getRightTag();
+
+        void swapLocalGrids();
+
         void print();
 
     private:

@@ -19,8 +19,11 @@ class Grid
         void setMpiRank(Task& task, int rank);
         void setTags(Task& task, int tag);
 
+        Task* getTask(int rank);
+
         void linkRanksTasks(Task* task, int i, int j);
 
+        void repair();
         void kill(int rank);
 
         void print();

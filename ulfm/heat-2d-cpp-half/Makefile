@@ -20,7 +20,28 @@ DMPI         := -D MPI_SUPPORT
 
 BUILD_DIR    := build
 
-all: debug
+all: heat-2d
+
+heat-2d:
+	@mkdir -p $(BUILD_DIR)
+	@RESULT=$$?; \
+	if [ $$RESULT -ne 0 ]; then \
+		printf "%-60b%b" "$(COM_COLOR)$(CREAT_STRING)$(OBJ_COLOR) $(BUILD_DIR)" "$(ERROR_COLOR)$(ERROR_STRING)$(NO_COLOR)\n"; \
+	else  \
+		printf "%-60b%b" "$(COM_COLOR)$(CREAT_STRING)$(OBJ_COLOR) $(BUILD_DIR)" "$(OK_COLOR)$(OK_STRING)$(NO_COLOR)\n"; \
+	fi;
+	@cp slurm.job $(BUILD_DIR)/slurm.job
+	@$(MPICXX) $(CFLAGS) $(LDFLAGS) $(STDFLAGS) $(DMPI) \
+	Utils.cpp \
+	Grid.cpp \
+	Task.cpp \
+	-o $(BUILD_DIR)/$@ heat-2d-compute-redundancy.cpp; \
+	RESULT=$$?; \
+	if [ $$RESULT -ne 0 ]; then \
+		printf "%-60b%b" "$(COM_COLOR)$(COM_STRING)$(OBJ_COLOR) $@" "$(ERROR_COLOR)$(ERROR_STRING)$(NO_COLOR)\n"; \
+	else  \
+		printf "%-60b%b" "$(COM_COLOR)$(COM_STRING)$(OBJ_COLOR) $(@F)" "$(OK_COLOR)$(OK_STRING)$(NO_COLOR)\n"; \
+	fi;
 
 debug:
 	@mkdir -p $(BUILD_DIR)
@@ -39,7 +60,7 @@ debug:
 		printf "%-60b%b" "$(COM_COLOR)$(COM_STRING)$(OBJ_COLOR) $@" "$(ERROR_COLOR)$(ERROR_STRING)$(NO_COLOR)\n"; \
 	else  \
 		printf "%-60b%b" "$(COM_COLOR)$(COM_STRING)$(OBJ_COLOR) $(@F)" "$(OK_COLOR)$(OK_STRING)$(NO_COLOR)\n"; \
-	fi
+	fi;
 
 clean:
 	@rm -Rf $(BUILD_DIR)

@@ -5,7 +5,20 @@
 #include "Task.h"
 
 // Default constructor
-Task::Task() { }
+Task::Task()
+{
+    this->i_             = -1;
+    this->j_             = -1;
+    this->nx_            = -1;
+    this->ny_            = -1;
+    this->mpiRank_       = -1;
+    this->upNeighbor_    = NULL;
+    this->downNeighbor_  = NULL;
+    this->leftNeighbor_  = NULL;
+    this->rightNeighbor_ = NULL;
+    this->grid_          = NULL;
+    this->newGrid_       = NULL;
+}
 
 // Main constructor
 Task::Task(int i, int j, int nx, int ny)
@@ -38,36 +51,69 @@ Task::Task(int i, int j, int nx, int ny)
 // Copy constructor
 Task::Task(const Task& rhs)
 {
-    this->i_             = rhs.i_;
-    this->j_             = rhs.j_;
-    this->nx_            = rhs.nx_;
-    this->ny_            = rhs.ny_;
-    this->upNeighbor_    = rhs.upNeighbor_;
-    this->downNeighbor_  = rhs.downNeighbor_;
-    this->leftNeighbor_  = rhs.leftNeighbor_;
-    this->rightNeighbor_ = rhs.rightNeighbor_;
-    this->tags_          = rhs.tags_;
-    this->mpiRank_       = rhs.mpiRank_;
-    this->rRanks_        = rhs.rRanks_;
-    this->rTasks_        = rhs.rTasks_;
+    this->i_       = rhs.i_;
+    this->j_       = rhs.j_;
+    this->nx_      = rhs.nx_;
+    this->ny_      = rhs.ny_;
+    this->mpiRank_ = rhs.mpiRank_;
 
-    this->grid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
-    if (!this->grid_)
+    if (rhs.upNeighbor_)
     {
-        throw std::string("Can't allocate memory for grid");
+        this->upNeighbor_ = rhs.upNeighbor_;
     }
 
-    this->newGrid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
-    if (!this->newGrid_)
+    if (rhs.downNeighbor_)
     {
-        throw std::string("Can't allocate memory for new grid");
+        this->downNeighbor_ = rhs.downNeighbor_;
+    }
+    
+    if (rhs.leftNeighbor_)
+    {
+        this->leftNeighbor_ = rhs.leftNeighbor_;
     }
 
-    std::memcpy(this->grid_, rhs.grid_,
-        sizeof(double) * ((this->ny_ + 2) * (this->nx_ + 2)));
+    if (rhs.rightNeighbor_)
+    {
+        this->rightNeighbor_ = rhs.rightNeighbor_;
+    }
 
-    std::memcpy(this->newGrid_, rhs.newGrid_,
-        sizeof(double) * ((this->ny_ + 2) * (this->nx_ + 2)));
+    if (rhs.tags_.size() > 0)
+    {
+        this->tags_ = rhs.tags_;
+    }
+
+    if (rhs.rRanks_.size() > 0)
+    {
+        this->rRanks_ = rhs.rRanks_;
+    }
+
+    if (rhs.rTasks_.size() > 0)
+    {
+        this->rTasks_  = rhs.rTasks_;
+    }
+
+    if (rhs.grid_)
+    {
+        this->grid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
+        if (!this->grid_)
+        {
+            throw std::string("Can't allocate memory for grid");
+        }
+        std::memcpy(this->grid_, rhs.grid_,
+            sizeof(double) * ((this->ny_ + 2) * (this->nx_ + 2)));
+    }
+
+    if (rhs.newGrid_)
+    {
+        this->newGrid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
+        if (!this->newGrid_)
+        {   
+            throw std::string("Can't allocate memory for new grid");
+        }
+
+        std::memcpy(this->newGrid_, rhs.newGrid_,
+            sizeof(double) * ((this->ny_ + 2) * (this->nx_ + 2)));
+    }
 
     // TODO
 }
@@ -87,36 +133,69 @@ Task& Task::operator=(const Task& rhs)
         return *this;
     }
 
-    this->i_             = rhs.i_;
-    this->j_             = rhs.j_;
-    this->nx_            = rhs.nx_;
-    this->ny_            = rhs.ny_;
-    this->upNeighbor_    = rhs.upNeighbor_;
-    this->downNeighbor_  = rhs.downNeighbor_;
-    this->leftNeighbor_  = rhs.leftNeighbor_;
-    this->rightNeighbor_ = rhs.rightNeighbor_;
-    this->tags_          = rhs.tags_;
-    this->mpiRank_       = rhs.mpiRank_;
-    this->rRanks_        = rhs.rRanks_;
-    this->rTasks_        = rhs.rTasks_;
+    this->i_       = rhs.i_;
+    this->j_       = rhs.j_;
+    this->nx_      = rhs.nx_;
+    this->ny_      = rhs.ny_;
+    this->mpiRank_ = rhs.mpiRank_;
 
-    this->grid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
-    if (!this->grid_)
+    if (rhs.upNeighbor_)
     {
-        throw std::string("Can't allocate memory for grid");
+        this->upNeighbor_ = rhs.upNeighbor_;
     }
 
-    this->newGrid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
-    if (!this->newGrid_)
+    if (rhs.downNeighbor_)
     {
-        throw std::string("Can't allocate memory for new grid");
+        this->downNeighbor_ = rhs.downNeighbor_;
+    }
+    
+    if (rhs.leftNeighbor_)
+    {
+        this->leftNeighbor_ = rhs.leftNeighbor_;
     }
 
-    std::memcpy(this->grid_, rhs.grid_,
-        sizeof(double) * ((this->ny_ + 2) * (this->nx_ + 2)));
+    if (rhs.rightNeighbor_)
+    {
+        this->rightNeighbor_ = rhs.rightNeighbor_;
+    }
 
-    std::memcpy(this->newGrid_, rhs.newGrid_,
-        sizeof(double) * ((this->ny_ + 2) * (this->nx_ + 2)));
+    if (rhs.tags_.size() > 0)
+    {
+        this->tags_ = rhs.tags_;
+    }
+
+    if (rhs.rRanks_.size() > 0)
+    {
+        this->rRanks_ = rhs.rRanks_;
+    }
+
+    if (rhs.rTasks_.size() > 0)
+    {
+        this->rTasks_  = rhs.rTasks_;
+    }
+
+    if (rhs.grid_)
+    {
+        this->grid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
+        if (!this->grid_)
+        {
+            throw std::string("Can't allocate memory for grid");
+        }
+        std::memcpy(this->grid_, rhs.grid_,
+            sizeof(double) * ((this->ny_ + 2) * (this->nx_ + 2)));
+    }
+
+    if (rhs.newGrid_)
+    {
+        this->newGrid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
+        if (!this->newGrid_)
+        {   
+            throw std::string("Can't allocate memory for new grid");
+        }
+
+        std::memcpy(this->newGrid_, rhs.newGrid_,
+            sizeof(double) * ((this->ny_ + 2) * (this->nx_ + 2)));
+    }
 
     // TODO
 
@@ -194,6 +273,143 @@ void Task::addRtask(Task* task)
 void Task::addTag(int tag)
 {
     this->tags_.push_back(tag);
+}
+
+double* Task::getLocalGrid()
+{
+    return this->grid_;
+}
+
+double* Task::getLocalNewGrid()
+{
+    return this->newGrid_;
+}
+
+void Task::setLocalGrid(double* ptr)
+{
+    this->grid_ = ptr;
+}
+
+void Task::setLocalNewGrid(double* ptr)
+{
+    this->newGrid_ = ptr;
+}
+
+int Task::getUpNeighbor()
+{
+    if (this->upNeighbor_)
+    {
+        return this->upNeighbor_->mpiRank_;
+    }
+    else
+    {
+#ifdef MPI_SUPPORT
+        return MPI_PROC_NULL;
+#else
+        return -2;
+#endif /* MPI_SUPPORT */
+    }
+}
+
+int Task::getDownNeighbor()
+{
+    if (this->downNeighbor_)
+    {
+        return this->downNeighbor_->mpiRank_;
+    }
+    else
+    {
+#ifdef MPI_SUPPORT
+        return MPI_PROC_NULL;
+#else
+        return -2;
+#endif /* MPI_SUPPORT */
+    }
+}
+
+int Task::getLeftNeighbor()
+{
+    if (this->leftNeighbor_)
+    {
+        return this->leftNeighbor_->mpiRank_;
+    }
+    else
+    {
+#ifdef MPI_SUPPORT
+        return MPI_PROC_NULL;
+#else
+        return -2;
+#endif /* MPI_SUPPORT */
+    }
+}
+
+int Task::getRightNeighbor()
+{
+    if (this->rightNeighbor_)
+    {
+        return this->rightNeighbor_->mpiRank_;
+    }
+    else
+    {
+#ifdef MPI_SUPPORT
+        return MPI_PROC_NULL;
+#else
+        return -2;
+#endif /* MPI_SUPPORT */
+    }
+}
+
+int Task::getUpTag()
+{
+    if (this->upNeighbor_)
+    {
+        return this->upNeighbor_->tags_[0];
+    }
+    else
+    {
+        return 9999;
+    }
+}
+
+int Task::getDownTag()
+{
+    if (this->downNeighbor_)
+    {
+        return this->downNeighbor_->tags_[0];
+    }
+    else
+    {
+        return 9999;
+    }
+}
+
+int Task::getLeftTag()
+{
+    if (this->leftNeighbor_)
+    {
+        return this->leftNeighbor_->tags_[0];
+    }
+    else
+    {
+        return 9999;
+    }
+}
+
+int Task::getRightTag()
+{
+    if (this->rightNeighbor_)
+    {
+        return this->rightNeighbor_->tags_[0];
+    }
+    else
+    {
+        return 9999;
+    }
+}
+
+void Task::swapLocalGrids()
+{
+    std::swap(this->grid_, this->newGrid_);
 }
 
 void Task::print()
