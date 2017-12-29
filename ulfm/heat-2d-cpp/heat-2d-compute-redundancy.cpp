@@ -50,8 +50,6 @@
 #define NELEMS(x) (sizeof((x)) / sizeof((x)[0]))
 #define IND(i, j) ((i) * (nx + 2) + (j))
 
-FILE *fp;
-
 typedef struct
 {
     int          count;
@@ -108,13 +106,7 @@ static int haloExchange(halo_cookie_t *cookie,
                         int            step,
                         char           mode)
 {
-    fprintf(fp, "<%s> Invoke\n", __FUNCTION__);
-    fflush(fp);
-
-    const int tag = 0;
-
     task_t *task      = cookie->task;
-    task_t *neighbors = cookie->neighbors;
     double *buf       = task->local_grid;
     int count         = cookie->count;
     int nx            = cookie->nx;
@@ -123,22 +115,6 @@ static int haloExchange(halo_cookie_t *cookie,
     MPI_Datatype col  = cookie->col;
     MPI_Comm comm     = cookie->comm;
     MPI_Request *reqs = cookie->reqs;
-
-    /*
-     * Pay attention to MPI-ranks who send or recv messages
-     */
-/*
-    int top    = (neighbors->top == GRID_TASK_BORDER)   ? GRID_TASK_BORDER : task->top;
-    int bottom = (neighbors->bottom == GRID_TASK_BORDER)? GRID_TASK_BORDER : task->bottom;
-    int left   = (neighbors->left == GRID_TASK_BORDER)  ? GRID_TASK_BORDER : task->left;
-    int right  = (neighbors->right == GRID_TASK_BORDER) ? GRID_TASK_BORDER : task->right;
-*/
-/*
-    int top    = neighbors->top;
-    int bottom = neighbors->bottom;
-    int left   = neighbors->left;
-    int right  = neighbors->right;
-*/
 
     int top    = gridTask.neighborGetTop(task, step);
     int bottom = gridTask.neighborGetBottom(task, step);
@@ -149,35 +125,6 @@ static int haloExchange(halo_cookie_t *cookie,
     int tagB   = gridTask.neighborGetBottomTag(task, step);
     int tagL   = gridTask.neighborGetLeftTag(task, step);
     int tagR   = gridTask.neighborGetRightTag(task, step);
-/*
-    fprintf("<%s> <*%c> <%d> MPI-rank(%02d), Task(%02d)(%02d, %02d), "
-           "Neighbors: U(%02d) D(%02d) L(%02d) R(%02d)\n",
-             __FUNCTION__, mode,  step, myRank, task->rank, task->x, task->y,
-            task->top, task->bottom, task->left, task->right);
-*/
-    fprintf(fp, "<%s> <%c> <%d> MPI-rank(%02d), Task(%02d)(%02d, %02d), "
-           "Neighbors: U(%02d(%02d)) D(%02d(%02d)) L(%02d(%02d)) R(%02d(%02d))\n",
-             __FUNCTION__, mode,  step, myRank, task->rank, task->x, task->y,
-            top, tagT, bottom, tagB, left, tagL, right, tagR);
-/*
-    // Non-blocking recv from TOP neighbor
-    MPI_Irecv(&buf[IND(0, 1)],      count, row, top,    tag, comm, &reqs[cnt++]);
-    // Non-blocking recv from BOTTOM neighbor
-    MPI_Irecv(&buf[IND(ny + 1, 1)], count, row, bottom, tag, comm, &reqs[cnt++]);
-    // Non-blocking recv from LEFT neighbor
-    MPI_Irecv(&buf[IND(1, 0)],      count, col, left,   tag, comm, &reqs[cnt++]);
-    // Non-blocking recv from RIGHT neighbor
-    MPI_Irecv(&buf[IND(1, nx + 1)], count, col, right,  tag, comm, &reqs[cnt++]);
-
-    // Non-blocking send to TOP neighbor
-    MPI_Isend(&buf[IND(1, 1)],      count, row, top,    tag, comm, &reqs[cnt++]);
-    // Non-blocking send to BOTTOM neighbor
-    MPI_Isend(&buf[IND(ny, 1)],     count, row, bottom, tag, comm, &reqs[cnt++]);
-    // Non-blocking send to LEFT neighbor
-    MPI_Isend(&buf[IND(1, 1)],      count, col, left,   tag, comm, &reqs[cnt++]);
-    // Non-blocking send to RIGHT neighbor
-    MPI_Isend(&buf[IND(1, nx)],     count, col, right,  tag, comm, &reqs[cnt++]);
-*/
 
     // Non-blocking recv from TOP neighbor
     MPI_Irecv(&buf[IND(0, 1)],      count, row, top,    tagT, comm, &reqs[cnt++]);
@@ -197,18 +144,11 @@ static int haloExchange(halo_cookie_t *cookie,
     // Non-blocking send to RIGHT neighbor
     MPI_Isend(&buf[IND(1, nx)],     count, col, right,  tagR, comm, &reqs[cnt++]);
 
-
-    fprintf(fp, "<%s> Done\n", __FUNCTION__);
-    fflush(fp);
-
     return cnt;
 }
 
 static void errorHandler(MPI_Comm *pcomm, int err, GridTask &gridTask)
 {
-    fprintf(fp, "<%s> Invoke\n", __FUNCTION__);
-    fflush(fp);
-
     MPI_Comm comm = *pcomm;
 
     char errStr[MPI_MAX_ERROR_STRING] = { 0 };
@@ -263,35 +203,20 @@ static void errorHandler(MPI_Comm *pcomm, int err, GridTask &gridTask)
             << ": Notified of error " << errStr << ". "
             << nf << " found dead: [ ";
 
-    fprintf(fp, "Rank %04d/%04d Notified of error %s.%d found dead: [",
-       rank, size - 1, errStr, nf);
-    fflush(fp);
-
     for (int i = 0; i < nf; i++)
     {
         std::cout << ranksGc[i] << " ";
-        fprintf(fp, "%04d ", ranksGc[i]);
-        fflush(fp);
         gridTask.kill(ranksGc[i]);
         gridTask.repair();
     }
-
-    fprintf(fp, "]\n");
-    fflush(fp);
     std::cout << "]" << std::endl;
 
     free(ranksGc);
     free(ranksGf);
-
-    fprintf(fp, "<%s> Done\n", __FUNCTION__);
-    fflush(fp);
 }
 
 static MPI_Comm repairCommunicator(MPI_Comm comm, int err)
 {
-    fprintf(fp, "<%s> Invoke\n", __FUNCTION__);
-    fflush(fp);
-
     int allSucceeded = (err == MPI_SUCCESS);
     MPIX_Comm_agree(comm, &allSucceeded);
     if (!allSucceeded)
@@ -304,15 +229,9 @@ static MPI_Comm repairCommunicator(MPI_Comm comm, int err)
     }
     else
     {
-        fprintf(fp, "<%s><%d> Can't repair communicator\n", __FUNCTION__, __LINE__);
-        fflush(fp);
-
         std::cerr << "Can't repair communicator" << std::endl;
         MPI_Abort(comm, err);
     }
-
-    fprintf(fp, "<%s> Done\n", __FUNCTION__);
-    fflush(fp);
 
     return comm;
 }
@@ -492,20 +411,6 @@ int main(int argc, char *argv[])
     double maxdiff = 0.0;
     int rc;
 
-    if (rank == 0)
-    {
-        //gridTask.show();
-    }
-
-
-
-    char filename[256] = { 0 };
-    mkdir("logs", 0777);
-    sprintf(filename, "logs/log-%d-rank.txt", rank);
-
-    fp = fopen(filename, "w+");
-    fprintf(fp, "Start calculation\n");
-
     while (1)
     {
         niters++;
@@ -514,7 +419,6 @@ restart_step:
         if (niters > 1000)
         {
             std::cerr << "Overflow accepted iterations" << std::endl;
-            fprintf(fp, "Overflow accepted iterations\n");
             break;
         }
 
@@ -554,64 +458,48 @@ restart_step:
         if (niters == 3 && rank == 15)
         {
             std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
-            fprintf(fp, "<%s><%d>Triggered SIGKILL\n", __FUNCTION__, __LINE__);
-            fclose(fp);
             raise(SIGKILL);
         }
 
         if (niters == 3 && rank == 14)
         {
             std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
-            fprintf(fp, "<%s><%d>Triggered SIGKILL\n", __FUNCTION__, __LINE__);
-            fclose(fp);
             raise(SIGKILL);
         }
 
         if (niters == 3 && rank == 13)
         {
             std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
-            fprintf(fp, "<%s><%d>Triggered SIGKILL\n", __FUNCTION__, __LINE__);
-            fclose(fp);
             raise(SIGKILL);
         }
 
         if (niters == 3 && rank == 12)
         {
             std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
-            fprintf(fp, "<%s><%d>Triggered SIGKILL\n", __FUNCTION__, __LINE__);
-            fclose(fp);
             raise(SIGKILL);
         }
 
         if (niters == 5 && rank == 11)
         {
             std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
-            fprintf(fp, "<%s><%d>Triggered SIGKILL\n", __FUNCTION__, __LINE__);
-            fclose(fp);
             raise(SIGKILL);
         }
 
         if (niters == 5 && rank == 10)
         {
             std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
-            fprintf(fp, "<%s><%d>Triggered SIGKILL\n", __FUNCTION__, __LINE__);
-            fclose(fp);
             raise(SIGKILL);
         }
 
         if (niters == 5 && rank == 9)
         {
             std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
-            fprintf(fp, "<%s><%d>Triggered SIGKILL\n", __FUNCTION__, __LINE__);
-            fclose(fp);
             raise(SIGKILL);
         }
 
         if (niters == 5 && rank == 8)
         {
             std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
-            fprintf(fp, "<%s><%d>Triggered SIGKILL\n", __FUNCTION__, __LINE__);
-            fclose(fp);
             raise(SIGKILL);
         }
 
@@ -619,32 +507,24 @@ restart_step:
         if (niters == 7 && rank == 7)
         {
             std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
-            fprintf(fp, "<%s><%d>Triggered SIGKILL\n", __FUNCTION__, __LINE__);
-            fclose(fp);
             raise(SIGKILL);
         }
 
         if (niters == 7 && rank == 6)
         {
             std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
-            fprintf(fp, "<%s><%d>Triggered SIGKILL\n", __FUNCTION__, __LINE__);
-            fclose(fp);
             raise(SIGKILL);
         }
 
         if (niters == 7 && rank == 3)
         {
             std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
-            fprintf(fp, "<%s><%d>Triggered SIGKILL\n", __FUNCTION__, __LINE__);
-            fclose(fp);
             raise(SIGKILL);
         }
 
         if (niters == 7 && rank == 2)
         {
             std::cerr << "Triggered SIGKILL for " << rank << " rank" << std::endl;
-            fprintf(fp, "<%s><%d>Triggered SIGKILL\n", __FUNCTION__, __LINE__);
-            fclose(fp);
             raise(SIGKILL);
         }
 
@@ -659,45 +539,20 @@ restart_step:
          */
         if (MPI_ERR_PROC_FAILED == rc)
         {
-            fprintf(fp, "<%s><%d> Error\n", __FUNCTION__, __LINE__);
-            fflush(fp);
             // Handle error
             errorHandler(&comm, rc, gridTask);
-
-            fprintf(fp, "<%s><%d>\n", __FUNCTION__, __LINE__);
-            fflush(fp);
 
             // Repair communicator
             comm = repairCommunicator(comm, rc);
 
-            fprintf(fp, "<%s><%d>\n", __FUNCTION__, __LINE__);
-            fflush(fp);
-
-            // Repair grid-task
-            //gridTask.repair();
-
-            fprintf(fp, "<%s><%d>\n", __FUNCTION__, __LINE__);
-            fflush(fp);
-
             realCounter    = gridTask.realTaskGet(myTask, realTask);
             replaceCounter = gridTask.replaceTaskGet(myTask, replaceTask);
-
-            fprintf(fp, "<%s><%d>\n", __FUNCTION__, __LINE__);
-            fflush(fp);
 
             // Swap grids (after repair) loop
             for (int i = 0; i < realCounter; i++)
             {
                 std::swap(realTask[i]->local_newgrid,
                           realTask[i]->local_grid);
-            }
-
-            fprintf(fp, "<%s><%d>\n", __FUNCTION__, __LINE__);
-            fflush(fp);
-
-            if (rank == 5)
-            {
-                //gridTask.show();
             }
 
             goto restart_step;
@@ -712,10 +567,6 @@ restart_step:
 
         if (replaceCounter > 0)
         {
-            fprintf(fp, "<%s><%d> Starting replaceExchange (%d)(%d)\n",
-                __FUNCTION__, __LINE__, realCounter, replaceCounter);
-            fflush(fp);
-
             int sizeRR = (8 * realCounter) * replaceCounter;
 
             int exchange = 0;
@@ -748,17 +599,8 @@ restart_step:
                     exchange = haloExchange(&halo_cookie, gridTask, rank, exchange, j, 'R');
                 }
             }
-
-            fprintf(fp, "<%s><%d> MPI_Waitall replaceExchange\n", __FUNCTION__, __LINE__);
-            fflush(fp);
             rc = MPI_Waitall(sizeRR, reqs, MPI_STATUS_IGNORE);
-            fprintf(fp, "<%s><%d> Ending replaceExchange\n", __FUNCTION__, __LINE__);
-            fflush(fp);
         }
-
-        fprintf(fp, "<%s><%d> Starting haloExchange (%d)\n",
-            __FUNCTION__, __LINE__, realCounter);
-        fflush(fp);
 
         int exchange = 0;
         MPI_Request reqs[8 * realCounter];
@@ -783,16 +625,9 @@ restart_step:
              */
             exchange = haloExchange(&halo_cookie, gridTask, rank, exchange, i, ' ');
         }
-
-        fprintf(fp, "<%s><%d>MPI_Waitall haloExchange\n", __FUNCTION__, __LINE__);
-        fflush(fp);
-
         // Step 6: Wait all
         rc = MPI_Waitall(8 * realCounter, reqs, MPI_STATUS_IGNORE);
         thalo += MPI_Wtime();
-
-        fprintf(fp, "<%s><%d>Ending haloExchange\n", __FUNCTION__, __LINE__);
-        fflush(fp);
 
         /*
          * Collective operation may fail so
@@ -800,17 +635,11 @@ restart_step:
          */
         if (MPI_ERR_PROC_FAILED == rc)
         {
-            fprintf(fp, "<%s><%d>Not handled error\n", __FUNCTION__, __LINE__);
-            fflush(fp);
             goto exit; // TODO
         }
     }
 
 exit:
-
-    fprintf(fp, "<%s><%d> Ending calculation\n", __FUNCTION__, __LINE__);
-    fflush(fp);
-
     MPI_Type_free(&row);
     MPI_Type_free(&col);
 
@@ -854,8 +683,6 @@ exit:
     {
         MPI_Reduce(prof, NULL, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     }
-
-    fclose(fp);
 
     MPI_Finalize();
     return 0;
