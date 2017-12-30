@@ -18,10 +18,12 @@ Task::Task()
     this->rightNeighbor_ = NULL;
     this->grid_          = NULL;
     this->newGrid_       = NULL;
+    this->repair_        = -1;
+    this->status_        = UNKNOWN_TASK;
 }
 
 // Main constructor
-Task::Task(int i, int j, int nx, int ny)
+Task::Task(int i, int j, int nx, int ny, int repair)
 {
     this->i_             = i;
     this->j_             = j;
@@ -32,6 +34,8 @@ Task::Task(int i, int j, int nx, int ny)
     this->leftNeighbor_  = NULL;
     this->rightNeighbor_ = NULL;
     this->mpiRank_       = -1;
+    this->status_        = UNKNOWN_TASK;
+    this->repair_        = repair;
 
     this->grid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
     if (!this->grid_)
@@ -56,6 +60,8 @@ Task::Task(const Task& rhs)
     this->nx_      = rhs.nx_;
     this->ny_      = rhs.ny_;
     this->mpiRank_ = rhs.mpiRank_;
+    this->status_  = rhs.status_;
+    this->repair_  = rhs.repair_;
 
     if (rhs.upNeighbor_)
     {
@@ -77,9 +83,24 @@ Task::Task(const Task& rhs)
         this->rightNeighbor_ = rhs.rightNeighbor_;
     }
 
-    if (rhs.tags_.size() > 0)
+    if (rhs.upNeighborTags_.size() > 0)
     {
-        this->tags_ = rhs.tags_;
+        this->upNeighborTags_ = rhs.upNeighborTags_;
+    }
+
+    if (rhs.downNeighborTags_.size() > 0)
+    {
+        this->downNeighborTags_ = rhs.downNeighborTags_;
+    }
+
+    if (rhs.leftNeighborTags_.size() > 0)
+    {
+        this->leftNeighborTags_ = rhs.leftNeighborTags_;
+    }
+
+    if (rhs.rightNeighborTags_.size() > 0)
+    {
+        this->rightNeighborTags_ = rhs.rightNeighborTags_;
     }
 
     if (rhs.rRanks_.size() > 0)
@@ -138,6 +159,8 @@ Task& Task::operator=(const Task& rhs)
     this->nx_      = rhs.nx_;
     this->ny_      = rhs.ny_;
     this->mpiRank_ = rhs.mpiRank_;
+    this->status_  = rhs.status_;
+    this->repair_  = rhs.repair_;
 
     if (rhs.upNeighbor_)
     {
@@ -159,9 +182,24 @@ Task& Task::operator=(const Task& rhs)
         this->rightNeighbor_ = rhs.rightNeighbor_;
     }
 
-    if (rhs.tags_.size() > 0)
+    if (rhs.upNeighborTags_.size() > 0)
     {
-        this->tags_ = rhs.tags_;
+        this->upNeighborTags_ = rhs.upNeighborTags_;
+    }
+
+    if (rhs.downNeighborTags_.size() > 0)
+    {
+        this->downNeighborTags_ = rhs.downNeighborTags_;
+    }
+
+    if (rhs.leftNeighborTags_.size() > 0)
+    {
+        this->leftNeighborTags_ = rhs.leftNeighborTags_;
+    }
+
+    if (rhs.rightNeighborTags_.size() > 0)
+    {
+        this->rightNeighborTags_ = rhs.rightNeighborTags_;
     }
 
     if (rhs.rRanks_.size() > 0)
@@ -202,6 +240,48 @@ Task& Task::operator=(const Task& rhs)
     return *this;
 }
 
+/*****************************************************************************/
+/* Public methods                                                            */
+/*****************************************************************************/
+
+/* */
+void Task::setMpiRank(int rank)
+{
+    this->mpiRank_ = rank;
+    this->status_  = ALIVE_TASK;
+}
+
+int* Task::getMpiRankPtr()
+{
+    return &this->mpiRank_;
+}
+
+int Task::getMpiRank()
+{
+    return this->mpiRank_;
+}
+
+/* */
+int Task::getStatus()
+{
+    return this->status_;
+}
+
+void Task::setStatus(int status)
+{
+    if (status == DEAD_TASK)
+    {
+#ifdef MPI_SUPPORT
+        this->mpiRank_ = MPI_PROC_NULL;
+#else
+        this->mpiRank_ = -1;
+#endif /* MPI_SUPPORT */
+    }
+
+    this->status_ = status;
+}
+
+/* */
 void Task::setUpNeighbor(Task* up)
 {
     if (up)
@@ -250,29 +330,113 @@ void Task::setRightNeighbor(Task* right)
     }
 }
 
-void Task::setMpiRank(int rank)
+Task* Task::getUpNeighbor()
 {
-    this->mpiRank_ = rank;
+    return this->upNeighbor_;
 }
 
-int* Task::getMpiRankPtr()
+Task* Task::getDownNeighbor()
 {
-    return &this->mpiRank_;
+    return this->downNeighbor_;
 }
 
-void Task::addRrank(int* rank)
+Task* Task::getLeftNeighbor()
 {
-    this->rRanks_.push_back(rank);
+    return this->leftNeighbor_;
 }
 
-void Task::addRtask(Task* task)
+Task* Task::getRightNeighbor()
 {
-    this->rTasks_.push_back(task);
+    return this->rightNeighbor_;
 }
 
-void Task::addTag(int tag)
+int Task::getUpNeighborRank(int layer)
 {
-    this->tags_.push_back(tag);
+    Task* up = this->getUpNeighbor();
+    if (up)
+    {
+        return up->getNextRank_(layer);
+    }
+    else
+    {
+#ifdef MPI_SUPPORT
+        return MPI_PROC_NULL;
+#else
+        return -1;
+#endif /* MPI_SUPPORT */
+    }
+}
+
+int Task::getDownNeighborRank(int layer)
+{
+    Task* down = this->getDownNeighbor();
+    if (down)
+    {
+        return down->getNextRank_(layer);
+    }
+    else
+    {
+#ifdef MPI_SUPPORT
+        return MPI_PROC_NULL;
+#else
+        return -1;
+#endif /* MPI_SUPPORT */
+    }
+}
+
+int Task::getLeftNeighborRank(int layer)
+{
+    Task* left = this->getLeftNeighbor();
+    if (left)
+    {
+        return left->getNextRank_(layer);
+    }
+    else
+    {
+#ifdef MPI_SUPPORT
+        return MPI_PROC_NULL;
+#else
+        return -1;
+#endif /* MPI_SUPPORT */
+    }
+}
+
+int Task::getRightNeighborRank(int layer)
+{
+    Task* right = this->getRightNeighbor();
+    if (right)
+    {
+        return right->getNextRank_(layer);
+    }
+    else
+    {
+#ifdef MPI_SUPPORT
+        return MPI_PROC_NULL;
+#else
+        return -1;
+#endif /* MPI_SUPPORT */
+    }
+}
+
+/* */
+void Task::setLocalGrid(double* grid)
+{
+    if (!grid)
+    {
+        throw std::string("Can't set local grid (bad pointer)");
+    }
+
+    this->grid_ = grid;
+}
+
+void Task::setLocalNewGrid(double* newGrid)
+{
+    if (!newGrid)
+    {
+        throw std::string("Can't set local new grid (bad pointer)");
+    }
+
+    this->newGrid_ = newGrid;
 }
 
 double* Task::getLocalGrid()
@@ -285,139 +449,107 @@ double* Task::getLocalNewGrid()
     return this->newGrid_;
 }
 
-void Task::setLocalGrid(double* ptr)
+/* */
+void Task::addRrank(int* rank)
 {
-    this->grid_ = ptr;
+    this->rRanks_.push_back(rank);
 }
 
-void Task::setLocalNewGrid(double* ptr)
+/* */
+void Task::addRtask(Task* task)
 {
-    this->newGrid_ = ptr;
+    this->rTasks_.push_back(task);
 }
 
-int Task::getUpNeighbor()
+/* */
+void Task::addUpTag(int tag)
 {
-    if (this->upNeighbor_)
-    {
-        return this->upNeighbor_->mpiRank_;
-    }
-    else
-    {
-#ifdef MPI_SUPPORT
-        return MPI_PROC_NULL;
-#else
-        return -2;
-#endif /* MPI_SUPPORT */
-    }
+    this->upNeighborTags_.push_back(tag);
 }
 
-int Task::getDownNeighbor()
+void Task::addDownTag(int tag)
 {
-    if (this->downNeighbor_)
-    {
-        return this->downNeighbor_->mpiRank_;
-    }
-    else
-    {
-#ifdef MPI_SUPPORT
-        return MPI_PROC_NULL;
-#else
-        return -2;
-#endif /* MPI_SUPPORT */
-    }
+    this->downNeighborTags_.push_back(tag);
 }
 
-int Task::getLeftNeighbor()
+void Task::addLeftTag(int tag)
 {
-    if (this->leftNeighbor_)
-    {
-        return this->leftNeighbor_->mpiRank_;
-    }
-    else
-    {
-#ifdef MPI_SUPPORT
-        return MPI_PROC_NULL;
-#else
-        return -2;
-#endif /* MPI_SUPPORT */
-    }
+    this->leftNeighborTags_.push_back(tag);
 }
 
-int Task::getRightNeighbor()
+void Task::addRightTag(int tag)
 {
-    if (this->rightNeighbor_)
-    {
-        return this->rightNeighbor_->mpiRank_;
-    }
-    else
-    {
-#ifdef MPI_SUPPORT
-        return MPI_PROC_NULL;
-#else
-        return -2;
-#endif /* MPI_SUPPORT */
-    }
+    this->rightNeighborTags_.push_back(tag);
 }
 
-int Task::getUpTag()
+int Task::getUpTag(int layer)
 {
-    if (this->upNeighbor_)
-    {
-        return this->upNeighbor_->tags_[0];
-    }
-    else
-    {
-        return 9999;
-    }
+    return this->getNextUpTag_(layer);
 }
 
-int Task::getDownTag()
+int Task::getDownTag(int layer)
 {
-    if (this->downNeighbor_)
-    {
-        return this->downNeighbor_->tags_[0];
-    }
-    else
-    {
-        return 9999;
-    }
+    return this->getNextDownTag_(layer);
 }
 
-int Task::getLeftTag()
+int Task::getLeftTag(int layer)
 {
-    if (this->leftNeighbor_)
-    {
-        return this->leftNeighbor_->tags_[0];
-    }
-    else
-    {
-        return 9999;
-    }
+    return this->getNextLeftTag_(layer);
 }
 
-int Task::getRightTag()
+int Task::getRightTag(int layer)
 {
-    if (this->rightNeighbor_)
-    {
-        return this->rightNeighbor_->tags_[0];
-    }
-    else
-    {
-        return 9999;
-    }
+    return this->getNextRightTag_(layer);
 }
 
+/* */
 void Task::swapLocalGrids()
 {
     std::swap(this->grid_, this->newGrid_);
 }
 
+/* */
+void Task::repair()
+{
+    if  (!this->repair_)
+    {
+        throw std::string("Can't repair task (reached repair limit)");
+    }
+
+    Task* task = this->getNextRepair_();
+
+    // This automaticly set rank and status
+    this->setMpiRank(task->mpiRank_);
+
+    task->reduceRepairAbility_();
+
+    this->reduceRepairAbility_();
+
+    this->status_ = ALIVE_TASK;
+}
+
+/* */
 void Task::print()
 {
     std::cout << "Task [ " << this->i_ << ", "
               << this->j_ << " ]" << std::endl;
 
-    std::cout << "mpi rank       : " << this->mpiRank_ << std::endl;
+    std::cout << "MPI rank       : " << this->mpiRank_ << std::endl;
+
+    switch(this->status_)
+    {
+        case UNKNOWN_TASK:
+            std::cout << "Status         : UNKNOWN_TASK" << std::endl;
+            break;
+        case DEAD_TASK:
+            std::cout << "Status         : DEAD_TASK" << std::endl;
+            break;
+        case ALIVE_TASK:
+            std::cout << "Status         : ALIVE_TASK" << std::endl;
+            break;
+    }
+
+    std::cout << "Repair         : " << this->repair_ << std::endl;
 
     if (this->upNeighbor_)
     {
@@ -474,10 +606,31 @@ void Task::print()
     }
     std::cout << "]" << std::endl;
 
-    std::cout << "Tags           : [ ";
-    for (int i = 0; i < (int)this->tags_.size(); ++i)
+    std::cout << "Up tags        : [ ";
+    for (int i = 0; i < (int)this->upNeighborTags_.size(); ++i)
     {
-        std::cout << this->tags_[i] << " ";
+        std::cout << this->upNeighborTags_[i] << " ";
+    }
+    std::cout << "]" << std::endl;
+
+    std::cout << "Down tags      : [ ";
+    for (int i = 0; i < (int)this->downNeighborTags_.size(); ++i)
+    {
+        std::cout << this->downNeighborTags_[i] << " ";
+    }
+    std::cout << "]" << std::endl;
+
+    std::cout << "Left tags      : [ ";
+    for (int i = 0; i < (int)this->leftNeighborTags_.size(); ++i)
+    {
+        std::cout << this->leftNeighborTags_[i] << " ";
+    }
+    std::cout << "]" << std::endl;
+
+    std::cout << "Right tags     : [ ";
+    for (int i = 0; i < (int)this->rightNeighborTags_.size(); ++i)
+    {
+        std::cout << this->rightNeighborTags_[i] << " ";
     }
     std::cout << "]" << std::endl;
 
@@ -492,4 +645,75 @@ void Task::print()
     // TODO
 
     std::cout << std::endl;
+}
+
+/*****************************************************************************/
+/* Private methods                                                           */
+/*****************************************************************************/
+
+/* */
+Task* Task::getNextRepair_()
+{
+    return this->rTasks_[1];
+}
+
+/* */
+int Task::getNextRank_(int layer)
+{
+    return *this->rRanks_[layer];
+}
+
+/* */
+int Task::getNextUpTag_(int layer)
+{
+    if (layer < (int)this->upNeighborTags_.size())
+    {
+        return this->upNeighborTags_[layer];
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+int Task::getNextDownTag_(int layer)
+{
+    if (layer < (int)this->downNeighborTags_.size())
+    {
+        return this->downNeighborTags_[layer];
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+int Task::getNextLeftTag_(int layer)
+{
+    if (layer < (int)this->leftNeighborTags_.size())
+    {
+        return this->leftNeighborTags_[layer];
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+int Task::getNextRightTag_(int layer)
+{
+    if (layer < (int)this->rightNeighborTags_.size())
+    {
+        return this->rightNeighborTags_[layer];
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+/* */
+void Task::reduceRepairAbility_()
+{
+    this->repair_--;
 }

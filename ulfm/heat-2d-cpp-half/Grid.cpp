@@ -29,12 +29,13 @@
 /*****************************************************************************/
 Grid::Grid(int cols, int rows, int nx, int ny, int px, int py)
 {
-    this->cols_ = cols;
-    this->rows_ = rows;
-    this->nx_   = nx;
-    this->ny_   = ny;
-    this->px_   = px;
-    this->py_   = py;
+    this->cols_  = cols;
+    this->rows_  = rows;
+    this->nx_    = nx;
+    this->ny_    = ny;
+    this->px_    = px;
+    this->py_    = py;
+    this->alive_ = py * px;
 
     // Allocate memory for grid-tasks
     for (int i = 0; i < this->py_; i++)
@@ -43,24 +44,32 @@ Grid::Grid(int cols, int rows, int nx, int ny, int px, int py)
     }
 
     int rank = 0;
-    int tags = 0;
+    int tags = 1;
 
     // Init each task
     for (int i = 0; i < this->py_; ++i)
     {
         for (int j = 0; j < this->px_; ++j)
         {
-            Task t(i, j, this->nx_, this->ny_);
+            Task t(i, j, this->nx_, this->ny_, 1);
 
             this->setNeighbors(t, i, j);
 
             this->setMpiRank(t, rank++);
 
-            this->setTags(t, tags++);
+            this->setTags(t, tags, 0);
 
             this->tasks_[i][j] = t;
 
             this->linkRanksTasks(&this->tasks_[i][j], i, j);
+        }
+    }
+
+    for (int i = 0; i < this->py_; ++i)
+    {
+        for (int j = 0; j < this->px_; ++j)
+        {
+            this->setTags(this->tasks_[i][j], tags, 1);
         }
     }
 }
@@ -145,12 +154,82 @@ void Grid::linkRanksTasks(Task* task, int i, int j)
     task->addRtask(&this->tasks_[i][j]);
 }
 
-void Grid::setTags(Task& task, int tag)
+/* */
+void Grid::setTags(Task& task, int& tag, int layer)
 {
     // Safe assing tags
 
-    task.addTag(tag);
-    task.addTag(tag + (this->py_ * this->px_));
+    Task* left = task.getLeftNeighbor();
+    if (left)
+    {
+        int leftTag = left->getRightTag(layer);
+        if (leftTag == -1)
+        {
+            task.addLeftTag(tag++);
+        }
+        else
+        {
+            task.addLeftTag(leftTag);
+        }
+    }
+    else
+    {
+        task.addLeftTag(0);
+    }
+
+    Task* up = task.getUpNeighbor();
+    if (up)
+    {
+        int upTag = up->getDownTag(layer);
+        if (upTag == -1)
+        {
+            task.addUpTag(tag++);
+        }
+        else
+        {
+            task.addUpTag(upTag);
+        }
+    }
+    else
+    {
+        task.addUpTag(0);
+    }
+
+    Task* right = task.getRightNeighbor();
+    if (right)
+    {
+        int rightTag = right->getLeftTag(layer);
+        if (rightTag == -1)
+        {
+            task.addRightTag(tag++);
+        }
+        else
+        {
+            task.addRightTag(rightTag);
+        }
+    }
+    else
+    {
+        task.addRightTag(0);
+    }
+
+    Task* down = task.getDownNeighbor();
+    if (down)
+    {
+        int downTag = down->getUpTag(layer);
+        if (downTag == -1)
+        {
+            task.addDownTag(tag++);
+        }
+        else
+        {
+            task.addDownTag(downTag);
+        }
+    }
+    else
+    {
+        task.addDownTag(0);
+    }
 }
 
 Task* Grid::getTask(int rank)
@@ -172,24 +251,41 @@ Task* Grid::getTask(int rank)
 
 void Grid::repair()
 {
-    // TODO
+    for (int i = 0; i < this->py_; ++i)
+    {
+        for (int j = 0; j < this->px_; ++j)
+        {
+            if (this->tasks_[i][j].getStatus() == DEAD_TASK)
+            {
+                this->tasks_[i][j].repair();
+            }
+        }
+    }
 }
 
+/* */
 void Grid::kill(int rank)
 {
+    this->alive_--; // Reduce alive processes
+
+    if (this->alive_ < ((this->px_ * this->py_) * 0.5))
+    {
+        throw std::string("Reached the limit of reducibility");
+    }
+
     for (int i = 0; i < this->py_; ++i)
     {
         for (int j = 0; j < this->px_; ++j)
         {
             if (rank == *this->tasks_[i][j].getMpiRankPtr())
             {
-                this->tasks_[i][j].setMpiRank(-1);
-                return;
+                this->tasks_[i][j].setStatus(DEAD_TASK);
             }
         }
     }
 }
 
+/* */
 void Grid::print()
 {
     for (int i = 0; i < this->py_; i++)
@@ -201,6 +297,11 @@ void Grid::print()
     }
 }
 
+/*****************************************************************************/
+/* Private methods                                                           */
+/*****************************************************************************/
+
+/* */
 void Grid::computeNextCoordinates_(int& i, int& j)
 {
     int halfGrid = (this->py_ * this->px_ / 2);

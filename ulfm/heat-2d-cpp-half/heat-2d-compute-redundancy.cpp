@@ -57,7 +57,7 @@ class Halo
         Halo(Task *task, int count,
              MPI_Datatype row, MPI_Datatype col, 
              int nx, int ny,
-             MPI_Comm comm, MPI_Request* reqs)
+             MPI_Comm comm)
         {
             this->task  = task;
             this->count = count;
@@ -115,10 +115,8 @@ static double checkTerminationCondition(double    *newGrid,
     return maxdiff;
 }
 
-static void haloExchange(Halo& cookie)
+static void haloExchange_(Halo& cookie, int layer, int& i)
 {
-    int i = 0;
-
     Task* task        = cookie.task;
     double* buf       = task->getLocalGrid();
     int count         = cookie.count;
@@ -129,37 +127,51 @@ static void haloExchange(Halo& cookie)
     MPI_Comm     comm = cookie.comm;
     MPI_Request* reqs = cookie.reqs;
 
-    int top   = task->getUpNeighbor();
-    int down  = task->getDownNeighbor();
-    int left  = task->getLeftNeighbor();
-    int right = task->getRightNeighbor();
+    int topR          = task->getUpNeighborRank(/*layer*/0);    // TODO
+    int downR         = task->getDownNeighborRank(/*layer*/0);  // TODO
+    int leftR         = task->getLeftNeighborRank(/*layer*/0);  // TODO
+    int rightR        = task->getRightNeighborRank(/*layer*/0); // TODO
 
-    int tagT = task->getUpTag();
-    int tagD = task->getDownTag();
-    int tagL = task->getLeftTag();
-    int tagR = task->getRightTag();
+    int tagT          = task->getUpTag(layer);
+    int tagD          = task->getDownTag(layer);
+    int tagL          = task->getLeftTag(layer);
+    int tagR          = task->getRightTag(layer);
+
+    // Non-blocking recv from
+    MPI_Irecv(&buf[IND(0, 1)],      count, row, topR,   tagT, comm, &reqs[i++]);
+    MPI_Irecv(&buf[IND(ny + 1, 1)], count, row, downR,  tagD, comm, &reqs[i++]);
+    MPI_Irecv(&buf[IND(1, 0)],      count, col, leftR,  tagL, comm, &reqs[i++]);
+    MPI_Irecv(&buf[IND(1, nx + 1)], count, col, rightR, tagR, comm, &reqs[i++]);
+
+    // Non-blocking send to
+    MPI_Isend(&buf[IND(1, 1)],      count, row, topR,   tagT, comm, &reqs[i++]);
+    MPI_Isend(&buf[IND(ny, 1)],     count, row, downR,  tagD, comm, &reqs[i++]);
+    MPI_Isend(&buf[IND(1, 1)],      count, col, leftR,  tagL, comm, &reqs[i++]);
+    MPI_Isend(&buf[IND(1, nx)],     count, col, rightR, tagR, comm, &reqs[i++]);
+}
+
+static int doHaloExchange(Halo& cookie)
+{
+    int rc = MPI_SUCCESS;
 
     // TODO
 
-    tagT = 0;
-    tagD = 0;
-    tagL = 0;
-    tagR = 0;
+    for (int i = 0; i < 2; ++i)
+    {
+        int idx = 0;
+        MPI_Request reqs[8];
+        cookie.reqs = reqs;
+        haloExchange_(cookie, i, idx);
+        rc = MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
+        if (rc != MPI_SUCCESS)
+        {
+            return rc;
+        }
+    }
 
-    // Non-blocking recv from
-    MPI_Irecv(&buf[IND(0, 1)],      count, row, top,   tagT, comm, &reqs[i++]);
-    MPI_Irecv(&buf[IND(ny + 1, 1)], count, row, down,  tagD, comm, &reqs[i++]);
-    MPI_Irecv(&buf[IND(1, 0)],      count, col, left,  tagL, comm, &reqs[i++]);
-    MPI_Irecv(&buf[IND(1, nx + 1)], count, col, right, tagR, comm, &reqs[i++]);
-
-    // Non-blocking send to
-    MPI_Isend(&buf[IND(1, 1)],      count, row, top,   tagT, comm, &reqs[i++]);
-    MPI_Isend(&buf[IND(ny, 1)],     count, row, down,  tagD, comm, &reqs[i++]);
-    MPI_Isend(&buf[IND(1, 1)],      count, col, left,  tagL, comm, &reqs[i++]);
-    MPI_Isend(&buf[IND(1, nx)],     count, col, right, tagR, comm, &reqs[i++]);
+    return rc;
 }
 
-/*
 static void errorHandler(MPI_Comm* pcomm, Grid* gridTask, int err)
 {
     MPI_Comm comm = *pcomm;
@@ -225,6 +237,7 @@ static void errorHandler(MPI_Comm* pcomm, Grid* gridTask, int err)
     free(ranksGf);
 }
 
+/*
 static MPI_Comm repairCommunicator(MPI_Comm comm, int err)
 {
     int allSucceeded = (err == MPI_SUCCESS);
@@ -421,6 +434,14 @@ static int solveEquation(int argc, char* argv[])
         myTask->swapLocalGrids();
 
         /*
+         * Killing test
+         */
+        if (niters == 2 && rank == 15)
+        {
+            raise(SIGKILL);
+        }
+
+        /*
          * Step 4: All reduce (may fail)
          */
         treduce -= MPI_Wtime();
@@ -428,12 +449,11 @@ static int solveEquation(int argc, char* argv[])
         treduce += MPI_Wtime();
 
         /*
-         * Collective operation may fail so
-         * ULFM provide repair operation
+         * Collective operation may fail - ULFM provide repair operation
          */
         if (MPI_ERR_PROC_FAILED == rc)
         {
-            
+            errorHandler(&comm, &gridTask, rc);
             goto exit; // TODO
         }
 
@@ -442,31 +462,23 @@ static int solveEquation(int argc, char* argv[])
             break; // Root exit point
         }
 
-        thalo -= MPI_Wtime();
-
         /*
          * Step 5: Halo exchange:
          * T = 4 * (a + b * (rows / py)) + 4 * (a + b * (cols / px))
          */
-        MPI_Request reqs[8];
-        Halo cookie(myTask, 1, row, col, nx, ny, comm, reqs);
+        Halo cookie(myTask, 1, row, col, nx, ny, comm);
 
-        haloExchange(cookie);
-
-        /*
-         * Step 6: Wait all
-         */
-        rc = MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
+        thalo -= MPI_Wtime();
+        rc = doHaloExchange(cookie);
         thalo += MPI_Wtime();
 
         /*
-         * Collective operation may fail so
-         * ULFM provide repair operation
+         * Collective operation may fail - ULFM provide repair operation
          */
         if (MPI_ERR_PROC_FAILED == rc)
         {
-            // TODO
-            goto exit;
+            errorHandler(&comm, &gridTask, rc);
+            goto exit; // TODO
         }
     }
 

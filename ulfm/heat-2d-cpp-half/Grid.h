@@ -17,7 +17,7 @@ class Grid
 
         void setNeighbors(Task& task, int i, int j);
         void setMpiRank(Task& task, int rank);
-        void setTags(Task& task, int tag);
+        void setTags(Task& task, int& tag, int layer);
 
         Task* getTask(int rank);
 
@@ -31,10 +31,11 @@ class Grid
     private:
         /*const*/ int cols_; // Amount of cells by x
         /*const*/ int rows_; // Amount of cells by y
-        /*const*/ int nx_; // Amount of cells by x (per task)
-        /*const*/ int ny_; // Amount of cells by y (per task)
-        /*const*/ int px_; // Amount of processes by x
-        /*const*/ int py_; // Amount of processes by y
+        /*const*/ int nx_;   // Amount of cells by x (per task)
+        /*const*/ int ny_;   // Amount of cells by y (per task)
+        /*const*/ int px_;   // Amount of processes by x
+        /*const*/ int py_;   // Amount of processes by y
+        int alive_;          // Amount of alive processes
 
         std::vector<std::vector<Task> > tasks_;
 

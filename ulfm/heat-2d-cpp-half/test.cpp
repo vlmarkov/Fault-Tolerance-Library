@@ -8,11 +8,24 @@ int main(int argc, char const *argv[])
 {
 	try
 	{
-		Grid testGrid(1024, 1024, 256, 256, 4, 4);
+		Grid testGrid(1024, 1024, 256, 256, 2, 2);
 
-		testGrid.kill(15);
+		//testGrid.kill(15);
+
+		//testGrid.repair();
+
+		//testGrid.kill(7);
+
+		//testGrid.repair();
 
 		testGrid.print();
+
+		//Task *t = testGrid.getTask(5);
+
+		//std::cout << t->getUpNeighborRank(0) << std::endl;
+		//std::cout << t->getUpNeighborRank(1) << std::endl;
+		//std::cout << t->getDownNeighborRank(0) << std::endl;
+		//std::cout << t->getDownNeighborRank(1) << std::endl;
 	}
 	catch (std::string err)
 	{
