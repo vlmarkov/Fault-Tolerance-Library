@@ -4,39 +4,29 @@
 
 #include "Task.h"
 
-// Default constructor
-Task::Task()
+/**
+ * Default constructor
+ */
+Task::Task() : 
+    i_(-1), j_(-1), nx_(-1), ny_(-1),
+    upNeighbor_(NULL), downNeighbor_(NULL),
+    leftNeighbor_(NULL), rightNeighbor_(NULL),
+    grid_(NULL), newGrid_(NULL),
+    mpiRank_(-1), status_(UNKNOWN_TASK), repair_(-1)
 {
-    this->i_             = -1;
-    this->j_             = -1;
-    this->nx_            = -1;
-    this->ny_            = -1;
-    this->mpiRank_       = -1;
-    this->upNeighbor_    = NULL;
-    this->downNeighbor_  = NULL;
-    this->leftNeighbor_  = NULL;
-    this->rightNeighbor_ = NULL;
-    this->grid_          = NULL;
-    this->newGrid_       = NULL;
-    this->repair_        = -1;
-    this->status_        = UNKNOWN_TASK;
+    ;
 }
 
-// Main constructor
-Task::Task(int i, int j, int nx, int ny, int repair)
+/**
+ * Main constructor
+ */
+Task::Task(int i, int j, int nx, int ny, int repair) : 
+    i_(i), j_(j), nx_(nx), ny_(ny),
+    upNeighbor_(NULL), downNeighbor_(NULL),
+    leftNeighbor_(NULL), rightNeighbor_(NULL),
+    grid_(NULL), newGrid_(NULL),
+    mpiRank_(-1), status_(UNKNOWN_TASK), repair_(repair)
 {
-    this->i_             = i;
-    this->j_             = j;
-    this->nx_            = nx;
-    this->ny_            = ny;
-    this->upNeighbor_    = NULL;
-    this->downNeighbor_  = NULL;
-    this->leftNeighbor_  = NULL;
-    this->rightNeighbor_ = NULL;
-    this->mpiRank_       = -1;
-    this->status_        = UNKNOWN_TASK;
-    this->repair_        = repair;
-
     this->grid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
     if (!this->grid_)
     {
@@ -52,37 +42,16 @@ Task::Task(int i, int j, int nx, int ny, int repair)
     // TODO
 }
 
-// Copy constructor
-Task::Task(const Task& rhs)
+/**
+ * Copy constructor
+ */
+Task::Task(const Task& rhs) :
+    i_(rhs.i_), j_(rhs.j_), nx_(rhs.nx_), ny_(rhs.ny_),
+    upNeighbor_(rhs.upNeighbor_), downNeighbor_(rhs.downNeighbor_),
+    leftNeighbor_(rhs.leftNeighbor_), rightNeighbor_(rhs.rightNeighbor_),
+    grid_(NULL), newGrid_(NULL),
+    mpiRank_(rhs.mpiRank_), status_(rhs.status_), repair_(rhs.repair_)
 {
-    this->i_       = rhs.i_;
-    this->j_       = rhs.j_;
-    this->nx_      = rhs.nx_;
-    this->ny_      = rhs.ny_;
-    this->mpiRank_ = rhs.mpiRank_;
-    this->status_  = rhs.status_;
-    this->repair_  = rhs.repair_;
-
-    if (rhs.upNeighbor_)
-    {
-        this->upNeighbor_ = rhs.upNeighbor_;
-    }
-
-    if (rhs.downNeighbor_)
-    {
-        this->downNeighbor_ = rhs.downNeighbor_;
-    }
-    
-    if (rhs.leftNeighbor_)
-    {
-        this->leftNeighbor_ = rhs.leftNeighbor_;
-    }
-
-    if (rhs.rightNeighbor_)
-    {
-        this->rightNeighbor_ = rhs.rightNeighbor_;
-    }
-
     if (rhs.upNeighborTags_.size() > 0)
     {
         this->upNeighborTags_ = rhs.upNeighborTags_;
@@ -139,14 +108,18 @@ Task::Task(const Task& rhs)
     // TODO
 }
 
-// Destructor
+/**
+ * Destructor
+ */
 Task::~Task()
 {
     delete[] this->grid_;
     delete[] this->newGrid_;
 }
 
-// Assign operator
+/**
+ * Assign operator
+ */
 Task& Task::operator=(const Task& rhs)
 {
     if (this == &rhs)
@@ -154,33 +127,19 @@ Task& Task::operator=(const Task& rhs)
         return *this;
     }
 
-    this->i_       = rhs.i_;
-    this->j_       = rhs.j_;
-    this->nx_      = rhs.nx_;
-    this->ny_      = rhs.ny_;
+    const_cast <int&> (this->i_)  = rhs.i_;
+    const_cast <int&> (this->j_)  = rhs.j_;
+    const_cast <int&> (this->nx_) = rhs.nx_;
+    const_cast <int&> (this->ny_) = rhs.ny_;
+
     this->mpiRank_ = rhs.mpiRank_;
     this->status_  = rhs.status_;
     this->repair_  = rhs.repair_;
 
-    if (rhs.upNeighbor_)
-    {
-        this->upNeighbor_ = rhs.upNeighbor_;
-    }
-
-    if (rhs.downNeighbor_)
-    {
-        this->downNeighbor_ = rhs.downNeighbor_;
-    }
-    
-    if (rhs.leftNeighbor_)
-    {
-        this->leftNeighbor_ = rhs.leftNeighbor_;
-    }
-
-    if (rhs.rightNeighbor_)
-    {
-        this->rightNeighbor_ = rhs.rightNeighbor_;
-    }
+    this->upNeighbor_ = rhs.upNeighbor_;
+    this->downNeighbor_ = rhs.downNeighbor_;
+    this->leftNeighbor_ = rhs.leftNeighbor_;
+    this->rightNeighbor_ = rhs.rightNeighbor_;
 
     if (rhs.upNeighborTags_.size() > 0)
     {
@@ -502,13 +461,17 @@ int Task::getRightTag(int layer)
     return this->getNextRightTag_(layer);
 }
 
-/* */
+/**
+ * Swap grid and new-grdi fields
+ */
 void Task::swapLocalGrids()
 {
     std::swap(this->grid_, this->newGrid_);
 }
 
-/* */
+/**
+ * Repair task
+ */
 void Task::repair()
 {
     if  (!this->repair_)
@@ -528,7 +491,9 @@ void Task::repair()
     this->status_ = ALIVE_TASK;
 }
 
-/* */
+/**
+ * Show whole infomation about task
+ */
 void Task::print()
 {
     std::cout << "Task [ " << this->i_ << ", "
@@ -651,19 +616,25 @@ void Task::print()
 /* Private methods                                                           */
 /*****************************************************************************/
 
-/* */
+/**
+ *
+ */
 Task* Task::getNextRepair_()
 {
     return this->rTasks_[1];
 }
 
-/* */
+/**
+ *
+ */
 int Task::getNextRank_(int layer)
 {
     return *this->rRanks_[layer];
 }
 
-/* */
+/**
+ *
+ */
 int Task::getNextUpTag_(int layer)
 {
     if (layer < (int)this->upNeighborTags_.size())
@@ -676,6 +647,9 @@ int Task::getNextUpTag_(int layer)
     }
 }
 
+/**
+ *
+ */
 int Task::getNextDownTag_(int layer)
 {
     if (layer < (int)this->downNeighborTags_.size())
@@ -688,6 +662,9 @@ int Task::getNextDownTag_(int layer)
     }
 }
 
+/**
+ *
+ */
 int Task::getNextLeftTag_(int layer)
 {
     if (layer < (int)this->leftNeighborTags_.size())
@@ -700,6 +677,9 @@ int Task::getNextLeftTag_(int layer)
     }
 }
 
+/**
+ *
+ */
 int Task::getNextRightTag_(int layer)
 {
     if (layer < (int)this->rightNeighborTags_.size())
@@ -712,7 +692,9 @@ int Task::getNextRightTag_(int layer)
     }
 }
 
-/* */
+/**
+ *
+ */
 void Task::reduceRepairAbility_()
 {
     this->repair_--;

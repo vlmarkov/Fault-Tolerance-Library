@@ -5,8 +5,15 @@
 #include "mpi.h"
 #endif /* MPI_SUPPORT */
 
+#ifdef ULFM_SUPPORT
+#include <mpi-ext.h>
+#endif /* ULFM_SUPPORT */
+
 #include <vector>
 
+/**
+ * Named constants
+ */
 enum
 {
     DEAD_TASK    = -1,
@@ -14,92 +21,135 @@ enum
     ALIVE_TASK   = 1
 };
 
-class Task
-{
-    public:
-        Task();
-        Task(int i, int j, int nx, int ny, int repair);
-        Task(const Task &obj);
-        ~Task();
+/**
+ * High-level abstraction of the problem. 
+ * Each task has a rank attached to it. 
+ * Describes interaction with other tasks (neighbors).
+ * Describes the redundancy mechanism.
+ */
+class Task {
+public:
+    /**
+     * Default constructor
+     */
+    Task();
 
-        Task& operator=(const Task& rhs);
+    /**
+     * Main constructor
+     */
+    Task(int i, int j, int nx, int ny, int repair);
 
-        void setMpiRank(int rank);
-        int getMpiRank();
-        int* getMpiRankPtr();
+    /**
+     * Copy constructor
+     */
+    Task(const Task &obj);
 
-        void setStatus(int status);
-        int getStatus();
+    /**
+     * Destructor
+     */
+    ~Task();
 
-        void setUpNeighbor(Task* up);
-        void setLeftNeighbor(Task* left);
-        void setDownNeighbor(Task* down);
-        void setRightNeighbor(Task* right);
-        Task* getUpNeighbor();
-        Task* getDownNeighbor();
-        Task* getLeftNeighbor();
-        Task* getRightNeighbor();
-        int getUpNeighborRank(int layer);
-        int getDownNeighborRank(int layer);
-        int getLeftNeighborRank(int layer);
-        int getRightNeighborRank(int layer);
+    /**
+     * Assign operator
+     */
+    Task& operator=(const Task& rhs);
 
-        void setLocalGrid(double* ptr);
-        void setLocalNewGrid(double* ptr);
-        double* getLocalGrid();
-        double* getLocalNewGrid();
+    void setMpiRank(int rank);
+    int getMpiRank();
+    int* getMpiRankPtr();
 
-        void addRrank(int* rank);
-        void addRtask(Task* task);
+    void setStatus(int status);
+    int getStatus();
 
-        void addUpTag(int tag);
-        void addDownTag(int tag);
-        void addLeftTag(int tag);
-        void addRightTag(int tag);
-        int getUpTag(int layer);
-        int getDownTag(int layer);
-        int getLeftTag(int layer);
-        int getRightTag(int layer);
+    void setUpNeighbor(Task* up);
+    void setLeftNeighbor(Task* left);
+    void setDownNeighbor(Task* down);
+    void setRightNeighbor(Task* right);
+    Task* getUpNeighbor();
+    Task* getDownNeighbor();
+    Task* getLeftNeighbor();
+    Task* getRightNeighbor();
+    int getUpNeighborRank(int layer);
+    int getDownNeighborRank(int layer);
+    int getLeftNeighborRank(int layer);
+    int getRightNeighborRank(int layer);
 
-        void swapLocalGrids();
+    void setLocalGrid(double* ptr);
+    void setLocalNewGrid(double* ptr);
+    double* getLocalGrid();
+    double* getLocalNewGrid();
 
-        void repair();
+    void addRrank(int* rank);
+    void addRtask(Task* task);
 
-        void print();
+    void addUpTag(int tag);
+    void addDownTag(int tag);
+    void addLeftTag(int tag);
+    void addRightTag(int tag);
+    int getUpTag(int layer);
+    int getDownTag(int layer);
+    int getLeftTag(int layer);
+    int getRightTag(int layer);
 
-    private:
-        /*const*/ int i_;
-        /*const*/ int j_;
-        /*const*/ int nx_;
-        /*const*/ int ny_;
+    /**
+     * Swap grid and new-grdi fields
+     */
+    void swapLocalGrids();
 
-        /*const*/ Task* upNeighbor_;
-        /*const*/ Task* downNeighbor_;
-        /*const*/ Task* leftNeighbor_;
-        /*const*/ Task* rightNeighbor_;
+    /**
+     * Repair task
+     */
+    void repair();
+    
+    /**
+     * Show whole infomation about task
+     */
+    void print();
 
-        /*const*/ std::vector<int> upNeighborTags_;
-        /*const*/ std::vector<int> downNeighborTags_;
-        /*const*/ std::vector<int> leftNeighborTags_;
-        /*const*/ std::vector<int> rightNeighborTags_;
+private:
+    const int i_;
+    const int j_;
+    const int nx_;
+    const int ny_;
 
-        /*const*/ double* grid_;
-        /*const*/ double* newGrid_;
+    /*const*/ Task* upNeighbor_;
+    /*const*/ Task* downNeighbor_;
+    /*const*/ Task* leftNeighbor_;
+    /*const*/ Task* rightNeighbor_;
 
-        int status_;
-        int repair_;
-        int mpiRank_;
+    /*const*/ std::vector<int> upNeighborTags_;
+    /*const*/ std::vector<int> downNeighborTags_;
+    /*const*/ std::vector<int> leftNeighborTags_;
+    /*const*/ std::vector<int> rightNeighborTags_;
 
-        std::vector<int*> rRanks_;
-        std::vector<Task*> rTasks_;
+    /*const*/ double* grid_;
+    /*const*/ double* newGrid_;
 
-        Task* getNextRepair_();
-        int getNextRank_(int layer);
-        int getNextUpTag_(int layer);
-        int getNextDownTag_(int layer);
-        int getNextLeftTag_(int layer);
-        int getNextRightTag_(int layer);
-        void reduceRepairAbility_();
+    /**
+     * Attached MPI-rank to task
+     */
+    int mpiRank_;
+
+    /**
+     * Task status
+     */
+    int status_;
+
+    /**
+     * Repair counter
+     */
+    int repair_;
+
+    std::vector<int*> rRanks_;
+    std::vector<Task*> rTasks_;
+
+    Task* getNextRepair_();
+    int getNextRank_(int layer);
+    int getNextUpTag_(int layer);
+    int getNextDownTag_(int layer);
+    int getNextLeftTag_(int layer);
+    int getNextRightTag_(int layer);
+    void reduceRepairAbility_();
 };
 
 #endif /* _TASK_H_ */

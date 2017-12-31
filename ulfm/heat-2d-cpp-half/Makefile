@@ -17,6 +17,7 @@ CFLAGS       := -g -Wall -O2
 LDFLAGS      := -lm
 STDFLAGS     := -std=c++0x
 DMPI         := -D MPI_SUPPORT
+DULFM        := -D ULFM_SUPPORT
 
 BUILD_DIR    := build
 
@@ -31,7 +32,7 @@ heat-2d:
 		printf "%-60b%b" "$(COM_COLOR)$(CREAT_STRING)$(OBJ_COLOR) $(BUILD_DIR)" "$(OK_COLOR)$(OK_STRING)$(NO_COLOR)\n"; \
 	fi;
 	@cp slurm.job $(BUILD_DIR)/slurm.job
-	@$(MPICXX) $(CFLAGS) $(LDFLAGS) $(STDFLAGS) $(DMPI) \
+	@$(MPICXX) $(CFLAGS) $(LDFLAGS) $(STDFLAGS) $(DMPI) $(DULFM) \
 	Utils.cpp \
 	Grid.cpp \
 	Task.cpp \

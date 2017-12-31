@@ -436,11 +436,12 @@ static int solveEquation(int argc, char* argv[])
         /*
          * Killing test
          */
+/*
         if (niters == 2 && rank == 15)
         {
             raise(SIGKILL);
         }
-
+*/
         /*
          * Step 4: All reduce (may fail)
          */

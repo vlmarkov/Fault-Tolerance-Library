@@ -27,59 +27,159 @@
 /* +---+       +---+                                                         */
 /*   Pic 2 - Redundancy                                                      */
 /*****************************************************************************/
-Grid::Grid(int cols, int rows, int nx, int ny, int px, int py)
-{
-    this->cols_  = cols;
-    this->rows_  = rows;
-    this->nx_    = nx;
-    this->ny_    = ny;
-    this->px_    = px;
-    this->py_    = py;
-    this->alive_ = py * px;
 
+/**
+ * Main constructor
+ * @input: columns, rows, 
+ *         cols by x, rows by y, 
+ *         processes by x, processes by y
+ */
+Grid::Grid(int cols, int rows, int nx, int ny, int px, int py) : 
+    cols_(cols), rows_(rows), nx_(nx), ny_(ny), px_(px), py_(py), alive_(py * px)
+{
     // Allocate memory for grid-tasks
     for (int i = 0; i < this->py_; i++)
     {
         this->tasks_.push_back(std::vector<Task>(this->px_));
     }
 
-    int rank = 0;
-    int tags = 1;
+    int rank   = 0;
+    int tags   = 1;
+    int repair = 1;
+    int layer  = 0;
 
     // Init each task
     for (int i = 0; i < this->py_; ++i)
     {
         for (int j = 0; j < this->px_; ++j)
         {
-            Task t(i, j, this->nx_, this->ny_, 1);
+            Task task(i, j, this->nx_, this->ny_, repair);
 
-            this->setNeighbors(t, i, j);
+            this->setNeighbors_(task, i, j);
 
-            this->setMpiRank(t, rank++);
+            this->setMpiRank_(task, rank++);
 
-            this->setTags(t, tags, 0);
+            this->setTags_(task, tags, layer);
 
-            this->tasks_[i][j] = t;
+            this->tasks_[i][j] = task;
 
-            this->linkRanksTasks(&this->tasks_[i][j], i, j);
+            this->linkRanksTasks_(&this->tasks_[i][j], i, j);
         }
+    }
+
+    layer++;
+
+    // Aditional MPI-tags assignment
+    for (int i = 0; i < this->py_; ++i)
+    {
+        for (int j = 0; j < this->px_; ++j)
+        {
+            this->setTags_(this->tasks_[i][j], tags, layer);
+        }
+    }
+}
+
+/**
+ * Destructor
+ */
+Grid::~Grid()
+{
+    // TODO: memory free
+}
+
+/*****************************************************************************/
+/* Public methods                                                            */
+/*****************************************************************************/
+
+/**
+ * Get task by MPI-rank
+ * @input: MPI-rank
+ * @return: pointer to Task
+ */
+Task* Grid::getTask(int rank)
+{
+    for (int i = 0; i < this->py_; ++i)
+    {
+        for (int j = 0; j < this->px_; ++j)
+        {
+            if (rank == *this->tasks_[i][j].getMpiRankPtr())
+            {
+                return &this->tasks_[i][j];
+            }
+        }
+    }
+
+    throw std::string("Can't find task by MPI-rank");
+    return NULL; // depricated, change to nullptr
+}
+
+/**
+ * Mark task as 'dead'
+ * @input: MPI-rank
+ */
+void Grid::kill(int rank)
+{
+    this->alive_--; // Reduce alive processes
+
+    if (this->alive_ < ((this->px_ * this->py_) * 0.5))
+    {
+        throw std::string("Reached the limit of reducibility"); // TODO: ?
     }
 
     for (int i = 0; i < this->py_; ++i)
     {
         for (int j = 0; j < this->px_; ++j)
         {
-            this->setTags(this->tasks_[i][j], tags, 1);
+            if (rank == *this->tasks_[i][j].getMpiRankPtr())
+            {
+                this->tasks_[i][j].setStatus(DEAD_TASK);
+            }
         }
     }
 }
 
-Grid::~Grid()
+/**
+ * Repair grid-tasks
+ */
+void Grid::repair()
 {
-    // TODO: memory free
+    // TODO: ?
+
+    for (int i = 0; i < this->py_; ++i)
+    {
+        for (int j = 0; j < this->px_; ++j)
+        {
+            if (this->tasks_[i][j].getStatus() == DEAD_TASK)
+            {
+                this->tasks_[i][j].repair();
+            }
+        }
+    }
 }
 
-void Grid::setNeighbors(Task& task, int i, int j)
+/**
+ * Show grid-tasks
+ */
+void Grid::print()
+{
+    for (int i = 0; i < this->py_; i++)
+    {
+        for (int j = 0; j < this->px_; j++)
+        {
+            this->tasks_[i][j].print();
+        }
+    }
+}
+
+/*****************************************************************************/
+/* Private methods                                                           */
+/*****************************************************************************/
+
+/**
+ * Set neighbors for task
+ * @input: reference to task, coordinates 'i' and 'j'
+ */
+void Grid::setNeighbors_(Task& task, int i, int j)
 {
     // Safe assing neighbors
 
@@ -124,38 +224,22 @@ void Grid::setNeighbors(Task& task, int i, int j)
     }
 }
 
-void Grid::setMpiRank(Task& task, int rank)
+/**
+ * Set MPI-rank for task
+ * @input: MPI-rank
+ */
+void Grid::setMpiRank_(Task& task, int rank)
 {
     task.setMpiRank(rank);
 }
 
-void Grid::linkRanksTasks(Task* task, int i, int j)
-{
-    // Safe assing ranks
-
-    this->computeNextCoordinates_(i, j);
-
-    int* self = task->getMpiRankPtr();
-    if (!self)
-    {
-        throw std::string("Can't get self mpi rank");
-    }
-
-    int* redundancy = this->tasks_[i][j].getMpiRankPtr();
-    if (!redundancy)
-    {
-        throw std::string("Can't get redundancy mpi rank");
-    }
-
-    task->addRrank(self);
-    task->addRrank(redundancy);
-
-    task->addRtask(task);
-    task->addRtask(&this->tasks_[i][j]);
-}
-
-/* */
-void Grid::setTags(Task& task, int& tag, int layer)
+/**
+ * Set MPI-tags for task
+ * @input: reference to task, 
+ *         reference to tag,
+ *         redundancy layer
+ */
+void Grid::setTags_(Task& task, int& tag, int layer)
 {
     // Safe assing tags
 
@@ -232,76 +316,10 @@ void Grid::setTags(Task& task, int& tag, int layer)
     }
 }
 
-Task* Grid::getTask(int rank)
-{
-    for (int i = 0; i < this->py_; ++i)
-    {
-        for (int j = 0; j < this->px_; ++j)
-        {
-            if (rank == *this->tasks_[i][j].getMpiRankPtr())
-            {
-                return &this->tasks_[i][j];
-            }
-        }
-    }
-
-    throw std::string("Can't find task by mpi rank");
-    return NULL;
-}
-
-void Grid::repair()
-{
-    for (int i = 0; i < this->py_; ++i)
-    {
-        for (int j = 0; j < this->px_; ++j)
-        {
-            if (this->tasks_[i][j].getStatus() == DEAD_TASK)
-            {
-                this->tasks_[i][j].repair();
-            }
-        }
-    }
-}
-
-/* */
-void Grid::kill(int rank)
-{
-    this->alive_--; // Reduce alive processes
-
-    if (this->alive_ < ((this->px_ * this->py_) * 0.5))
-    {
-        throw std::string("Reached the limit of reducibility");
-    }
-
-    for (int i = 0; i < this->py_; ++i)
-    {
-        for (int j = 0; j < this->px_; ++j)
-        {
-            if (rank == *this->tasks_[i][j].getMpiRankPtr())
-            {
-                this->tasks_[i][j].setStatus(DEAD_TASK);
-            }
-        }
-    }
-}
-
-/* */
-void Grid::print()
-{
-    for (int i = 0; i < this->py_; i++)
-    {
-        for (int j = 0; j < this->px_; j++)
-        {
-            this->tasks_[i][j].print();
-        }
-    }
-}
-
-/*****************************************************************************/
-/* Private methods                                                           */
-/*****************************************************************************/
-
-/* */
+/**
+ * Compute next cordiantes for task (where task will be migrate)
+ * @input: coordinates 'i' and 'j'
+ */
 void Grid::computeNextCoordinates_(int& i, int& j)
 {
     int halfGrid = (this->py_ * this->px_ / 2);
@@ -328,4 +346,33 @@ void Grid::computeNextCoordinates_(int& i, int& j)
             i = 0;
         }
     } 
+}
+
+/**
+ * Link MPI-ranks, migrating tasks with task
+ * @input: pointer to task, coordinates 'i' and 'j'
+ */
+void Grid::linkRanksTasks_(Task* task, int i, int j)
+{
+    // Safe assing
+
+    this->computeNextCoordinates_(i, j);
+
+    int* self = task->getMpiRankPtr();
+    if (!self)
+    {
+        throw std::string("Can't get self MPI-rank");
+    }
+
+    int* redundancy = this->tasks_[i][j].getMpiRankPtr();
+    if (!redundancy)
+    {
+        throw std::string("Can't get redundancy MPI-rank");
+    }
+
+    task->addRrank(self);
+    task->addRrank(redundancy);
+
+    task->addRtask(task);
+    task->addRtask(&this->tasks_[i][j]);
 }
