@@ -22,8 +22,8 @@ enum
 };
 
 /**
- * High-level abstraction of the problem. 
- * Each task has a rank attached to it. 
+ * High-level abstraction of the task.
+ * Each task has a rank attached to it.
  * Describes interaction with other tasks (neighbors).
  * Describes the redundancy mechanism.
  */
@@ -100,7 +100,7 @@ public:
      * Repair task
      */
     void repair();
-    
+
     /**
      * Show whole infomation about task
      */

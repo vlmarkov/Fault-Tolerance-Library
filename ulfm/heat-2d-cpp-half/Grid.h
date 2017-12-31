@@ -22,8 +22,8 @@ class Grid {
 public:
     /**
      * Main constructor
-     * @input: columns, rows, 
-     *         cols by x, rows by y, 
+     * @input: columns, rows,
+     *         cols by x, rows by y,
      *         processes by x, processes by y
      */
     Grid(int cols, int rows, int nx, int ny, int px, int py);
@@ -38,7 +38,7 @@ public:
      * @input: MPI-rank
      * @return: pointer to Task
      */
-    Task* getTask(int rank); 
+    Task* getTask(int rank);
 
     /**
      * Mark task as 'dead'
@@ -71,7 +71,7 @@ private:
      * Amount of cells by x (per task)
      */
     const int nx_;
-    
+
     /**
      * Amount of cells by y (per task)
      */
