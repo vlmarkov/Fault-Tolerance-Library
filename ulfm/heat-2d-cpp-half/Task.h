@@ -36,13 +36,17 @@ public:
 
     /**
      * Main constructor
+     * @input: coodinate 'i', coordinate 'j'
+     *         size by x, size by y
+     *         repair counter
      */
     Task(int i, int j, int nx, int ny, int repair);
 
     /**
      * Copy constructor
+     * @input: task object
      */
-    Task(const Task &obj);
+    Task(const Task &rhs);
 
     /**
      * Destructor
@@ -76,8 +80,8 @@ public:
 
     void setLocalGrid(double* ptr);
     void setLocalNewGrid(double* ptr);
-    double* getLocalGrid();
-    double* getLocalNewGrid();
+    double* getLocalGrid(int layer);
+    double* getLocalNewGrid(int layer);
 
     void addRrank(int* rank);
     void addRtask(Task* task);
@@ -93,8 +97,26 @@ public:
 
     /**
      * Swap grid and new-grdi fields
+     * @input: redundancy layer
      */
-    void swapLocalGrids();
+    void swapLocalGrids(int layer);
+
+    /**
+     * Get number of redundancy layers
+     */
+    int getLayers();
+
+    /**
+     * Get x coordinates
+     * @input: layer
+     */
+    int getX(int layer);
+
+    /**
+     * Get y coordinates
+     * @input: layer
+     */
+    int getY(int layer);
 
     /**
      * Repair task
@@ -105,6 +127,12 @@ public:
      * Show whole infomation about task
      */
     void print();
+
+    /**
+     * Show whole infomation about task
+     * by redundancy layers
+     */
+    void printByLayers();
 
 private:
     const int i_;

@@ -166,7 +166,13 @@ void Grid::print()
     {
         for (int j = 0; j < this->px_; j++)
         {
+
+#ifdef MPI_SUPPORT
             this->tasks_[i][j].print();
+#else
+            this->tasks_[i][j].printByLayers();
+#endif /* MPI_SUPPORT */
+
         }
     }
 }

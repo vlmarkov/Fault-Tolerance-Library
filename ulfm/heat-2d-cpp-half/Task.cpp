@@ -19,6 +19,9 @@ Task::Task() :
 
 /**
  * Main constructor
+ * @input: coodinate 'i', coordinate 'j'
+ *         size by x, size by y
+ *         repair counter
  */
 Task::Task(int i, int j, int nx, int ny, int repair) : 
     i_(i), j_(j), nx_(nx), ny_(ny),
@@ -44,6 +47,7 @@ Task::Task(int i, int j, int nx, int ny, int repair) :
 
 /**
  * Copy constructor
+ * @input: task object
  */
 Task::Task(const Task& rhs) :
     i_(rhs.i_), j_(rhs.j_), nx_(rhs.nx_), ny_(rhs.ny_),
@@ -311,70 +315,94 @@ Task* Task::getRightNeighbor()
 
 int Task::getUpNeighborRank(int layer)
 {
-    Task* up = this->getUpNeighbor();
-    if (up)
+    if (layer < (int)this->rTasks_.size())
     {
-        return up->getNextRank_(layer);
+        Task* up = this->rTasks_[layer]->getUpNeighbor();
+        if (up)
+        {
+            return up->getNextRank_(layer);
+        }
     }
     else
     {
+        throw std::string("Can't get up neighbor");
+    }
+
 #ifdef MPI_SUPPORT
         return MPI_PROC_NULL;
 #else
         return -1;
 #endif /* MPI_SUPPORT */
-    }
+
 }
 
 int Task::getDownNeighborRank(int layer)
 {
-    Task* down = this->getDownNeighbor();
-    if (down)
+    if (layer < (int)this->rTasks_.size())
     {
-        return down->getNextRank_(layer);
+        Task* down = this->rTasks_[layer]->getDownNeighbor();
+        if (down)
+        {
+            return down->getNextRank_(layer);
+        }
     }
     else
     {
+        throw std::string("Can't get down neighbor");
+    }
+
 #ifdef MPI_SUPPORT
         return MPI_PROC_NULL;
 #else
         return -1;
 #endif /* MPI_SUPPORT */
-    }
+
 }
 
 int Task::getLeftNeighborRank(int layer)
 {
-    Task* left = this->getLeftNeighbor();
-    if (left)
+    if (layer < (int)this->rTasks_.size())
     {
-        return left->getNextRank_(layer);
+        Task* left = this->rTasks_[layer]->getLeftNeighbor();
+        if (left)
+        {
+            return left->getNextRank_(layer);
+        }
     }
     else
     {
+        throw std::string("Can't get left neighbor");
+    }
+
 #ifdef MPI_SUPPORT
         return MPI_PROC_NULL;
 #else
         return -1;
 #endif /* MPI_SUPPORT */
-    }
+
 }
 
 int Task::getRightNeighborRank(int layer)
 {
-    Task* right = this->getRightNeighbor();
-    if (right)
+    if (layer < (int)this->rTasks_.size())
     {
-        return right->getNextRank_(layer);
+        Task* right = this->rTasks_[layer]->getRightNeighbor();
+        if (right)
+        {
+            return right->getNextRank_(layer);
+        }
     }
     else
     {
+        throw std::string("Can't get right neighbor");
+    }
+
 #ifdef MPI_SUPPORT
         return MPI_PROC_NULL;
 #else
         return -1;
 #endif /* MPI_SUPPORT */
-    }
+
 }
 
 /* */
@@ -398,14 +426,42 @@ void Task::setLocalNewGrid(double* newGrid)
     this->newGrid_ = newGrid;
 }
 
-double* Task::getLocalGrid()
+/**
+ * Get local grid
+ * @input: redundancy layer
+ * @return: pointer to grid
+ */
+double* Task::getLocalGrid(int layer)
 {
-    return this->grid_;
+    if (layer < (int)this->rTasks_.size())
+    {
+        return this->rTasks_[layer]->grid_;
+    }
+    else
+    {
+        throw std::string("Can't get local grid");
+    }
+
+    return NULL;
 }
 
-double* Task::getLocalNewGrid()
+/**
+ * Get local new-grid
+ * @input: redundancy layer
+ * @return: pointer to new-grid
+ */
+double* Task::getLocalNewGrid(int layer)
 {
-    return this->newGrid_;
+    if (layer < (int)this->rTasks_.size())
+    {
+        return this->rTasks_[layer]->newGrid_;
+    }
+    else
+    {
+        throw std::string("Can't get local new-grid");
+    }
+
+    return NULL;
 }
 
 /* */
@@ -462,11 +518,60 @@ int Task::getRightTag(int layer)
 }
 
 /**
- * Swap grid and new-grdi fields
+ * Swap grid and new-grid fields
+ * @input: redundancy layer
  */
-void Task::swapLocalGrids()
+void Task::swapLocalGrids(int layer)
 {
-    std::swap(this->grid_, this->newGrid_);
+    if (layer < (int)this->rTasks_.size())
+    {
+        std::swap(this->rTasks_[layer]->grid_,
+                  this->rTasks_[layer]->newGrid_);
+    }
+    else
+    {
+        throw std::string("Can't swap grids");
+    }
+}
+
+/**
+ * Get number of redundancy layers
+ */
+int Task::getLayers()
+{
+    return (int)this->rTasks_.size();
+}
+
+/**
+ * Get x coordinates
+ * @input: layer
+ */
+int Task::getX(int layer)
+{
+    if (layer < (int)this->rTasks_.size())
+    {
+        return this->rTasks_[layer]->i_;
+    }
+    else
+    {
+        throw std::string("Can't get x");
+    }
+}
+
+/**
+ * Get y coordinates
+ * @input: layer
+ */
+int Task::getY(int layer)
+{
+    if (layer < (int)this->rTasks_.size())
+    {
+        return this->rTasks_[layer]->j_;
+    }
+    else
+    {
+        throw std::string("Can't get y");
+    }
 }
 
 /**
@@ -570,6 +675,119 @@ void Task::print()
         std::cout << *this->rRanks_[i] << " ";
     }
     std::cout << "]" << std::endl;
+
+    std::cout << "Up tags        : [ ";
+    for (int i = 0; i < (int)this->upNeighborTags_.size(); ++i)
+    {
+        std::cout << this->upNeighborTags_[i] << " ";
+    }
+    std::cout << "]" << std::endl;
+
+    std::cout << "Down tags      : [ ";
+    for (int i = 0; i < (int)this->downNeighborTags_.size(); ++i)
+    {
+        std::cout << this->downNeighborTags_[i] << " ";
+    }
+    std::cout << "]" << std::endl;
+
+    std::cout << "Left tags      : [ ";
+    for (int i = 0; i < (int)this->leftNeighborTags_.size(); ++i)
+    {
+        std::cout << this->leftNeighborTags_[i] << " ";
+    }
+    std::cout << "]" << std::endl;
+
+    std::cout << "Right tags     : [ ";
+    for (int i = 0; i < (int)this->rightNeighborTags_.size(); ++i)
+    {
+        std::cout << this->rightNeighborTags_[i] << " ";
+    }
+    std::cout << "]" << std::endl;
+
+    std::cout << "Tasks          : [ ";
+    for (int i = 0; i < (int)this->rTasks_.size(); ++i)
+    {
+        std::cout << this->rTasks_[i]->i_ << ","
+                  << this->rTasks_[i]->j_ << " ";
+    }
+    std::cout << "]" << std::endl;
+
+    // TODO
+
+    std::cout << std::endl;
+}
+
+/**
+ * Show whole infomation about task
+ * by redundancy layers
+ */
+void Task::printByLayers()
+{
+    std::cout << "Task [ " << this->i_ << ", "
+              << this->j_ << " ]" << std::endl;
+
+    std::cout << "MPI rank       : ";
+    for (int i = 0; i < this->getLayers(); ++i)
+    {
+        std::cout << this->rTasks_[i]->mpiRank_ << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Up neighbor    : ";
+    for (int i = 0; i < this->getLayers(); ++i)
+    {
+        if (this->upNeighbor_)
+        {
+            std::cout << this->upNeighbor_->rTasks_[i]->mpiRank_ << " ";
+        }
+        else
+        {
+            std::cout << "-1" << " ";
+        }
+    }
+    std::cout << std::endl;
+
+    std::cout << "Left neighbor  : ";
+    for (int i = 0; i < this->getLayers(); ++i)
+    {
+        if (this->leftNeighbor_)
+        {
+            std::cout << this->leftNeighbor_->rTasks_[i]->mpiRank_ << " ";
+        }
+        else
+        {
+            std::cout << "-1" << " ";
+        }
+    }
+    std::cout << std::endl;
+
+    std::cout << "Down neighbor  : ";
+    for (int i = 0; i < this->getLayers(); ++i)
+    {
+        if (this->downNeighbor_)
+        {
+            std::cout << this->downNeighbor_->rTasks_[i]->mpiRank_ << " ";
+        }
+        else
+        {
+            std::cout << "-1" << " ";
+        }
+    }
+    std::cout << std::endl;
+
+    std::cout << "Right neighbor : ";
+    for (int i = 0; i < this->getLayers(); ++i)
+    {
+        if (this->rightNeighbor_)
+        {
+            std::cout << this->rightNeighbor_->rTasks_[i]->mpiRank_ << " ";
+        }
+        else
+        {
+            std::cout << "-1" << " ";
+        }
+    }
+    std::cout << std::endl;
 
     std::cout << "Up tags        : [ ";
     for (int i = 0; i < (int)this->upNeighborTags_.size(); ++i)

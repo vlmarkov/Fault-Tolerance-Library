@@ -1,6 +1,7 @@
 Features:
  ✔ mpi tag assignment, unique between linked task @done
- ☐ task migration
+ ✔ task migration @done (18-01-01 14:47)
+ ☐ task kill & repair
  ☐ 
 
 Bugs:

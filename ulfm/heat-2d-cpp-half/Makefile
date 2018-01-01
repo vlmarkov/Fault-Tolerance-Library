@@ -18,10 +18,32 @@ LDFLAGS      := -lm
 STDFLAGS     := -std=c++0x
 DMPI         := -D MPI_SUPPORT
 DULFM        := -D ULFM_SUPPORT
+DKILL        := -D KILLING_TEST
 
 BUILD_DIR    := build
 
-all: heat-2d
+all: heat-2d heat-2d-kill
+
+heat-2d-kill:
+	@mkdir -p $(BUILD_DIR)
+	@RESULT=$$?; \
+	if [ $$RESULT -ne 0 ]; then \
+		printf "%-60b%b" "$(COM_COLOR)$(CREAT_STRING)$(OBJ_COLOR) $(BUILD_DIR)" "$(ERROR_COLOR)$(ERROR_STRING)$(NO_COLOR)\n"; \
+	else  \
+		printf "%-60b%b" "$(COM_COLOR)$(CREAT_STRING)$(OBJ_COLOR) $(BUILD_DIR)" "$(OK_COLOR)$(OK_STRING)$(NO_COLOR)\n"; \
+	fi;
+	@cp slurm-kill.job $(BUILD_DIR)/slurm-kill.job
+	@$(MPICXX) $(CFLAGS) $(LDFLAGS) $(STDFLAGS) $(DMPI) $(DULFM) $(DKILL) \
+	Utils.cpp \
+	Grid.cpp \
+	Task.cpp \
+	-o $(BUILD_DIR)/$@ heat-2d-compute-redundancy.cpp; \
+	RESULT=$$?; \
+	if [ $$RESULT -ne 0 ]; then \
+		printf "%-60b%b" "$(COM_COLOR)$(COM_STRING)$(OBJ_COLOR) $@" "$(ERROR_COLOR)$(ERROR_STRING)$(NO_COLOR)\n"; \
+	else  \
+		printf "%-60b%b" "$(COM_COLOR)$(COM_STRING)$(OBJ_COLOR) $(@F)" "$(OK_COLOR)$(OK_STRING)$(NO_COLOR)\n"; \
+	fi;
 
 heat-2d:
 	@mkdir -p $(BUILD_DIR)

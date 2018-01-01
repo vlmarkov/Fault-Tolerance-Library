@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./makeit.sh && cd build && sbatch slurm.job
+./makeit.sh && cd build && sbatch slurm.job && sbatch slurm-kill.job

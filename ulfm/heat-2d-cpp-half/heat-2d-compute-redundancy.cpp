@@ -51,33 +51,55 @@
 #define NELEMS(x) (sizeof((x)) / sizeof((x)[0]))
 #define IND(i, j) ((i) * (nx + 2) + (j))
 
-class Halo
-{
-    public:
-        Halo(Task *task, int count,
-             MPI_Datatype row, MPI_Datatype col, 
-             int nx, int ny,
-             MPI_Comm comm)
-        {
-            this->task  = task;
-            this->count = count;
-            this->row   = row;
-            this->col   = col;
-            this->nx    = nx;
-            this->ny    = ny;
-            this->comm  = comm;
-            this->reqs  = reqs;
-        }
+/**
+ * Shadow values exchange wrapper
+ */
+class WrapperHalo {
+public:
+    /**
+     * Main constructor
+     */
+    WrapperHalo(Task*        _task,
+                int          _count,
+                int          _nx,
+                int          _ny,
+                MPI_Datatype _row,
+                MPI_Datatype _col,
+                MPI_Comm     _comm);
 
-        ~Halo() { }
+    /**
+     * Destructor
+     */
+    ~WrapperHalo();
     
-        Task* task;
-        MPI_Request* reqs;
-        MPI_Comm comm;
-        MPI_Datatype row, col;
-        int count, nx, ny;
-
+    Task*        task;
+    int          count;
+    int          nx;
+    int          ny;
+    MPI_Datatype row;
+    MPI_Datatype col;
+    MPI_Comm     comm;
+    MPI_Request* reqs;
 };
+
+WrapperHalo::WrapperHalo(Task*        _task,
+                         int          _count,
+                         int          _nx,
+                         int          _ny,
+                         MPI_Datatype _row,
+                         MPI_Datatype _col,
+                         MPI_Comm     _comm) :
+    task(_task), count(_count), nx(_nx), ny(_ny), row(_row),
+    col(_col), comm(_comm)
+{
+    ;
+}
+
+WrapperHalo::~WrapperHalo()
+{
+    ;
+}
+
 
 static void updateInteriorPoints(double    *newGrid,
                                  double    *oldGrid,
@@ -115,61 +137,65 @@ static double checkTerminationCondition(double    *newGrid,
     return maxdiff;
 }
 
-static void haloExchange_(Halo& cookie, int layer, int& i)
+static void haloExchange_(WrapperHalo& wrapper, int layer, int& i)
 {
-    Task* task        = cookie.task;
-    double* buf       = task->getLocalGrid();
-    int count         = cookie.count;
-    int nx            = cookie.nx;
-    int ny            = cookie.ny;
-    MPI_Datatype row  = cookie.row;
-    MPI_Datatype col  = cookie.col;
-    MPI_Comm     comm = cookie.comm;
-    MPI_Request* reqs = cookie.reqs;
+    Task* task        = wrapper.task;
+    int count         = wrapper.count;
+    int nx            = wrapper.nx;
+    int ny            = wrapper.ny;
+    MPI_Datatype row  = wrapper.row;
+    MPI_Datatype col  = wrapper.col;
+    MPI_Comm     comm = wrapper.comm;
+    MPI_Request* reqs = wrapper.reqs;
 
-    int topR          = task->getUpNeighborRank(/*layer*/0);    // TODO
-    int downR         = task->getDownNeighborRank(/*layer*/0);  // TODO
-    int leftR         = task->getLeftNeighborRank(/*layer*/0);  // TODO
-    int rightR        = task->getRightNeighborRank(/*layer*/0); // TODO
+    double* buf       = task->getLocalGrid(layer);
 
-    int tagT          = task->getUpTag(layer);
-    int tagD          = task->getDownTag(layer);
-    int tagL          = task->getLeftTag(layer);
-    int tagR          = task->getRightTag(layer);
+    int topR          = task->getUpNeighborRank(layer);    // TODO
+    int downR         = task->getDownNeighborRank(layer);  // TODO
+    int leftR         = task->getLeftNeighborRank(layer);  // TODO
+    int rightR        = task->getRightNeighborRank(layer); // TODO
 
+    int topT          = task->getUpTag(layer);
+    int downT         = task->getDownTag(layer);
+    int leftT         = task->getLeftTag(layer);
+    int rightT        = task->getRightTag(layer);
+/*
+    {
+        int rank;
+        MPI_Comm_rank(comm, &rank);
+
+        printf("%04d, Layer %d: T(%04d), D(%04d), L(%0d), R(%04d)\n",
+            rank, layer, topR, downR, leftR, rightR);
+    }
+*/
     // Non-blocking recv from
-    MPI_Irecv(&buf[IND(0, 1)],      count, row, topR,   tagT, comm, &reqs[i++]);
-    MPI_Irecv(&buf[IND(ny + 1, 1)], count, row, downR,  tagD, comm, &reqs[i++]);
-    MPI_Irecv(&buf[IND(1, 0)],      count, col, leftR,  tagL, comm, &reqs[i++]);
-    MPI_Irecv(&buf[IND(1, nx + 1)], count, col, rightR, tagR, comm, &reqs[i++]);
+    MPI_Irecv(&buf[IND(0, 1)],      count, row, topR,   topT,   comm, &reqs[i++]);
+    MPI_Irecv(&buf[IND(ny + 1, 1)], count, row, downR,  downT,  comm, &reqs[i++]);
+    MPI_Irecv(&buf[IND(1, 0)],      count, col, leftR,  leftT,  comm, &reqs[i++]);
+    MPI_Irecv(&buf[IND(1, nx + 1)], count, col, rightR, rightT, comm, &reqs[i++]);
 
     // Non-blocking send to
-    MPI_Isend(&buf[IND(1, 1)],      count, row, topR,   tagT, comm, &reqs[i++]);
-    MPI_Isend(&buf[IND(ny, 1)],     count, row, downR,  tagD, comm, &reqs[i++]);
-    MPI_Isend(&buf[IND(1, 1)],      count, col, leftR,  tagL, comm, &reqs[i++]);
-    MPI_Isend(&buf[IND(1, nx)],     count, col, rightR, tagR, comm, &reqs[i++]);
+    MPI_Isend(&buf[IND(1, 1)],      count, row, topR,   topT,   comm, &reqs[i++]);
+    MPI_Isend(&buf[IND(ny, 1)],     count, row, downR,  downT,  comm, &reqs[i++]);
+    MPI_Isend(&buf[IND(1, 1)],      count, col, leftR,  leftT,  comm, &reqs[i++]);
+    MPI_Isend(&buf[IND(1, nx)],     count, col, rightR, rightT, comm, &reqs[i++]);
 }
 
-static int doHaloExchange(Halo& cookie)
+static int doHaloExchange(WrapperHalo& wrapper)
 {
-    int rc = MPI_SUCCESS;
+    int cnt    = 0;
+    int layers = wrapper.task->getLayers();
 
-    // TODO
+    MPI_Request reqs[8 * layers];
 
-    for (int i = 0; i < 2; ++i)
+    wrapper.reqs = reqs;
+
+    for (int i = 0; i < layers; ++i)
     {
-        int idx = 0;
-        MPI_Request reqs[8];
-        cookie.reqs = reqs;
-        haloExchange_(cookie, i, idx);
-        rc = MPI_Waitall(8, reqs, MPI_STATUS_IGNORE);
-        if (rc != MPI_SUCCESS)
-        {
-            return rc;
-        }
+        haloExchange_(wrapper, i, cnt);
     }
 
-    return rc;
+    return MPI_Waitall(8 * layers, reqs, MPI_STATUS_IGNORE);
 }
 
 static void errorHandler(MPI_Comm* pcomm, Grid* gridTask, int err)
@@ -350,41 +376,50 @@ static int solveEquation(int argc, char* argv[])
 
     Task* myTask = gridTask.getTask(rank);
 
-    double* grid    = myTask->getLocalGrid();
-    double* newgrid = myTask->getLocalNewGrid();
-
-    /*
-     * Fill boundary points: 
-     *   - left and right borders are zero filled
-     *   - top border: u(x, 0) = sin(pi * x)
-     *   - bottom border: u(x, 1) = sin(pi * x) * exp(-pi)
-     */
-    double dx = 1.0 / (cols - 1.0); 
-    int    sj = getSumOfPrevBlocks(cols, rankx, px);
-
-    if (ranky == 0)
+    for (int i = 0; i < myTask->getLayers(); ++i)
     {
-        // Initialize top border: u(x, 0) = sin(pi * x)
-        for (int j = 1; j <= nx; j++)
+        double* grid    = myTask->getLocalGrid(i);
+        double* newgrid = myTask->getLocalNewGrid(i);
+        rankx           = myTask->getX(i);
+        ranky           = myTask->getY(i);
+
+        /*
+         * Fill boundary points: 
+         *   - left and right borders are zero filled
+         *   - top border: u(x, 0) = sin(pi * x)
+         *   - bottom border: u(x, 1) = sin(pi * x) * exp(-pi)
+         */
+        double dx = 1.0 / (cols - 1.0); 
+        int    sj = getSumOfPrevBlocks(cols, rankx, px);
+
+        if (ranky == 0)
         {
-            // Translate col index to x coord in [0, 1]
-            double x     = dx * (sj + j - 1);
-            int ind      = IND(0, j);
-            newgrid[ind] = grid[ind] = sin(PI * x);
+            // Initialize top border: u(x, 0) = sin(pi * x)
+            for (int j = 1; j <= nx; j++)
+            {
+                // Translate col index to x coord in [0, 1]
+                double x     = dx * (sj + j - 1);
+                int ind      = IND(0, j);
+                newgrid[ind] = grid[ind] = sin(PI * x);
+            }
+        }
+
+        if (ranky == py - 1)
+        {
+            // Initialize bottom border: u(x, 1) = sin(pi * x) * exp(-pi)
+            for (int j = 1; j <= nx; j++)
+            {
+                // Translate col index to x coord in [0, 1]
+                double x     = dx * (sj + j - 1);
+                int ind      = IND(ny + 1, j);
+                newgrid[ind] = grid[ind] = sin(PI * x) * exp(-PI);
+            }
         }
     }
 
-    if (ranky == py - 1)
-    {
-        // Initialize bottom border: u(x, 1) = sin(pi * x) * exp(-pi)
-        for (int j = 1; j <= nx; j++)
-        {
-            // Translate col index to x coord in [0, 1]
-            double x     = dx * (sj + j - 1);
-            int ind      = IND(ny + 1, j);
-            newgrid[ind] = grid[ind] = sin(PI * x) * exp(-PI);
-        }
-    }
+    // Restore ranks for statistic
+    rankx = myTask->getX(0);
+    ranky = myTask->getY(0);
 
     /*
      * Left and right borders type
@@ -411,37 +446,50 @@ static int solveEquation(int argc, char* argv[])
     {
         niters++;
 
+restart_step:
+
         if (niters > 1000)
         {
-            std::cerr << "Overflow accepted iterations" << std::endl;
-            break;
+            throw std::string("Overflow accepted iterations");
         }
 
-        /*
-         * Step 1: Update interior points
-         */
-        updateInteriorPoints(myTask->getLocalNewGrid(), myTask->getLocalGrid(), ny, nx);
+        maxdiff = 0.0;
 
-        /*
-         * Step 2: Check termination condition
-         */
-        maxdiff = checkTerminationCondition(myTask->getLocalNewGrid(), myTask->getLocalGrid(), ny, nx);
+        // Loop by for process's tasks
+        for (int i = 0; i < myTask->getLayers(); ++i)
+        {
+            /*
+             * Step 1: Update interior points
+             */
+            updateInteriorPoints(myTask->getLocalNewGrid(i),
+                                 myTask->getLocalGrid(i), ny, nx);
 
-        /*
-         * Step 3: Swap grids
-         * (after termination local_grid will contain result)
-         */
-        myTask->swapLocalGrids();
+            /*
+             * Step 2: Check termination condition
+             */
+            double tmp = checkTerminationCondition(
+                myTask->getLocalNewGrid(i),
+                myTask->getLocalGrid(i), ny, nx);
 
-        /*
-         * Killing test
-         */
-/*
+            if (tmp > maxdiff)
+            {
+                maxdiff = tmp;
+            }
+
+            /*
+             * Step 3: Swap grids
+             * (after termination local_grid will contain result)
+             */
+            myTask->swapLocalGrids(i);
+        }
+
+#ifdef KILLING_TEST
         if (niters == 2 && rank == 15)
         {
             raise(SIGKILL);
         }
-*/
+#endif /* KILLING_TEST */
+
         /*
          * Step 4: All reduce (may fail)
          */
@@ -455,6 +503,7 @@ static int solveEquation(int argc, char* argv[])
         if (MPI_ERR_PROC_FAILED == rc)
         {
             errorHandler(&comm, &gridTask, rc);
+            //goto restart_step; // TODO
             goto exit; // TODO
         }
 
@@ -467,10 +516,10 @@ static int solveEquation(int argc, char* argv[])
          * Step 5: Halo exchange:
          * T = 4 * (a + b * (rows / py)) + 4 * (a + b * (cols / px))
          */
-        Halo cookie(myTask, 1, row, col, nx, ny, comm);
+        WrapperHalo wrapper(myTask, 1, nx, ny, row, col, comm);
 
         thalo -= MPI_Wtime();
-        rc = doHaloExchange(cookie);
+        rc = doHaloExchange(wrapper);
         thalo += MPI_Wtime();
 
         /*
