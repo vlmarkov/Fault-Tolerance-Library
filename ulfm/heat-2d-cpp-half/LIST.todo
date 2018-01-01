@@ -1,7 +1,9 @@
 Features:
  ✔ mpi tag assignment, unique between linked task @done
  ✔ task migration @done (18-01-01 14:47)
- ☐ task kill & repair
+ ✔ task kill & repair @done (18-01-01 17:12)
+ ☐ mpi-ranks shift after repair
+ ☐ 
  ☐ 
 
 Bugs:
@@ -10,7 +12,7 @@ Bugs:
  ☐ 
 
 Other:
- ☐ 
+ ✔ fixed task intializer list @done (18-01-01 17:13)
  ☐ 
  ☐ 
 

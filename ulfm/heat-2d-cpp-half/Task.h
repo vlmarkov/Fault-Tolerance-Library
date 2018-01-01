@@ -104,7 +104,12 @@ public:
     /**
      * Get number of redundancy layers
      */
-    int getLayers();
+    int getLayersNumber();
+
+    /**
+     *
+     */
+    std::vector<Task*> getReplacements();
 
     /**
      * Get x coordinates
@@ -170,8 +175,10 @@ private:
 
     std::vector<int*> rRanks_;
     std::vector<Task*> rTasks_;
+    std::vector<Task*> replacements_;
 
-    Task* getNextRepair_();
+    void addReplacement_(Task* task);
+    Task* getNextReplacement_();
     int getNextRank_(int layer);
     int getNextUpTag_(int layer);
     int getNextDownTag_(int layer);

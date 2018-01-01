@@ -15,7 +15,7 @@
 
 /**
  * High-level abstraction of the two-dimensional decomposition
- * of the computational domain for grid computations. 
+ * of the computational domain for grid computations.
  * Represents a grid of tasks and the processes assigned to them.
  */
 class Grid {
@@ -111,7 +111,7 @@ private:
 
     /**
      * Set MPI-tags for task
-     * @input: reference to task, 
+     * @input: reference to task,
      *         reference to tag,
      *         redundancy layer
      */

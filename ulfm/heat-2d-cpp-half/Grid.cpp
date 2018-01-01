@@ -30,8 +30,8 @@
 
 /**
  * Main constructor
- * @input: columns, rows, 
- *         cols by x, rows by y, 
+ * @input: columns, rows,
+ *         cols by x, rows by y,
  *         processes by x, processes by y
  */
 Grid::Grid(int cols, int rows, int nx, int ny, int px, int py) : 
@@ -94,7 +94,7 @@ Grid::~Grid()
 /**
  * Get task by MPI-rank
  * @input: MPI-rank
- * @return: pointer to Task
+ * @return: pointer to task
  */
 Task* Grid::getTask(int rank)
 {
@@ -241,7 +241,7 @@ void Grid::setMpiRank_(Task& task, int rank)
 
 /**
  * Set MPI-tags for task
- * @input: reference to task, 
+ * @input: reference to task,
  *         reference to tag,
  *         redundancy layer
  */
@@ -335,7 +335,7 @@ void Grid::computeNextCoordinates_(int& i, int& j)
     {
         for (; j < this->px_; ++j)
         {
-            
+
             if (cnt == halfGrid)
             {
                 return;

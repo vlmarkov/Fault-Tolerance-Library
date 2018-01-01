@@ -1,6 +1,6 @@
 /***************************************************************************************/
 /* heat-2d.c: MPI implementation of Laplace equation solver by Jacobi iteration method.*/
-/*                                                                                     */ 
+/*                                                                                     */
 /* 2D Laplace equation:                                                                */
 /*   \Delta u = 0                                                                      */
 /*   \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} = 0         */
@@ -71,7 +71,7 @@ public:
      * Destructor
      */
     ~WrapperHalo();
-    
+
     Task*        task;
     int          count;
     int          nx;
@@ -150,24 +150,16 @@ static void haloExchange_(WrapperHalo& wrapper, int layer, int& i)
 
     double* buf       = task->getLocalGrid(layer);
 
-    int topR          = task->getUpNeighborRank(layer);    // TODO
-    int downR         = task->getDownNeighborRank(layer);  // TODO
-    int leftR         = task->getLeftNeighborRank(layer);  // TODO
-    int rightR        = task->getRightNeighborRank(layer); // TODO
+    int topR          = task->getUpNeighborRank(layer);
+    int downR         = task->getDownNeighborRank(layer);
+    int leftR         = task->getLeftNeighborRank(layer);
+    int rightR        = task->getRightNeighborRank(layer);
 
     int topT          = task->getUpTag(layer);
     int downT         = task->getDownTag(layer);
     int leftT         = task->getLeftTag(layer);
     int rightT        = task->getRightTag(layer);
-/*
-    {
-        int rank;
-        MPI_Comm_rank(comm, &rank);
 
-        printf("%04d, Layer %d: T(%04d), D(%04d), L(%0d), R(%04d)\n",
-            rank, layer, topR, downR, leftR, rightR);
-    }
-*/
     // Non-blocking recv from
     MPI_Irecv(&buf[IND(0, 1)],      count, row, topR,   topT,   comm, &reqs[i++]);
     MPI_Irecv(&buf[IND(ny + 1, 1)], count, row, downR,  downT,  comm, &reqs[i++]);
@@ -184,9 +176,15 @@ static void haloExchange_(WrapperHalo& wrapper, int layer, int& i)
 static int doHaloExchange(WrapperHalo& wrapper)
 {
     int cnt    = 0;
-    int layers = wrapper.task->getLayers();
+    int layers = wrapper.task->getLayersNumber();
+    std::vector<Task*> replacements = wrapper.task->getReplacements();
 
-    MPI_Request reqs[8 * layers];
+    int size = (int)replacements.size();
+    int msgs = 8 * layers;
+
+    msgs = msgs + (msgs * size);
+
+    MPI_Request reqs[msgs];
 
     wrapper.reqs = reqs;
 
@@ -195,7 +193,16 @@ static int doHaloExchange(WrapperHalo& wrapper)
         haloExchange_(wrapper, i, cnt);
     }
 
-    return MPI_Waitall(8 * layers, reqs, MPI_STATUS_IGNORE);
+    for (int r = 0; r < size; ++r)
+    {
+        wrapper.task = replacements[r];
+        for (int i = 0; i < layers; ++i)
+        {
+            haloExchange_(wrapper, i, cnt);
+        }
+    }
+
+    return MPI_Waitall(msgs, reqs, MPI_STATUS_IGNORE);
 }
 
 static void errorHandler(MPI_Comm* pcomm, Grid* gridTask, int err)
@@ -263,7 +270,7 @@ static void errorHandler(MPI_Comm* pcomm, Grid* gridTask, int err)
     free(ranksGf);
 }
 
-/*
+
 static MPI_Comm repairCommunicator(MPI_Comm comm, int err)
 {
     int allSucceeded = (err == MPI_SUCCESS);
@@ -285,7 +292,7 @@ static MPI_Comm repairCommunicator(MPI_Comm comm, int err)
 
     return comm;
 }
-*/
+
 
 static int solveEquation(int argc, char* argv[])
 {
@@ -376,7 +383,9 @@ static int solveEquation(int argc, char* argv[])
 
     Task* myTask = gridTask.getTask(rank);
 
-    for (int i = 0; i < myTask->getLayers(); ++i)
+    std::vector<Task *> replacedTask;
+
+    for (int i = 0; i < myTask->getLayersNumber(); ++i)
     {
         double* grid    = myTask->getLocalGrid(i);
         double* newgrid = myTask->getLocalNewGrid(i);
@@ -455,8 +464,8 @@ restart_step:
 
         maxdiff = 0.0;
 
-        // Loop by for process's tasks
-        for (int i = 0; i < myTask->getLayers(); ++i)
+        // Loops by process's tasks
+        for (int i = 0; i < myTask->getLayersNumber(); ++i)
         {
             /*
              * Step 1: Update interior points
@@ -467,7 +476,7 @@ restart_step:
             /*
              * Step 2: Check termination condition
              */
-            double tmp = checkTerminationCondition(
+            double tmp  = checkTerminationCondition(
                 myTask->getLocalNewGrid(i),
                 myTask->getLocalGrid(i), ny, nx);
 
@@ -488,6 +497,41 @@ restart_step:
         {
             raise(SIGKILL);
         }
+
+        if (niters == 4 && rank == 14)
+        {
+            raise(SIGKILL);
+        }
+
+        if (niters == 7 && rank == 13)
+        {
+            raise(SIGKILL);
+        }
+
+        if (niters == 9 && rank == 12)
+        {
+            raise(SIGKILL);
+        }
+
+        if (niters == 11 && rank == 11)
+        {
+            raise(SIGKILL);
+        }
+
+        if (niters == 13 && rank == 10)
+        {
+            raise(SIGKILL);
+        }
+
+        if (niters == 15 && rank == 9)
+        {
+            raise(SIGKILL);
+        }
+
+        if (niters == 17 && rank == 8)
+        {
+            raise(SIGKILL);
+        }
 #endif /* KILLING_TEST */
 
         /*
@@ -503,8 +547,16 @@ restart_step:
         if (MPI_ERR_PROC_FAILED == rc)
         {
             errorHandler(&comm, &gridTask, rc);
-            //goto restart_step; // TODO
-            goto exit; // TODO
+
+            comm = repairCommunicator(comm, rc);
+
+            // Swaps grids (after repair)
+            for (int i = 0; i < myTask->getLayersNumber(); ++i)
+            {
+                myTask->swapLocalGrids(i);
+            }
+
+            goto restart_step;
         }
 
         if (maxdiff < EPS)

@@ -7,29 +7,37 @@
 /**
  * Default constructor
  */
-Task::Task() : 
-    i_(-1), j_(-1), nx_(-1), ny_(-1),
-    upNeighbor_(NULL), downNeighbor_(NULL),
-    leftNeighbor_(NULL), rightNeighbor_(NULL),
-    grid_(NULL), newGrid_(NULL),
-    mpiRank_(-1), status_(UNKNOWN_TASK), repair_(-1)
+Task::Task() : i_(-1), j_(-1), nx_(-1), ny_(-1)
 {
-    ;
+    this->upNeighbor_    = NULL;
+    this->downNeighbor_  = NULL;
+    this->leftNeighbor_  = NULL;
+    this->rightNeighbor_ = NULL;
+    this->grid_          = NULL;
+    this->newGrid_       = NULL;
+    this->mpiRank_       = -1;
+    this->status_        = UNKNOWN_TASK;
+    this->repair_        = -1;
 }
 
 /**
  * Main constructor
- * @input: coodinate 'i', coordinate 'j'
- *         size by x, size by y
+ * @input: coodinate 'i', coordinate 'j',
+ *         size by x, size by y,
  *         repair counter
  */
-Task::Task(int i, int j, int nx, int ny, int repair) : 
-    i_(i), j_(j), nx_(nx), ny_(ny),
-    upNeighbor_(NULL), downNeighbor_(NULL),
-    leftNeighbor_(NULL), rightNeighbor_(NULL),
-    grid_(NULL), newGrid_(NULL),
-    mpiRank_(-1), status_(UNKNOWN_TASK), repair_(repair)
+Task::Task(int i, int j, int nx, int ny, int repair) : i_(i), j_(j), nx_(nx), ny_(ny)
 {
+    this->upNeighbor_    = NULL;
+    this->downNeighbor_  = NULL;
+    this->leftNeighbor_  = NULL;
+    this->rightNeighbor_ = NULL;
+    this->grid_          = NULL;
+    this->newGrid_       = NULL;
+    this->mpiRank_       = -1;
+    this->status_        = UNKNOWN_TASK;
+    this->repair_        = repair;
+
     this->grid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
     if (!this->grid_)
     {
@@ -49,42 +57,25 @@ Task::Task(int i, int j, int nx, int ny, int repair) :
  * Copy constructor
  * @input: task object
  */
-Task::Task(const Task& rhs) :
-    i_(rhs.i_), j_(rhs.j_), nx_(rhs.nx_), ny_(rhs.ny_),
-    upNeighbor_(rhs.upNeighbor_), downNeighbor_(rhs.downNeighbor_),
-    leftNeighbor_(rhs.leftNeighbor_), rightNeighbor_(rhs.rightNeighbor_),
-    grid_(NULL), newGrid_(NULL),
-    mpiRank_(rhs.mpiRank_), status_(rhs.status_), repair_(rhs.repair_)
+Task::Task(const Task& rhs) : i_(rhs.i_), j_(rhs.j_), nx_(rhs.nx_), ny_(rhs.ny_)
 {
-    if (rhs.upNeighborTags_.size() > 0)
-    {
-        this->upNeighborTags_ = rhs.upNeighborTags_;
-    }
+    this->upNeighbor_    = rhs.upNeighbor_;
+    this->downNeighbor_  = rhs.downNeighbor_;
+    this->leftNeighbor_  = rhs.leftNeighbor_;
+    this->rightNeighbor_ = rhs.rightNeighbor_;
+    this->grid_          = NULL;
+    this->newGrid_       = NULL;
+    this->mpiRank_       = rhs.mpiRank_;
+    this->status_        = rhs.status_;
+    this->repair_        = rhs.repair_;
 
-    if (rhs.downNeighborTags_.size() > 0)
-    {
-        this->downNeighborTags_ = rhs.downNeighborTags_;
-    }
-
-    if (rhs.leftNeighborTags_.size() > 0)
-    {
-        this->leftNeighborTags_ = rhs.leftNeighborTags_;
-    }
-
-    if (rhs.rightNeighborTags_.size() > 0)
-    {
-        this->rightNeighborTags_ = rhs.rightNeighborTags_;
-    }
-
-    if (rhs.rRanks_.size() > 0)
-    {
-        this->rRanks_ = rhs.rRanks_;
-    }
-
-    if (rhs.rTasks_.size() > 0)
-    {
-        this->rTasks_  = rhs.rTasks_;
-    }
+    this->upNeighborTags_    = rhs.upNeighborTags_;
+    this->downNeighborTags_  = rhs.downNeighborTags_;
+    this->leftNeighborTags_  = rhs.leftNeighborTags_;
+    this->rightNeighborTags_ = rhs.rightNeighborTags_;
+    this->rRanks_            = rhs.rRanks_;
+    this->rTasks_            = rhs.rTasks_;
+    this->replacements_      = rhs.replacements_;
 
     if (rhs.grid_)
     {
@@ -101,7 +92,7 @@ Task::Task(const Task& rhs) :
     {
         this->newGrid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
         if (!this->newGrid_)
-        {   
+        {
             throw std::string("Can't allocate memory for new grid");
         }
 
@@ -140,40 +131,18 @@ Task& Task::operator=(const Task& rhs)
     this->status_  = rhs.status_;
     this->repair_  = rhs.repair_;
 
-    this->upNeighbor_ = rhs.upNeighbor_;
-    this->downNeighbor_ = rhs.downNeighbor_;
-    this->leftNeighbor_ = rhs.leftNeighbor_;
+    this->upNeighbor_    = rhs.upNeighbor_;
+    this->downNeighbor_  = rhs.downNeighbor_;
+    this->leftNeighbor_  = rhs.leftNeighbor_;
     this->rightNeighbor_ = rhs.rightNeighbor_;
 
-    if (rhs.upNeighborTags_.size() > 0)
-    {
-        this->upNeighborTags_ = rhs.upNeighborTags_;
-    }
-
-    if (rhs.downNeighborTags_.size() > 0)
-    {
-        this->downNeighborTags_ = rhs.downNeighborTags_;
-    }
-
-    if (rhs.leftNeighborTags_.size() > 0)
-    {
-        this->leftNeighborTags_ = rhs.leftNeighborTags_;
-    }
-
-    if (rhs.rightNeighborTags_.size() > 0)
-    {
-        this->rightNeighborTags_ = rhs.rightNeighborTags_;
-    }
-
-    if (rhs.rRanks_.size() > 0)
-    {
-        this->rRanks_ = rhs.rRanks_;
-    }
-
-    if (rhs.rTasks_.size() > 0)
-    {
-        this->rTasks_  = rhs.rTasks_;
-    }
+    this->upNeighborTags_    = rhs.upNeighborTags_;
+    this->downNeighborTags_  = rhs.downNeighborTags_;
+    this->leftNeighborTags_  = rhs.leftNeighborTags_;
+    this->rightNeighborTags_ = rhs.rightNeighborTags_;
+    this->rRanks_            = rhs.rRanks_;
+    this->rTasks_            = rhs.rTasks_;
+    this->replacements_      = rhs.replacements_;
 
     if (rhs.grid_)
     {
@@ -190,7 +159,7 @@ Task& Task::operator=(const Task& rhs)
     {
         this->newGrid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
         if (!this->newGrid_)
-        {   
+        {
             throw std::string("Can't allocate memory for new grid");
         }
 
@@ -207,29 +176,43 @@ Task& Task::operator=(const Task& rhs)
 /* Public methods                                                            */
 /*****************************************************************************/
 
-/* */
+/**
+ *
+ */
 void Task::setMpiRank(int rank)
 {
     this->mpiRank_ = rank;
     this->status_  = ALIVE_TASK;
 }
 
+/**
+ *
+ */
 int* Task::getMpiRankPtr()
 {
     return &this->mpiRank_;
 }
 
+/**
+ *
+ */
 int Task::getMpiRank()
 {
     return this->mpiRank_;
 }
 
-/* */
+/**
+ * Get task status
+ */
 int Task::getStatus()
 {
     return this->status_;
 }
 
+/**
+ * Set task status
+ * @input: status
+ */
 void Task::setStatus(int status)
 {
     if (status == DEAD_TASK)
@@ -244,7 +227,9 @@ void Task::setStatus(int status)
     this->status_ = status;
 }
 
-/* */
+/**
+ *
+ */
 void Task::setUpNeighbor(Task* up)
 {
     if (up)
@@ -257,6 +242,9 @@ void Task::setUpNeighbor(Task* up)
     }
 }
 
+/**
+ *
+ */
 void Task::setDownNeighbor(Task* down)
 {
     if (down)
@@ -269,6 +257,9 @@ void Task::setDownNeighbor(Task* down)
     }
 }
 
+/**
+ *
+ */
 void Task::setLeftNeighbor(Task* left)
 {
     if (left)
@@ -281,6 +272,9 @@ void Task::setLeftNeighbor(Task* left)
     }
 }
 
+/**
+ *
+ */
 void Task::setRightNeighbor(Task* right)
 {
     if (right)
@@ -293,26 +287,41 @@ void Task::setRightNeighbor(Task* right)
     }
 }
 
+/**
+ *
+ */
 Task* Task::getUpNeighbor()
 {
     return this->upNeighbor_;
 }
 
+/**
+ *
+ */
 Task* Task::getDownNeighbor()
 {
     return this->downNeighbor_;
 }
 
+/**
+ *
+ */
 Task* Task::getLeftNeighbor()
 {
     return this->leftNeighbor_;
 }
 
+/**
+ *
+ */
 Task* Task::getRightNeighbor()
 {
     return this->rightNeighbor_;
 }
 
+/**
+ *
+ */
 int Task::getUpNeighborRank(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -336,6 +345,9 @@ int Task::getUpNeighborRank(int layer)
 
 }
 
+/**
+ *
+ */
 int Task::getDownNeighborRank(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -359,6 +371,9 @@ int Task::getDownNeighborRank(int layer)
 
 }
 
+/**
+ *
+ */
 int Task::getLeftNeighborRank(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -382,6 +397,9 @@ int Task::getLeftNeighborRank(int layer)
 
 }
 
+/**
+ *
+ */
 int Task::getRightNeighborRank(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -405,7 +423,9 @@ int Task::getRightNeighborRank(int layer)
 
 }
 
-/* */
+/**
+ *
+ */
 void Task::setLocalGrid(double* grid)
 {
     if (!grid)
@@ -416,6 +436,9 @@ void Task::setLocalGrid(double* grid)
     this->grid_ = grid;
 }
 
+/**
+ *
+ */
 void Task::setLocalNewGrid(double* newGrid)
 {
     if (!newGrid)
@@ -464,54 +487,81 @@ double* Task::getLocalNewGrid(int layer)
     return NULL;
 }
 
-/* */
+/**
+ *
+ */
 void Task::addRrank(int* rank)
 {
     this->rRanks_.push_back(rank);
 }
 
-/* */
+/**
+ *
+ */
 void Task::addRtask(Task* task)
 {
     this->rTasks_.push_back(task);
 }
 
-/* */
+/**
+ *
+ */
 void Task::addUpTag(int tag)
 {
     this->upNeighborTags_.push_back(tag);
 }
 
+/**
+ *
+ */
 void Task::addDownTag(int tag)
 {
     this->downNeighborTags_.push_back(tag);
 }
 
+/**
+ *
+ */
 void Task::addLeftTag(int tag)
 {
     this->leftNeighborTags_.push_back(tag);
 }
 
+/**
+ *
+ */
 void Task::addRightTag(int tag)
 {
     this->rightNeighborTags_.push_back(tag);
 }
 
+/**
+ *
+ */
 int Task::getUpTag(int layer)
 {
     return this->getNextUpTag_(layer);
 }
 
+/**
+ *
+ */
 int Task::getDownTag(int layer)
 {
     return this->getNextDownTag_(layer);
 }
 
+/**
+ *
+ */
 int Task::getLeftTag(int layer)
 {
     return this->getNextLeftTag_(layer);
 }
 
+/**
+ *
+ */
 int Task::getRightTag(int layer)
 {
     return this->getNextRightTag_(layer);
@@ -537,9 +587,17 @@ void Task::swapLocalGrids(int layer)
 /**
  * Get number of redundancy layers
  */
-int Task::getLayers()
+int Task::getLayersNumber()
 {
     return (int)this->rTasks_.size();
+}
+
+/**
+ * Returns replacements vector
+ */
+std::vector<Task*> Task::getReplacements()
+{
+    return this->replacements_;
 }
 
 /**
@@ -584,14 +642,16 @@ void Task::repair()
         throw std::string("Can't repair task (reached repair limit)");
     }
 
-    Task* task = this->getNextRepair_();
+    Task* replacement = this->getNextReplacement_();
 
     // This automaticly set rank and status
-    this->setMpiRank(task->mpiRank_);
+    this->setMpiRank(replacement->mpiRank_);
 
-    task->reduceRepairAbility_();
+    replacement->reduceRepairAbility_();
 
     this->reduceRepairAbility_();
+
+    replacement->addReplacement_(this);
 
     this->status_ = ALIVE_TASK;
 }
@@ -712,6 +772,15 @@ void Task::print()
     }
     std::cout << "]" << std::endl;
 
+    std::cout << "Replacements   : [ ";
+    for (int i = 0; i < (int)this->replacements_.size(); ++i)
+    {
+        std::cout << this->replacements_[i]->mpiRank_ << " ("
+                  << this->replacements_[i]->i_ << ", "
+                  << this->replacements_[i]->j_ << ") ";
+    }
+    std::cout << "]" << std::endl;
+
     // TODO
 
     std::cout << std::endl;
@@ -727,14 +796,14 @@ void Task::printByLayers()
               << this->j_ << " ]" << std::endl;
 
     std::cout << "MPI rank       : ";
-    for (int i = 0; i < this->getLayers(); ++i)
+    for (int i = 0; i < this->getLayersNumber(); ++i)
     {
         std::cout << this->rTasks_[i]->mpiRank_ << " ";
     }
     std::cout << std::endl;
 
     std::cout << "Up neighbor    : ";
-    for (int i = 0; i < this->getLayers(); ++i)
+    for (int i = 0; i < this->getLayersNumber(); ++i)
     {
         if (this->upNeighbor_)
         {
@@ -748,7 +817,7 @@ void Task::printByLayers()
     std::cout << std::endl;
 
     std::cout << "Left neighbor  : ";
-    for (int i = 0; i < this->getLayers(); ++i)
+    for (int i = 0; i < this->getLayersNumber(); ++i)
     {
         if (this->leftNeighbor_)
         {
@@ -762,7 +831,7 @@ void Task::printByLayers()
     std::cout << std::endl;
 
     std::cout << "Down neighbor  : ";
-    for (int i = 0; i < this->getLayers(); ++i)
+    for (int i = 0; i < this->getLayersNumber(); ++i)
     {
         if (this->downNeighbor_)
         {
@@ -776,7 +845,7 @@ void Task::printByLayers()
     std::cout << std::endl;
 
     std::cout << "Right neighbor : ";
-    for (int i = 0; i < this->getLayers(); ++i)
+    for (int i = 0; i < this->getLayersNumber(); ++i)
     {
         if (this->rightNeighbor_)
         {
@@ -835,9 +904,18 @@ void Task::printByLayers()
 /*****************************************************************************/
 
 /**
+ * Add task to vector replacements
+ * @input: task
+ */
+void Task::addReplacement_(Task* task)
+{
+    this->replacements_.push_back(task);
+}
+
+/**
  *
  */
-Task* Task::getNextRepair_()
+Task* Task::getNextReplacement_()
 {
     return this->rTasks_[1];
 }
