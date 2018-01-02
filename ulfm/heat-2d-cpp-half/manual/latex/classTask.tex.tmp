@@ -1,0 +1,1025 @@
+\hypertarget{classTask}{}\section{Task Class Reference}
+\label{classTask}\index{Task@{Task}}
+
+
+High-\/level abstraction of the task.  
+
+
+
+
+{\ttfamily \#include $<$Task.\+h$>$}
+
+
+
+Collaboration diagram for Task\+:
+% FIG 0
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classTask_a0ca53354bdc006762a0fda68c64f7608}{Task} ()\hypertarget{classTask_a0ca53354bdc006762a0fda68c64f7608}{}\label{classTask_a0ca53354bdc006762a0fda68c64f7608}
+
+\begin{DoxyCompactList}\small\item\em Default constructor. \end{DoxyCompactList}\item 
+\hyperlink{classTask_a18dc52e0d2bc784c2947142f04e92609}{Task} (int i, int j, int nx, int ny, int \hyperlink{classTask_ac84383a9682166e1b92d2b7f29c77aae}{repair})
+\begin{DoxyCompactList}\small\item\em Main constructor. \end{DoxyCompactList}\item 
+\hyperlink{classTask_af99394b6a5a7e57d9d5c12d45dd06133}{Task} (const \hyperlink{classTask}{Task} \&rhs)
+\begin{DoxyCompactList}\small\item\em Copy constructor. \end{DoxyCompactList}\item 
+\hyperlink{classTask_a3ecf499ea35fb4a96853969a1e1cbbce}{$\sim$\+Task} ()
+\begin{DoxyCompactList}\small\item\em Destructor. \end{DoxyCompactList}\item 
+\hyperlink{classTask}{Task} \& \hyperlink{classTask_a68f0c278427d5a75df6fd59505c59b9a}{operator=} (const \hyperlink{classTask}{Task} \&rhs)
+\begin{DoxyCompactList}\small\item\em Assign operator. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a3cffaff82f68529ae3f5bad0f3a8b0f9}{set\+Mpi\+Rank} (int rank)
+\begin{DoxyCompactList}\small\item\em Sets \hyperlink{classTask}{Task} M\+P\+I-\/rank. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_a091eb01d0f1f213d76414aaad2481c5f}{get\+Mpi\+Rank} ()
+\begin{DoxyCompactList}\small\item\em Gets \hyperlink{classTask}{Task} M\+P\+I-\/rank. \end{DoxyCompactList}\item 
+int $\ast$ \hyperlink{classTask_afc97ef89f005275cc36c5802d355b182}{get\+Mpi\+Rank\+Ptr} ()
+\begin{DoxyCompactList}\small\item\em Gets \hyperlink{classTask}{Task} M\+P\+I-\/rank. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a8fa9bb1e2d51ce78d1d4644b421f4f9d}{set\+Status} (int status)
+\begin{DoxyCompactList}\small\item\em Sets \hyperlink{classTask}{Task} status. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_a7b3e05f3ebf0b3d5c4ae65787d7df64b}{get\+Status} ()\hypertarget{classTask_a7b3e05f3ebf0b3d5c4ae65787d7df64b}{}\label{classTask_a7b3e05f3ebf0b3d5c4ae65787d7df64b}
+
+\begin{DoxyCompactList}\small\item\em Gets \hyperlink{classTask}{Task} status. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a3fc6de2fea3bd4869ca72c3b2865aec9}{set\+Up\+Neighbor} (\hyperlink{classTask}{Task} $\ast$up)
+\begin{DoxyCompactList}\small\item\em Sets up neighbor. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a6bd437a671ffc49d1b3a8cb1bec26029}{set\+Left\+Neighbor} (\hyperlink{classTask}{Task} $\ast$left)
+\begin{DoxyCompactList}\small\item\em left up neighbor \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a37b2f9e5a854fd3f863c2456d6ddaf9d}{set\+Down\+Neighbor} (\hyperlink{classTask}{Task} $\ast$down)
+\begin{DoxyCompactList}\small\item\em Sets down neighbor. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a2cfffab3231663e550459c7adf071adb}{set\+Right\+Neighbor} (\hyperlink{classTask}{Task} $\ast$right)
+\begin{DoxyCompactList}\small\item\em Sets right neighbor. \end{DoxyCompactList}\item 
+\hyperlink{classTask}{Task} $\ast$ \hyperlink{classTask_a1bd132471a3df6a117e741b9d5a1cee9}{get\+Up\+Neighbor} ()
+\begin{DoxyCompactList}\small\item\em Gets up neighbor. \end{DoxyCompactList}\item 
+\hyperlink{classTask}{Task} $\ast$ \hyperlink{classTask_ac7e5e11d3e7d6727018c43f3e07e79bb}{get\+Down\+Neighbor} ()
+\begin{DoxyCompactList}\small\item\em Gets down neighbor. \end{DoxyCompactList}\item 
+\hyperlink{classTask}{Task} $\ast$ \hyperlink{classTask_ae1f4ba255872d478311c089b6151feb5}{get\+Left\+Neighbor} ()
+\begin{DoxyCompactList}\small\item\em Gets left neighbor. \end{DoxyCompactList}\item 
+\hyperlink{classTask}{Task} $\ast$ \hyperlink{classTask_a7afe74dcbb7854a65a7c52663eaf1549}{get\+Right\+Neighbor} ()
+\begin{DoxyCompactList}\small\item\em Gets right neighbor. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_af44ae2ab1b630b8d428beaa7484b9a82}{get\+Up\+Neighbor\+Rank} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets up neighbor M\+P\+I-\/rank. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_aad60be81222911c2398ebeabf728347a}{get\+Down\+Neighbor\+Rank} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets down neighbor M\+P\+I-\/rank. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_a08bdbf00f430a36a014cde2c72e71f4c}{get\+Left\+Neighbor\+Rank} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets left neighbor M\+P\+I-\/rank. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_ae40c37d095e1aa66a17b56e0c71fbb7d}{get\+Right\+Neighbor\+Rank} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets right neighbor M\+P\+I-\/rank. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a27f98878370d88af464d77e7ba17eda0}{set\+Local\+Grid} (double $\ast$ptr)
+\begin{DoxyCompactList}\small\item\em Sets local grid. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_ab1bfcab76d0b801d21139fa2280a0c4d}{set\+Local\+New\+Grid} (double $\ast$ptr)
+\begin{DoxyCompactList}\small\item\em Sets new local grid. \end{DoxyCompactList}\item 
+double $\ast$ \hyperlink{classTask_a0a3647a3c3b957a204f9d50a17438524}{get\+Local\+Grid} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets local grid. \end{DoxyCompactList}\item 
+double $\ast$ \hyperlink{classTask_aa589e673faa616d16dcf305df0f98f7c}{get\+Local\+New\+Grid} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets new local grid. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a1e6121b88342e745c95a5299b4d97ffd}{add\+Rrank} (int $\ast$rank)
+\begin{DoxyCompactList}\small\item\em Adds redundancy M\+P\+I-\/rank. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_aa6908a92f145c47dd0d36fb898d4365b}{add\+Rtask} (\hyperlink{classTask}{Task} $\ast$task)
+\begin{DoxyCompactList}\small\item\em Adds redundancy \hyperlink{classTask}{Task}. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a85e6a3c8d0661623f2595144b0d4353d}{add\+Up\+Tag} (int tag)
+\begin{DoxyCompactList}\small\item\em Adds Up M\+P\+I-\/tag. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a3c2deaef40ecb7ee551ad0c9e86c3e2f}{add\+Down\+Tag} (int tag)
+\begin{DoxyCompactList}\small\item\em Adds Down M\+P\+I-\/tag. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_ac085d860253115de26dec2065d2b1a24}{add\+Left\+Tag} (int tag)
+\begin{DoxyCompactList}\small\item\em Adds Left M\+P\+I-\/tag. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a8bb8d1487b7d71d53791d7754a668be5}{add\+Right\+Tag} (int tag)
+\begin{DoxyCompactList}\small\item\em Adds Right M\+P\+I-\/tag. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_ac2a99b7b3090c1309f25e7b722fe833f}{get\+Up\+Tag} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets Up M\+P\+I-\/tag. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_afeee548c3ed873e5b637e90970fdd8de}{get\+Down\+Tag} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets Down M\+P\+I-\/tag. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_a9e32222b90c43e0e7e4bf7a7dfc48e2e}{get\+Left\+Tag} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets Left M\+P\+I-\/tag. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_ae0ee5c9cde6f10c66c2241c4b794f38f}{get\+Right\+Tag} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets Right M\+P\+I-\/tag. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a2500cb730f60348d051a1eace6579e2b}{swap\+Local\+Grids} (int layer)
+\begin{DoxyCompactList}\small\item\em Swaps \hyperlink{classTask_ab7117d32273662d2695f80f5ea245331}{Task\+::grid\+\_\+} and \hyperlink{classTask_a554be6d55c1e3204cf946d9c0faf97c3}{Task\+::new\+Grid\+\_\+} fields. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_abb70929ab1b5c3bd6356501a876fd131}{get\+Layers\+Number} ()\hypertarget{classTask_abb70929ab1b5c3bd6356501a876fd131}{}\label{classTask_abb70929ab1b5c3bd6356501a876fd131}
+
+\begin{DoxyCompactList}\small\item\em Gets number of redundancy layers. \end{DoxyCompactList}\item 
+std\+::vector$<$ \hyperlink{classTask}{Task} $\ast$ $>$ \hyperlink{classTask_a2abeb620bbe984e126feac78fa3ab8d7}{get\+Replacements} ()\hypertarget{classTask_a2abeb620bbe984e126feac78fa3ab8d7}{}\label{classTask_a2abeb620bbe984e126feac78fa3ab8d7}
+
+\begin{DoxyCompactList}\small\item\em Gets replacements vector. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_a5f2fd3ae37f5aa26cae04c55a47f11b2}{getX} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets X coordinate. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_ad0e0f34141af6ef5d713f127b5d2455b}{getY} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets Y coordinate. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_ac84383a9682166e1b92d2b7f29c77aae}{repair} ()\hypertarget{classTask_ac84383a9682166e1b92d2b7f29c77aae}{}\label{classTask_ac84383a9682166e1b92d2b7f29c77aae}
+
+\begin{DoxyCompactList}\small\item\em Repairs task. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_a94c213a940fe0e9516c9098d153366fc}{print} ()\hypertarget{classTask_a94c213a940fe0e9516c9098d153366fc}{}\label{classTask_a94c213a940fe0e9516c9098d153366fc}
+
+\begin{DoxyCompactList}\small\item\em Shows whole infomation about \hyperlink{classTask}{Task} object. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_ab6d8dbb773a59f5eb135daa0310d3ffd}{print\+By\+Layers} ()\hypertarget{classTask_ab6d8dbb773a59f5eb135daa0310d3ffd}{}\label{classTask_ab6d8dbb773a59f5eb135daa0310d3ffd}
+
+\begin{DoxyCompactList}\small\item\em Show whole infomation about \hyperlink{classTask}{Task} object by redundancy layers. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{classTask_a2be9ef85af890d0d1d03419c3aa3c5a5}{add\+Replacement\+\_\+} (\hyperlink{classTask}{Task} $\ast$task)
+\begin{DoxyCompactList}\small\item\em Adds new replacment \hyperlink{classTask}{Task}. \end{DoxyCompactList}\item 
+\hyperlink{classTask}{Task} $\ast$ \hyperlink{classTask_ad68b20393fd9626df255ce965c7084b4}{get\+Next\+Replacement\+\_\+} ()
+\begin{DoxyCompactList}\small\item\em Gets next replacment \hyperlink{classTask}{Task}. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_a9e1772ee1d516932f37e6fce7dcd8784}{get\+Next\+Rank\+\_\+} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets next right M\+P\+I-\/rank. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_a4d84ca19e841fa134285e2d42d310124}{get\+Next\+Up\+Tag\+\_\+} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets next up M\+P\+I-\/tag. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_a888458368188ea57e6c69523d98a5cc6}{get\+Next\+Down\+Tag\+\_\+} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets next down M\+P\+I-\/tag. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_a84ed7441bbaaee365580dabbb3ed8a61}{get\+Next\+Left\+Tag\+\_\+} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets next left M\+P\+I-\/tag. \end{DoxyCompactList}\item 
+int \hyperlink{classTask_ad96cd097dc05cc5946ccd072a7be47b9}{get\+Next\+Right\+Tag\+\_\+} (int layer)
+\begin{DoxyCompactList}\small\item\em Gets next right M\+P\+I-\/tag. \end{DoxyCompactList}\item 
+void \hyperlink{classTask_aba992256623e8504401f1b8f897c3fc2}{reduce\+Repair\+Ability\+\_\+} ()\hypertarget{classTask_aba992256623e8504401f1b8f897c3fc2}{}\label{classTask_aba992256623e8504401f1b8f897c3fc2}
+
+\begin{DoxyCompactList}\small\item\em Reduces repair ability of \hyperlink{classTask}{Task}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+const int \hyperlink{classTask_aa454be94224aebece247cf0cd23fcffc}{i\+\_\+}
+\item 
+const int \hyperlink{classTask_aced73e768f619c3b56184befe3691aaf}{j\+\_\+}
+\item 
+const int \hyperlink{classTask_ad42667f57720ad0304e329e9d5b2b1f2}{nx\+\_\+}
+\item 
+const int \hyperlink{classTask_a786ae2a58cd74dda7142dc19649d87c5}{ny\+\_\+}
+\item 
+\hyperlink{classTask}{Task} $\ast$ \hyperlink{classTask_afb2ba19e810d01148e7a125e14ce755c}{up\+Neighbor\+\_\+}
+\item 
+\hyperlink{classTask}{Task} $\ast$ \hyperlink{classTask_a8554727d257017a90dbd0d52eaf6fe52}{down\+Neighbor\+\_\+}
+\item 
+\hyperlink{classTask}{Task} $\ast$ \hyperlink{classTask_a1a33c520e485401263ef144361e18dde}{left\+Neighbor\+\_\+}
+\item 
+\hyperlink{classTask}{Task} $\ast$ \hyperlink{classTask_aa6d859faf14ed3e950923562dba9d848}{right\+Neighbor\+\_\+}
+\item 
+std\+::vector$<$ int $>$ \hyperlink{classTask_ac143013d3e48eddf3aab992077c5d05a}{up\+Neighbor\+Tags\+\_\+}
+\item 
+std\+::vector$<$ int $>$ \hyperlink{classTask_a9c1d1cfcf9285f44029a58820ae082a4}{down\+Neighbor\+Tags\+\_\+}
+\item 
+std\+::vector$<$ int $>$ \hyperlink{classTask_a0968fecb0e49a48f4af6824fd513f752}{left\+Neighbor\+Tags\+\_\+}
+\item 
+std\+::vector$<$ int $>$ \hyperlink{classTask_a3a426a21f7ba4c4f91479207f96d6a66}{right\+Neighbor\+Tags\+\_\+}
+\item 
+double $\ast$ \hyperlink{classTask_ab7117d32273662d2695f80f5ea245331}{grid\+\_\+}
+\item 
+double $\ast$ \hyperlink{classTask_a554be6d55c1e3204cf946d9c0faf97c3}{new\+Grid\+\_\+}
+\item 
+int \hyperlink{classTask_aa303576fad66710bd6d36f1487b8fb3f}{mpi\+Rank\+\_\+}
+\item 
+int \hyperlink{classTask_a96652c5f54a8104340907cad3502c175}{status\+\_\+}
+\item 
+int \hyperlink{classTask_a7c5c4a8e56053d8358ba46a756deab3e}{repair\+\_\+}
+\item 
+std\+::vector$<$ int $\ast$ $>$ \hyperlink{classTask_a0770f08a9273b858cdcc8c4555fa0291}{r\+Ranks\+\_\+}
+\item 
+std\+::vector$<$ \hyperlink{classTask}{Task} $\ast$ $>$ \hyperlink{classTask_a4a6d7ba7f0f194053af5ff7ca236f761}{r\+Tasks\+\_\+}
+\item 
+std\+::vector$<$ \hyperlink{classTask}{Task} $\ast$ $>$ \hyperlink{classTask_a308c2c8b24a94d163fc95b3e0951132b}{replacements\+\_\+}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+High-\/level abstraction of the task. 
+
+Each task has a rank attached to it. Describes interaction with other tasks (neighbors). Describes the redundancy mechanism. \begin{DoxyAuthor}{Author}
+Markov V.\+A. 
+\end{DoxyAuthor}
+\begin{DoxyDate}{Date}
+2018 
+\end{DoxyDate}
+\begin{DoxyVersion}{Version}
+0.\+1 
+\end{DoxyVersion}
+\begin{DoxyWarning}{Warning}
+Work In Progress 
+\end{DoxyWarning}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\index{Task@{Task}!Task@{Task}}
+\index{Task@{Task}!Task@{Task}}
+\subsubsection[{\texorpdfstring{Task(int i, int j, int nx, int ny, int repair)}{Task(int i, int j, int nx, int ny, int repair)}}]{\setlength{\rightskip}{0pt plus 5cm}Task\+::\+Task (
+\begin{DoxyParamCaption}
+\item[{int}]{i, }
+\item[{int}]{j, }
+\item[{int}]{nx, }
+\item[{int}]{ny, }
+\item[{int}]{repair}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a18dc52e0d2bc784c2947142f04e92609}{}\label{classTask_a18dc52e0d2bc784c2947142f04e92609}
+
+
+Main constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em i} & an integer argument \hyperlink{classGrid}{Grid} coodinate \\
+\hline
+{\em j} & an integer argument \hyperlink{classGrid}{Grid} coodinate \\
+\hline
+{\em nx} & an integer argument, number of columns in one \hyperlink{classGrid}{Grid} cell \\
+\hline
+{\em ny} & an integer argument, number of columns in one \hyperlink{classGrid}{Grid} cell \\
+\hline
+{\em repair} & an integer argument, number of avialable repairs \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!Task@{Task}}
+\index{Task@{Task}!Task@{Task}}
+\subsubsection[{\texorpdfstring{Task(const Task \&rhs)}{Task(const Task &rhs)}}]{\setlength{\rightskip}{0pt plus 5cm}Task\+::\+Task (
+\begin{DoxyParamCaption}
+\item[{const {\bf Task} \&}]{rhs}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_af99394b6a5a7e57d9d5c12d45dd06133}{}\label{classTask_af99394b6a5a7e57d9d5c12d45dd06133}
+
+
+Copy constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em rhs} & a refernce \hyperlink{classTask}{Task} object \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!````~Task@{$\sim$\+Task}}
+\index{````~Task@{$\sim$\+Task}!Task@{Task}}
+\subsubsection[{\texorpdfstring{$\sim$\+Task()}{~Task()}}]{\setlength{\rightskip}{0pt plus 5cm}Task\+::$\sim$\+Task (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a3ecf499ea35fb4a96853969a1e1cbbce}{}\label{classTask_a3ecf499ea35fb4a96853969a1e1cbbce}
+
+
+Destructor. 
+
+Free memory for fields 
+\begin{DoxyCode}
+\hyperlink{classTask_ab7117d32273662d2695f80f5ea245331}{Task::grid\_}
+\hyperlink{classTask_a554be6d55c1e3204cf946d9c0faf97c3}{Task::newGrid\_}
+\end{DoxyCode}
+ 
+
+\subsection{Member Function Documentation}
+\index{Task@{Task}!add\+Down\+Tag@{add\+Down\+Tag}}
+\index{add\+Down\+Tag@{add\+Down\+Tag}!Task@{Task}}
+\subsubsection[{\texorpdfstring{add\+Down\+Tag(int tag)}{addDownTag(int tag)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::add\+Down\+Tag (
+\begin{DoxyParamCaption}
+\item[{int}]{tag}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a3c2deaef40ecb7ee551ad0c9e86c3e2f}{}\label{classTask_a3c2deaef40ecb7ee551ad0c9e86c3e2f}
+
+
+Adds Down M\+P\+I-\/tag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em tag} & an integer argument new M\+P\+I-\/tag \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!add\+Left\+Tag@{add\+Left\+Tag}}
+\index{add\+Left\+Tag@{add\+Left\+Tag}!Task@{Task}}
+\subsubsection[{\texorpdfstring{add\+Left\+Tag(int tag)}{addLeftTag(int tag)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::add\+Left\+Tag (
+\begin{DoxyParamCaption}
+\item[{int}]{tag}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_ac085d860253115de26dec2065d2b1a24}{}\label{classTask_ac085d860253115de26dec2065d2b1a24}
+
+
+Adds Left M\+P\+I-\/tag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em tag} & an integer argument new M\+P\+I-\/tag \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!add\+Replacement\+\_\+@{add\+Replacement\+\_\+}}
+\index{add\+Replacement\+\_\+@{add\+Replacement\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{add\+Replacement\+\_\+(\+Task $\ast$task)}{addReplacement_(Task *task)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::add\+Replacement\+\_\+ (
+\begin{DoxyParamCaption}
+\item[{{\bf Task} $\ast$}]{task}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a2be9ef85af890d0d1d03419c3aa3c5a5}{}\label{classTask_a2be9ef85af890d0d1d03419c3aa3c5a5}
+
+
+Adds new replacment \hyperlink{classTask}{Task}. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em task} & a pointer argument \hyperlink{classTask}{Task} object \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!add\+Right\+Tag@{add\+Right\+Tag}}
+\index{add\+Right\+Tag@{add\+Right\+Tag}!Task@{Task}}
+\subsubsection[{\texorpdfstring{add\+Right\+Tag(int tag)}{addRightTag(int tag)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::add\+Right\+Tag (
+\begin{DoxyParamCaption}
+\item[{int}]{tag}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a8bb8d1487b7d71d53791d7754a668be5}{}\label{classTask_a8bb8d1487b7d71d53791d7754a668be5}
+
+
+Adds Right M\+P\+I-\/tag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em tag} & an integer argument new M\+P\+I-\/tag \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!add\+Rrank@{add\+Rrank}}
+\index{add\+Rrank@{add\+Rrank}!Task@{Task}}
+\subsubsection[{\texorpdfstring{add\+Rrank(int $\ast$rank)}{addRrank(int *rank)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::add\+Rrank (
+\begin{DoxyParamCaption}
+\item[{int $\ast$}]{rank}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a1e6121b88342e745c95a5299b4d97ffd}{}\label{classTask_a1e6121b88342e745c95a5299b4d97ffd}
+
+
+Adds redundancy M\+P\+I-\/rank. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em rank} & a pointer argument new redundancy M\+P\+I-\/rank \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!add\+Rtask@{add\+Rtask}}
+\index{add\+Rtask@{add\+Rtask}!Task@{Task}}
+\subsubsection[{\texorpdfstring{add\+Rtask(\+Task $\ast$task)}{addRtask(Task *task)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::add\+Rtask (
+\begin{DoxyParamCaption}
+\item[{{\bf Task} $\ast$}]{task}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_aa6908a92f145c47dd0d36fb898d4365b}{}\label{classTask_aa6908a92f145c47dd0d36fb898d4365b}
+
+
+Adds redundancy \hyperlink{classTask}{Task}. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em task} & a pointer argument new redundancy \hyperlink{classTask}{Task} \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!add\+Up\+Tag@{add\+Up\+Tag}}
+\index{add\+Up\+Tag@{add\+Up\+Tag}!Task@{Task}}
+\subsubsection[{\texorpdfstring{add\+Up\+Tag(int tag)}{addUpTag(int tag)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::add\+Up\+Tag (
+\begin{DoxyParamCaption}
+\item[{int}]{tag}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a85e6a3c8d0661623f2595144b0d4353d}{}\label{classTask_a85e6a3c8d0661623f2595144b0d4353d}
+
+
+Adds Up M\+P\+I-\/tag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em tag} & an integer argument new M\+P\+I-\/tag \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!get\+Down\+Neighbor@{get\+Down\+Neighbor}}
+\index{get\+Down\+Neighbor@{get\+Down\+Neighbor}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Down\+Neighbor()}{getDownNeighbor()}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Task} $\ast$ Task\+::get\+Down\+Neighbor (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_ac7e5e11d3e7d6727018c43f3e07e79bb}{}\label{classTask_ac7e5e11d3e7d6727018c43f3e07e79bb}
+
+
+Gets down neighbor. 
+
+\begin{DoxyReturn}{Returns}
+pointer to \hyperlink{classTask}{Task} object 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Down\+Neighbor\+Rank@{get\+Down\+Neighbor\+Rank}}
+\index{get\+Down\+Neighbor\+Rank@{get\+Down\+Neighbor\+Rank}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Down\+Neighbor\+Rank(int layer)}{getDownNeighborRank(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Down\+Neighbor\+Rank (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_aad60be81222911c2398ebeabf728347a}{}\label{classTask_aad60be81222911c2398ebeabf728347a}
+
+
+Gets down neighbor M\+P\+I-\/rank. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/rank 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Down\+Tag@{get\+Down\+Tag}}
+\index{get\+Down\+Tag@{get\+Down\+Tag}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Down\+Tag(int layer)}{getDownTag(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Down\+Tag (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_afeee548c3ed873e5b637e90970fdd8de}{}\label{classTask_afeee548c3ed873e5b637e90970fdd8de}
+
+
+Gets Down M\+P\+I-\/tag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/tag 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Left\+Neighbor@{get\+Left\+Neighbor}}
+\index{get\+Left\+Neighbor@{get\+Left\+Neighbor}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Left\+Neighbor()}{getLeftNeighbor()}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Task} $\ast$ Task\+::get\+Left\+Neighbor (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_ae1f4ba255872d478311c089b6151feb5}{}\label{classTask_ae1f4ba255872d478311c089b6151feb5}
+
+
+Gets left neighbor. 
+
+\begin{DoxyReturn}{Returns}
+pointer to \hyperlink{classTask}{Task} object 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Left\+Neighbor\+Rank@{get\+Left\+Neighbor\+Rank}}
+\index{get\+Left\+Neighbor\+Rank@{get\+Left\+Neighbor\+Rank}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Left\+Neighbor\+Rank(int layer)}{getLeftNeighborRank(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Left\+Neighbor\+Rank (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a08bdbf00f430a36a014cde2c72e71f4c}{}\label{classTask_a08bdbf00f430a36a014cde2c72e71f4c}
+
+
+Gets left neighbor M\+P\+I-\/rank. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/rank 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Left\+Tag@{get\+Left\+Tag}}
+\index{get\+Left\+Tag@{get\+Left\+Tag}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Left\+Tag(int layer)}{getLeftTag(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Left\+Tag (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a9e32222b90c43e0e7e4bf7a7dfc48e2e}{}\label{classTask_a9e32222b90c43e0e7e4bf7a7dfc48e2e}
+
+
+Gets Left M\+P\+I-\/tag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/tag 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Local\+Grid@{get\+Local\+Grid}}
+\index{get\+Local\+Grid@{get\+Local\+Grid}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Local\+Grid(int layer)}{getLocalGrid(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}double $\ast$ Task\+::get\+Local\+Grid (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a0a3647a3c3b957a204f9d50a17438524}{}\label{classTask_a0a3647a3c3b957a204f9d50a17438524}
+
+
+Gets local grid. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+pointer to local grid 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Local\+New\+Grid@{get\+Local\+New\+Grid}}
+\index{get\+Local\+New\+Grid@{get\+Local\+New\+Grid}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Local\+New\+Grid(int layer)}{getLocalNewGrid(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}double $\ast$ Task\+::get\+Local\+New\+Grid (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_aa589e673faa616d16dcf305df0f98f7c}{}\label{classTask_aa589e673faa616d16dcf305df0f98f7c}
+
+
+Gets new local grid. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+pointer to new local grid 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Mpi\+Rank@{get\+Mpi\+Rank}}
+\index{get\+Mpi\+Rank@{get\+Mpi\+Rank}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Mpi\+Rank()}{getMpiRank()}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Mpi\+Rank (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a091eb01d0f1f213d76414aaad2481c5f}{}\label{classTask_a091eb01d0f1f213d76414aaad2481c5f}
+
+
+Gets \hyperlink{classTask}{Task} M\+P\+I-\/rank. 
+
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/rank 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Mpi\+Rank\+Ptr@{get\+Mpi\+Rank\+Ptr}}
+\index{get\+Mpi\+Rank\+Ptr@{get\+Mpi\+Rank\+Ptr}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Mpi\+Rank\+Ptr()}{getMpiRankPtr()}}]{\setlength{\rightskip}{0pt plus 5cm}int $\ast$ Task\+::get\+Mpi\+Rank\+Ptr (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_afc97ef89f005275cc36c5802d355b182}{}\label{classTask_afc97ef89f005275cc36c5802d355b182}
+
+
+Gets \hyperlink{classTask}{Task} M\+P\+I-\/rank. 
+
+\begin{DoxyReturn}{Returns}
+pointer to M\+P\+I-\/rank 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Next\+Down\+Tag\+\_\+@{get\+Next\+Down\+Tag\+\_\+}}
+\index{get\+Next\+Down\+Tag\+\_\+@{get\+Next\+Down\+Tag\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Next\+Down\+Tag\+\_\+(int layer)}{getNextDownTag_(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Next\+Down\+Tag\+\_\+ (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a888458368188ea57e6c69523d98a5cc6}{}\label{classTask_a888458368188ea57e6c69523d98a5cc6}
+
+
+Gets next down M\+P\+I-\/tag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/tag 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Next\+Left\+Tag\+\_\+@{get\+Next\+Left\+Tag\+\_\+}}
+\index{get\+Next\+Left\+Tag\+\_\+@{get\+Next\+Left\+Tag\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Next\+Left\+Tag\+\_\+(int layer)}{getNextLeftTag_(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Next\+Left\+Tag\+\_\+ (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a84ed7441bbaaee365580dabbb3ed8a61}{}\label{classTask_a84ed7441bbaaee365580dabbb3ed8a61}
+
+
+Gets next left M\+P\+I-\/tag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/tag 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Next\+Rank\+\_\+@{get\+Next\+Rank\+\_\+}}
+\index{get\+Next\+Rank\+\_\+@{get\+Next\+Rank\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Next\+Rank\+\_\+(int layer)}{getNextRank_(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Next\+Rank\+\_\+ (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a9e1772ee1d516932f37e6fce7dcd8784}{}\label{classTask_a9e1772ee1d516932f37e6fce7dcd8784}
+
+
+Gets next right M\+P\+I-\/rank. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/rank 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Next\+Replacement\+\_\+@{get\+Next\+Replacement\+\_\+}}
+\index{get\+Next\+Replacement\+\_\+@{get\+Next\+Replacement\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Next\+Replacement\+\_\+()}{getNextReplacement_()}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Task} $\ast$ Task\+::get\+Next\+Replacement\+\_\+ (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_ad68b20393fd9626df255ce965c7084b4}{}\label{classTask_ad68b20393fd9626df255ce965c7084b4}
+
+
+Gets next replacment \hyperlink{classTask}{Task}. 
+
+\begin{DoxyReturn}{Returns}
+pointer to \hyperlink{classTask}{Task} object 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Next\+Right\+Tag\+\_\+@{get\+Next\+Right\+Tag\+\_\+}}
+\index{get\+Next\+Right\+Tag\+\_\+@{get\+Next\+Right\+Tag\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Next\+Right\+Tag\+\_\+(int layer)}{getNextRightTag_(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Next\+Right\+Tag\+\_\+ (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_ad96cd097dc05cc5946ccd072a7be47b9}{}\label{classTask_ad96cd097dc05cc5946ccd072a7be47b9}
+
+
+Gets next right M\+P\+I-\/tag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/tag 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Next\+Up\+Tag\+\_\+@{get\+Next\+Up\+Tag\+\_\+}}
+\index{get\+Next\+Up\+Tag\+\_\+@{get\+Next\+Up\+Tag\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Next\+Up\+Tag\+\_\+(int layer)}{getNextUpTag_(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Next\+Up\+Tag\+\_\+ (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a4d84ca19e841fa134285e2d42d310124}{}\label{classTask_a4d84ca19e841fa134285e2d42d310124}
+
+
+Gets next up M\+P\+I-\/tag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/tag 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Right\+Neighbor@{get\+Right\+Neighbor}}
+\index{get\+Right\+Neighbor@{get\+Right\+Neighbor}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Right\+Neighbor()}{getRightNeighbor()}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Task} $\ast$ Task\+::get\+Right\+Neighbor (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a7afe74dcbb7854a65a7c52663eaf1549}{}\label{classTask_a7afe74dcbb7854a65a7c52663eaf1549}
+
+
+Gets right neighbor. 
+
+\begin{DoxyReturn}{Returns}
+pointer to \hyperlink{classTask}{Task} object 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Right\+Neighbor\+Rank@{get\+Right\+Neighbor\+Rank}}
+\index{get\+Right\+Neighbor\+Rank@{get\+Right\+Neighbor\+Rank}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Right\+Neighbor\+Rank(int layer)}{getRightNeighborRank(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Right\+Neighbor\+Rank (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_ae40c37d095e1aa66a17b56e0c71fbb7d}{}\label{classTask_ae40c37d095e1aa66a17b56e0c71fbb7d}
+
+
+Gets right neighbor M\+P\+I-\/rank. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/rank 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Right\+Tag@{get\+Right\+Tag}}
+\index{get\+Right\+Tag@{get\+Right\+Tag}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Right\+Tag(int layer)}{getRightTag(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Right\+Tag (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_ae0ee5c9cde6f10c66c2241c4b794f38f}{}\label{classTask_ae0ee5c9cde6f10c66c2241c4b794f38f}
+
+
+Gets Right M\+P\+I-\/tag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/tag 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Up\+Neighbor@{get\+Up\+Neighbor}}
+\index{get\+Up\+Neighbor@{get\+Up\+Neighbor}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Up\+Neighbor()}{getUpNeighbor()}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Task} $\ast$ Task\+::get\+Up\+Neighbor (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a1bd132471a3df6a117e741b9d5a1cee9}{}\label{classTask_a1bd132471a3df6a117e741b9d5a1cee9}
+
+
+Gets up neighbor. 
+
+\begin{DoxyReturn}{Returns}
+pointer to \hyperlink{classTask}{Task} object 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Up\+Neighbor\+Rank@{get\+Up\+Neighbor\+Rank}}
+\index{get\+Up\+Neighbor\+Rank@{get\+Up\+Neighbor\+Rank}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Up\+Neighbor\+Rank(int layer)}{getUpNeighborRank(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Up\+Neighbor\+Rank (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_af44ae2ab1b630b8d428beaa7484b9a82}{}\label{classTask_af44ae2ab1b630b8d428beaa7484b9a82}
+
+
+Gets up neighbor M\+P\+I-\/rank. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/rank 
+\end{DoxyReturn}
+\index{Task@{Task}!get\+Up\+Tag@{get\+Up\+Tag}}
+\index{get\+Up\+Tag@{get\+Up\+Tag}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Up\+Tag(int layer)}{getUpTag(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::get\+Up\+Tag (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_ac2a99b7b3090c1309f25e7b722fe833f}{}\label{classTask_ac2a99b7b3090c1309f25e7b722fe833f}
+
+
+Gets Up M\+P\+I-\/tag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+integer M\+P\+I-\/tag 
+\end{DoxyReturn}
+\index{Task@{Task}!getX@{getX}}
+\index{getX@{getX}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+X(int layer)}{getX(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::getX (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a5f2fd3ae37f5aa26cae04c55a47f11b2}{}\label{classTask_a5f2fd3ae37f5aa26cae04c55a47f11b2}
+
+
+Gets X coordinate. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em std\+::string} & If can\textquotesingle{}t get X \\
+\hline
+\end{DoxyExceptions}
+\index{Task@{Task}!getY@{getY}}
+\index{getY@{getY}!Task@{Task}}
+\subsubsection[{\texorpdfstring{get\+Y(int layer)}{getY(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::getY (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_ad0e0f34141af6ef5d713f127b5d2455b}{}\label{classTask_ad0e0f34141af6ef5d713f127b5d2455b}
+
+
+Gets Y coordinate. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em std\+::string} & If can\textquotesingle{}t get Y \\
+\hline
+\end{DoxyExceptions}
+\index{Task@{Task}!operator=@{operator=}}
+\index{operator=@{operator=}!Task@{Task}}
+\subsubsection[{\texorpdfstring{operator=(const Task \&rhs)}{operator=(const Task &rhs)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Task} \& Task\+::operator= (
+\begin{DoxyParamCaption}
+\item[{const {\bf Task} \&}]{rhs}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a68f0c278427d5a75df6fd59505c59b9a}{}\label{classTask_a68f0c278427d5a75df6fd59505c59b9a}
+
+
+Assign operator. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em rhs} & a refernce \hyperlink{classTask}{Task} object \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!set\+Down\+Neighbor@{set\+Down\+Neighbor}}
+\index{set\+Down\+Neighbor@{set\+Down\+Neighbor}!Task@{Task}}
+\subsubsection[{\texorpdfstring{set\+Down\+Neighbor(\+Task $\ast$down)}{setDownNeighbor(Task *down)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::set\+Down\+Neighbor (
+\begin{DoxyParamCaption}
+\item[{{\bf Task} $\ast$}]{down}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a37b2f9e5a854fd3f863c2456d6ddaf9d}{}\label{classTask_a37b2f9e5a854fd3f863c2456d6ddaf9d}
+
+
+Sets down neighbor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em down} & a pointer argument new \hyperlink{classTask}{Task} neighbor \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!set\+Left\+Neighbor@{set\+Left\+Neighbor}}
+\index{set\+Left\+Neighbor@{set\+Left\+Neighbor}!Task@{Task}}
+\subsubsection[{\texorpdfstring{set\+Left\+Neighbor(\+Task $\ast$left)}{setLeftNeighbor(Task *left)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::set\+Left\+Neighbor (
+\begin{DoxyParamCaption}
+\item[{{\bf Task} $\ast$}]{left}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a6bd437a671ffc49d1b3a8cb1bec26029}{}\label{classTask_a6bd437a671ffc49d1b3a8cb1bec26029}
+
+
+left up neighbor 
+
+
+\begin{DoxyParams}{Parameters}
+{\em left} & a pointer argument new \hyperlink{classTask}{Task} neighbor \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!set\+Local\+Grid@{set\+Local\+Grid}}
+\index{set\+Local\+Grid@{set\+Local\+Grid}!Task@{Task}}
+\subsubsection[{\texorpdfstring{set\+Local\+Grid(double $\ast$ptr)}{setLocalGrid(double *ptr)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::set\+Local\+Grid (
+\begin{DoxyParamCaption}
+\item[{double $\ast$}]{ptr}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a27f98878370d88af464d77e7ba17eda0}{}\label{classTask_a27f98878370d88af464d77e7ba17eda0}
+
+
+Sets local grid. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em ptr} & a pointer argument \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!set\+Local\+New\+Grid@{set\+Local\+New\+Grid}}
+\index{set\+Local\+New\+Grid@{set\+Local\+New\+Grid}!Task@{Task}}
+\subsubsection[{\texorpdfstring{set\+Local\+New\+Grid(double $\ast$ptr)}{setLocalNewGrid(double *ptr)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::set\+Local\+New\+Grid (
+\begin{DoxyParamCaption}
+\item[{double $\ast$}]{ptr}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_ab1bfcab76d0b801d21139fa2280a0c4d}{}\label{classTask_ab1bfcab76d0b801d21139fa2280a0c4d}
+
+
+Sets new local grid. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em ptr} & a pointer argument \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!set\+Mpi\+Rank@{set\+Mpi\+Rank}}
+\index{set\+Mpi\+Rank@{set\+Mpi\+Rank}!Task@{Task}}
+\subsubsection[{\texorpdfstring{set\+Mpi\+Rank(int rank)}{setMpiRank(int rank)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::set\+Mpi\+Rank (
+\begin{DoxyParamCaption}
+\item[{int}]{rank}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a3cffaff82f68529ae3f5bad0f3a8b0f9}{}\label{classTask_a3cffaff82f68529ae3f5bad0f3a8b0f9}
+
+
+Sets \hyperlink{classTask}{Task} M\+P\+I-\/rank. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em rank} & an integer argument new M\+P\+I-\/rank\\
+\hline
+\end{DoxyParams}
+Also sets Task\+::status -\/ \textquotesingle{}A\+L\+I\+V\+E\+\_\+\+T\+A\+SK\textquotesingle{} \index{Task@{Task}!set\+Right\+Neighbor@{set\+Right\+Neighbor}}
+\index{set\+Right\+Neighbor@{set\+Right\+Neighbor}!Task@{Task}}
+\subsubsection[{\texorpdfstring{set\+Right\+Neighbor(\+Task $\ast$right)}{setRightNeighbor(Task *right)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::set\+Right\+Neighbor (
+\begin{DoxyParamCaption}
+\item[{{\bf Task} $\ast$}]{right}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a2cfffab3231663e550459c7adf071adb}{}\label{classTask_a2cfffab3231663e550459c7adf071adb}
+
+
+Sets right neighbor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em right} & a pointer argument new \hyperlink{classTask}{Task} neighbor \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!set\+Status@{set\+Status}}
+\index{set\+Status@{set\+Status}!Task@{Task}}
+\subsubsection[{\texorpdfstring{set\+Status(int status)}{setStatus(int status)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::set\+Status (
+\begin{DoxyParamCaption}
+\item[{int}]{status}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a8fa9bb1e2d51ce78d1d4644b421f4f9d}{}\label{classTask_a8fa9bb1e2d51ce78d1d4644b421f4f9d}
+
+
+Sets \hyperlink{classTask}{Task} status. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em status} & an integer argument new \hyperlink{classTask}{Task} status \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!set\+Up\+Neighbor@{set\+Up\+Neighbor}}
+\index{set\+Up\+Neighbor@{set\+Up\+Neighbor}!Task@{Task}}
+\subsubsection[{\texorpdfstring{set\+Up\+Neighbor(\+Task $\ast$up)}{setUpNeighbor(Task *up)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::set\+Up\+Neighbor (
+\begin{DoxyParamCaption}
+\item[{{\bf Task} $\ast$}]{up}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a3fc6de2fea3bd4869ca72c3b2865aec9}{}\label{classTask_a3fc6de2fea3bd4869ca72c3b2865aec9}
+
+
+Sets up neighbor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em up} & a pointer argument new \hyperlink{classTask}{Task} neighbor \\
+\hline
+\end{DoxyParams}
+\index{Task@{Task}!swap\+Local\+Grids@{swap\+Local\+Grids}}
+\index{swap\+Local\+Grids@{swap\+Local\+Grids}!Task@{Task}}
+\subsubsection[{\texorpdfstring{swap\+Local\+Grids(int layer)}{swapLocalGrids(int layer)}}]{\setlength{\rightskip}{0pt plus 5cm}void Task\+::swap\+Local\+Grids (
+\begin{DoxyParamCaption}
+\item[{int}]{layer}
+\end{DoxyParamCaption}
+)}\hypertarget{classTask_a2500cb730f60348d051a1eace6579e2b}{}\label{classTask_a2500cb730f60348d051a1eace6579e2b}
+
+
+Swaps \hyperlink{classTask_ab7117d32273662d2695f80f5ea245331}{Task\+::grid\+\_\+} and \hyperlink{classTask_a554be6d55c1e3204cf946d9c0faf97c3}{Task\+::new\+Grid\+\_\+} fields. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layer} & an integer argument redundancy layer \\
+\hline
+\end{DoxyParams}
+
+
+\subsection{Member Data Documentation}
+\index{Task@{Task}!down\+Neighbor\+\_\+@{down\+Neighbor\+\_\+}}
+\index{down\+Neighbor\+\_\+@{down\+Neighbor\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{down\+Neighbor\+\_\+}{downNeighbor_}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Task}$\ast$ Task\+::down\+Neighbor\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a8554727d257017a90dbd0d52eaf6fe52}{}\label{classTask_a8554727d257017a90dbd0d52eaf6fe52}
+Down neighbor \index{Task@{Task}!down\+Neighbor\+Tags\+\_\+@{down\+Neighbor\+Tags\+\_\+}}
+\index{down\+Neighbor\+Tags\+\_\+@{down\+Neighbor\+Tags\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{down\+Neighbor\+Tags\+\_\+}{downNeighborTags_}}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<$int$>$ Task\+::down\+Neighbor\+Tags\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a9c1d1cfcf9285f44029a58820ae082a4}{}\label{classTask_a9c1d1cfcf9285f44029a58820ae082a4}
+Down neighbor M\+P\+I-\/tag \index{Task@{Task}!grid\+\_\+@{grid\+\_\+}}
+\index{grid\+\_\+@{grid\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{grid\+\_\+}{grid_}}]{\setlength{\rightskip}{0pt plus 5cm}double$\ast$ Task\+::grid\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_ab7117d32273662d2695f80f5ea245331}{}\label{classTask_ab7117d32273662d2695f80f5ea245331}
+Local sub-\/grid \index{Task@{Task}!i\+\_\+@{i\+\_\+}}
+\index{i\+\_\+@{i\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{i\+\_\+}{i_}}]{\setlength{\rightskip}{0pt plus 5cm}const int Task\+::i\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_aa454be94224aebece247cf0cd23fcffc}{}\label{classTask_aa454be94224aebece247cf0cd23fcffc}
+Coordinate in \hyperlink{classGrid}{Grid} \index{Task@{Task}!j\+\_\+@{j\+\_\+}}
+\index{j\+\_\+@{j\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{j\+\_\+}{j_}}]{\setlength{\rightskip}{0pt plus 5cm}const int Task\+::j\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_aced73e768f619c3b56184befe3691aaf}{}\label{classTask_aced73e768f619c3b56184befe3691aaf}
+Coordinate in \hyperlink{classGrid}{Grid} \index{Task@{Task}!left\+Neighbor\+\_\+@{left\+Neighbor\+\_\+}}
+\index{left\+Neighbor\+\_\+@{left\+Neighbor\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{left\+Neighbor\+\_\+}{leftNeighbor_}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Task}$\ast$ Task\+::left\+Neighbor\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a1a33c520e485401263ef144361e18dde}{}\label{classTask_a1a33c520e485401263ef144361e18dde}
+Left neighbor \index{Task@{Task}!left\+Neighbor\+Tags\+\_\+@{left\+Neighbor\+Tags\+\_\+}}
+\index{left\+Neighbor\+Tags\+\_\+@{left\+Neighbor\+Tags\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{left\+Neighbor\+Tags\+\_\+}{leftNeighborTags_}}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<$int$>$ Task\+::left\+Neighbor\+Tags\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a0968fecb0e49a48f4af6824fd513f752}{}\label{classTask_a0968fecb0e49a48f4af6824fd513f752}
+Left neighbor M\+P\+I-\/tag \index{Task@{Task}!mpi\+Rank\+\_\+@{mpi\+Rank\+\_\+}}
+\index{mpi\+Rank\+\_\+@{mpi\+Rank\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{mpi\+Rank\+\_\+}{mpiRank_}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::mpi\+Rank\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_aa303576fad66710bd6d36f1487b8fb3f}{}\label{classTask_aa303576fad66710bd6d36f1487b8fb3f}
+Attached M\+P\+I-\/rank to \hyperlink{classTask}{Task} \index{Task@{Task}!new\+Grid\+\_\+@{new\+Grid\+\_\+}}
+\index{new\+Grid\+\_\+@{new\+Grid\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{new\+Grid\+\_\+}{newGrid_}}]{\setlength{\rightskip}{0pt plus 5cm}double$\ast$ Task\+::new\+Grid\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a554be6d55c1e3204cf946d9c0faf97c3}{}\label{classTask_a554be6d55c1e3204cf946d9c0faf97c3}
+Local sub-\/grid \index{Task@{Task}!nx\+\_\+@{nx\+\_\+}}
+\index{nx\+\_\+@{nx\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{nx\+\_\+}{nx_}}]{\setlength{\rightskip}{0pt plus 5cm}const int Task\+::nx\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_ad42667f57720ad0304e329e9d5b2b1f2}{}\label{classTask_ad42667f57720ad0304e329e9d5b2b1f2}
+Number of columns in one \hyperlink{classGrid}{Grid} cell \index{Task@{Task}!ny\+\_\+@{ny\+\_\+}}
+\index{ny\+\_\+@{ny\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{ny\+\_\+}{ny_}}]{\setlength{\rightskip}{0pt plus 5cm}const int Task\+::ny\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a786ae2a58cd74dda7142dc19649d87c5}{}\label{classTask_a786ae2a58cd74dda7142dc19649d87c5}
+Number of rows in one \hyperlink{classGrid}{Grid} cell \index{Task@{Task}!repair\+\_\+@{repair\+\_\+}}
+\index{repair\+\_\+@{repair\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{repair\+\_\+}{repair_}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::repair\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a7c5c4a8e56053d8358ba46a756deab3e}{}\label{classTask_a7c5c4a8e56053d8358ba46a756deab3e}
+Repair counter \index{Task@{Task}!replacements\+\_\+@{replacements\+\_\+}}
+\index{replacements\+\_\+@{replacements\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{replacements\+\_\+}{replacements_}}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<${\bf Task}$\ast$$>$ Task\+::replacements\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a308c2c8b24a94d163fc95b3e0951132b}{}\label{classTask_a308c2c8b24a94d163fc95b3e0951132b}
+Replacements \hyperlink{classTask}{Task} vector \index{Task@{Task}!right\+Neighbor\+\_\+@{right\+Neighbor\+\_\+}}
+\index{right\+Neighbor\+\_\+@{right\+Neighbor\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{right\+Neighbor\+\_\+}{rightNeighbor_}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Task}$\ast$ Task\+::right\+Neighbor\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_aa6d859faf14ed3e950923562dba9d848}{}\label{classTask_aa6d859faf14ed3e950923562dba9d848}
+Right neighbor \index{Task@{Task}!right\+Neighbor\+Tags\+\_\+@{right\+Neighbor\+Tags\+\_\+}}
+\index{right\+Neighbor\+Tags\+\_\+@{right\+Neighbor\+Tags\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{right\+Neighbor\+Tags\+\_\+}{rightNeighborTags_}}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<$int$>$ Task\+::right\+Neighbor\+Tags\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a3a426a21f7ba4c4f91479207f96d6a66}{}\label{classTask_a3a426a21f7ba4c4f91479207f96d6a66}
+Right neighbor M\+P\+I-\/tag \index{Task@{Task}!r\+Ranks\+\_\+@{r\+Ranks\+\_\+}}
+\index{r\+Ranks\+\_\+@{r\+Ranks\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{r\+Ranks\+\_\+}{rRanks_}}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<$int$\ast$$>$ Task\+::r\+Ranks\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a0770f08a9273b858cdcc8c4555fa0291}{}\label{classTask_a0770f08a9273b858cdcc8c4555fa0291}
+Redundancy M\+P\+I-\/ranks vector \index{Task@{Task}!r\+Tasks\+\_\+@{r\+Tasks\+\_\+}}
+\index{r\+Tasks\+\_\+@{r\+Tasks\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{r\+Tasks\+\_\+}{rTasks_}}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<${\bf Task}$\ast$$>$ Task\+::r\+Tasks\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a4a6d7ba7f0f194053af5ff7ca236f761}{}\label{classTask_a4a6d7ba7f0f194053af5ff7ca236f761}
+Redundancy \hyperlink{classTask}{Task} vector \index{Task@{Task}!status\+\_\+@{status\+\_\+}}
+\index{status\+\_\+@{status\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{status\+\_\+}{status_}}]{\setlength{\rightskip}{0pt plus 5cm}int Task\+::status\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_a96652c5f54a8104340907cad3502c175}{}\label{classTask_a96652c5f54a8104340907cad3502c175}
+\hyperlink{classTask}{Task} status \index{Task@{Task}!up\+Neighbor\+\_\+@{up\+Neighbor\+\_\+}}
+\index{up\+Neighbor\+\_\+@{up\+Neighbor\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{up\+Neighbor\+\_\+}{upNeighbor_}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf Task}$\ast$ Task\+::up\+Neighbor\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_afb2ba19e810d01148e7a125e14ce755c}{}\label{classTask_afb2ba19e810d01148e7a125e14ce755c}
+Up neighbor \index{Task@{Task}!up\+Neighbor\+Tags\+\_\+@{up\+Neighbor\+Tags\+\_\+}}
+\index{up\+Neighbor\+Tags\+\_\+@{up\+Neighbor\+Tags\+\_\+}!Task@{Task}}
+\subsubsection[{\texorpdfstring{up\+Neighbor\+Tags\+\_\+}{upNeighborTags_}}]{\setlength{\rightskip}{0pt plus 5cm}std\+::vector$<$int$>$ Task\+::up\+Neighbor\+Tags\+\_\+\hspace{0.3cm}{\ttfamily [private]}}\hypertarget{classTask_ac143013d3e48eddf3aab992077c5d05a}{}\label{classTask_ac143013d3e48eddf3aab992077c5d05a}
+Up neighbor M\+P\+I-\/tag 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+/home/randy/\+Fault-\/\+Tolerance-\/\+Library/ulfm/heat-\/2d-\/cpp-\/half/Task.\+h\item 
+/home/randy/\+Fault-\/\+Tolerance-\/\+Library/ulfm/heat-\/2d-\/cpp-\/half/Task.\+cpp\end{DoxyCompactItemize}

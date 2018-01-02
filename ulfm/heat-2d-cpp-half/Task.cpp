@@ -4,9 +4,6 @@
 
 #include "Task.h"
 
-/**
- * Default constructor
- */
 Task::Task() : i_(-1), j_(-1), nx_(-1), ny_(-1)
 {
     this->upNeighbor_    = NULL;
@@ -20,12 +17,6 @@ Task::Task() : i_(-1), j_(-1), nx_(-1), ny_(-1)
     this->repair_        = -1;
 }
 
-/**
- * Main constructor
- * @input: coodinate 'i', coordinate 'j',
- *         size by x, size by y,
- *         repair counter
- */
 Task::Task(int i, int j, int nx, int ny, int repair) : i_(i), j_(j), nx_(nx), ny_(ny)
 {
     this->upNeighbor_    = NULL;
@@ -53,10 +44,6 @@ Task::Task(int i, int j, int nx, int ny, int repair) : i_(i), j_(j), nx_(nx), ny
     // TODO
 }
 
-/**
- * Copy constructor
- * @input: task object
- */
 Task::Task(const Task& rhs) : i_(rhs.i_), j_(rhs.j_), nx_(rhs.nx_), ny_(rhs.ny_)
 {
     this->upNeighbor_    = rhs.upNeighbor_;
@@ -103,18 +90,12 @@ Task::Task(const Task& rhs) : i_(rhs.i_), j_(rhs.j_), nx_(rhs.nx_), ny_(rhs.ny_)
     // TODO
 }
 
-/**
- * Destructor
- */
 Task::~Task()
 {
     delete[] this->grid_;
     delete[] this->newGrid_;
 }
 
-/**
- * Assign operator
- */
 Task& Task::operator=(const Task& rhs)
 {
     if (this == &rhs)
@@ -176,43 +157,27 @@ Task& Task::operator=(const Task& rhs)
 /* Public methods                                                            */
 /*****************************************************************************/
 
-/**
- *
- */
 void Task::setMpiRank(int rank)
 {
     this->mpiRank_ = rank;
     this->status_  = ALIVE_TASK;
 }
 
-/**
- *
- */
 int* Task::getMpiRankPtr()
 {
     return &this->mpiRank_;
 }
 
-/**
- *
- */
 int Task::getMpiRank()
 {
     return this->mpiRank_;
 }
 
-/**
- * Get task status
- */
 int Task::getStatus()
 {
     return this->status_;
 }
 
-/**
- * Set task status
- * @input: status
- */
 void Task::setStatus(int status)
 {
     if (status == DEAD_TASK)
@@ -227,9 +192,6 @@ void Task::setStatus(int status)
     this->status_ = status;
 }
 
-/**
- *
- */
 void Task::setUpNeighbor(Task* up)
 {
     if (up)
@@ -242,9 +204,6 @@ void Task::setUpNeighbor(Task* up)
     }
 }
 
-/**
- *
- */
 void Task::setDownNeighbor(Task* down)
 {
     if (down)
@@ -257,9 +216,6 @@ void Task::setDownNeighbor(Task* down)
     }
 }
 
-/**
- *
- */
 void Task::setLeftNeighbor(Task* left)
 {
     if (left)
@@ -272,9 +228,6 @@ void Task::setLeftNeighbor(Task* left)
     }
 }
 
-/**
- *
- */
 void Task::setRightNeighbor(Task* right)
 {
     if (right)
@@ -287,41 +240,26 @@ void Task::setRightNeighbor(Task* right)
     }
 }
 
-/**
- *
- */
 Task* Task::getUpNeighbor()
 {
     return this->upNeighbor_;
 }
 
-/**
- *
- */
 Task* Task::getDownNeighbor()
 {
     return this->downNeighbor_;
 }
 
-/**
- *
- */
 Task* Task::getLeftNeighbor()
 {
     return this->leftNeighbor_;
 }
 
-/**
- *
- */
 Task* Task::getRightNeighbor()
 {
     return this->rightNeighbor_;
 }
 
-/**
- *
- */
 int Task::getUpNeighborRank(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -345,9 +283,6 @@ int Task::getUpNeighborRank(int layer)
 
 }
 
-/**
- *
- */
 int Task::getDownNeighborRank(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -371,9 +306,6 @@ int Task::getDownNeighborRank(int layer)
 
 }
 
-/**
- *
- */
 int Task::getLeftNeighborRank(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -397,9 +329,6 @@ int Task::getLeftNeighborRank(int layer)
 
 }
 
-/**
- *
- */
 int Task::getRightNeighborRank(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -423,9 +352,6 @@ int Task::getRightNeighborRank(int layer)
 
 }
 
-/**
- *
- */
 void Task::setLocalGrid(double* grid)
 {
     if (!grid)
@@ -436,9 +362,6 @@ void Task::setLocalGrid(double* grid)
     this->grid_ = grid;
 }
 
-/**
- *
- */
 void Task::setLocalNewGrid(double* newGrid)
 {
     if (!newGrid)
@@ -449,11 +372,6 @@ void Task::setLocalNewGrid(double* newGrid)
     this->newGrid_ = newGrid;
 }
 
-/**
- * Get local grid
- * @input: redundancy layer
- * @return: pointer to grid
- */
 double* Task::getLocalGrid(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -468,11 +386,6 @@ double* Task::getLocalGrid(int layer)
     return NULL;
 }
 
-/**
- * Get local new-grid
- * @input: redundancy layer
- * @return: pointer to new-grid
- */
 double* Task::getLocalNewGrid(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -487,90 +400,56 @@ double* Task::getLocalNewGrid(int layer)
     return NULL;
 }
 
-/**
- *
- */
 void Task::addRrank(int* rank)
 {
     this->rRanks_.push_back(rank);
 }
 
-/**
- *
- */
 void Task::addRtask(Task* task)
 {
     this->rTasks_.push_back(task);
 }
 
-/**
- *
- */
 void Task::addUpTag(int tag)
 {
     this->upNeighborTags_.push_back(tag);
 }
 
-/**
- *
- */
 void Task::addDownTag(int tag)
 {
     this->downNeighborTags_.push_back(tag);
 }
 
-/**
- *
- */
 void Task::addLeftTag(int tag)
 {
     this->leftNeighborTags_.push_back(tag);
 }
 
-/**
- *
- */
 void Task::addRightTag(int tag)
 {
     this->rightNeighborTags_.push_back(tag);
 }
 
-/**
- *
- */
 int Task::getUpTag(int layer)
 {
     return this->getNextUpTag_(layer);
 }
 
-/**
- *
- */
 int Task::getDownTag(int layer)
 {
     return this->getNextDownTag_(layer);
 }
 
-/**
- *
- */
 int Task::getLeftTag(int layer)
 {
     return this->getNextLeftTag_(layer);
 }
 
-/**
- *
- */
 int Task::getRightTag(int layer)
 {
     return this->getNextRightTag_(layer);
 }
 
-/**
- * Swap grid and new-grid fields
- * @input: redundancy layer
- */
 void Task::swapLocalGrids(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -584,26 +463,16 @@ void Task::swapLocalGrids(int layer)
     }
 }
 
-/**
- * Get number of redundancy layers
- */
 int Task::getLayersNumber()
 {
     return (int)this->rTasks_.size();
 }
 
-/**
- * Returns replacements vector
- */
 std::vector<Task*> Task::getReplacements()
 {
     return this->replacements_;
 }
 
-/**
- * Get x coordinates
- * @input: layer
- */
 int Task::getX(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -616,10 +485,6 @@ int Task::getX(int layer)
     }
 }
 
-/**
- * Get y coordinates
- * @input: layer
- */
 int Task::getY(int layer)
 {
     if (layer < (int)this->rTasks_.size())
@@ -632,9 +497,6 @@ int Task::getY(int layer)
     }
 }
 
-/**
- * Repair task
- */
 void Task::repair()
 {
     if  (!this->repair_)
@@ -656,9 +518,6 @@ void Task::repair()
     this->status_ = ALIVE_TASK;
 }
 
-/**
- * Show whole infomation about task
- */
 void Task::print()
 {
     std::cout << "Task [ " << this->i_ << ", "
@@ -786,10 +645,6 @@ void Task::print()
     std::cout << std::endl;
 }
 
-/**
- * Show whole infomation about task
- * by redundancy layers
- */
 void Task::printByLayers()
 {
     std::cout << "Task [ " << this->i_ << ", "
@@ -903,34 +758,21 @@ void Task::printByLayers()
 /* Private methods                                                           */
 /*****************************************************************************/
 
-/**
- * Add task to vector replacements
- * @input: task
- */
 void Task::addReplacement_(Task* task)
 {
     this->replacements_.push_back(task);
 }
 
-/**
- *
- */
 Task* Task::getNextReplacement_()
 {
     return this->rTasks_[1];
 }
 
-/**
- *
- */
 int Task::getNextRank_(int layer)
 {
     return *this->rRanks_[layer];
 }
 
-/**
- *
- */
 int Task::getNextUpTag_(int layer)
 {
     if (layer < (int)this->upNeighborTags_.size())
@@ -943,9 +785,6 @@ int Task::getNextUpTag_(int layer)
     }
 }
 
-/**
- *
- */
 int Task::getNextDownTag_(int layer)
 {
     if (layer < (int)this->downNeighborTags_.size())
@@ -958,9 +797,7 @@ int Task::getNextDownTag_(int layer)
     }
 }
 
-/**
- *
- */
+
 int Task::getNextLeftTag_(int layer)
 {
     if (layer < (int)this->leftNeighborTags_.size())
@@ -973,9 +810,6 @@ int Task::getNextLeftTag_(int layer)
     }
 }
 
-/**
- *
- */
 int Task::getNextRightTag_(int layer)
 {
     if (layer < (int)this->rightNeighborTags_.size())
@@ -988,9 +822,6 @@ int Task::getNextRightTag_(int layer)
     }
 }
 
-/**
- *
- */
 void Task::reduceRepairAbility_()
 {
     this->repair_--;

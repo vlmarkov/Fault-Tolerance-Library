@@ -2,7 +2,7 @@ Features:
  ✔ mpi tag assignment, unique between linked task @done
  ✔ task migration @done (18-01-01 14:47)
  ✔ task kill & repair @done (18-01-01 17:12)
- ☐ mpi-ranks shift after repair
+ ✔ mpi-ranks shift after repair @done (18-01-02 21:25)
  ☐ 
  ☐ 
 

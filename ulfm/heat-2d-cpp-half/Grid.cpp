@@ -8,7 +8,7 @@
 /* +---+       +---+  - Each procces will migrate to i + gird / 2 (tasks)    */
 /* | 0 | . . . | 1 |  - May occur undefined behavior if px and py not even   */
 /* +---+       +---+  - need to test it                                      */
-/*   .           .                                                           */
+/*   .           .    - TODO description                                     */
 /*   .           .                                                           */
 /*   .           .                                                           */
 /* +---+       +---+                                                         */
@@ -28,12 +28,6 @@
 /*   Pic 2 - Redundancy                                                      */
 /*****************************************************************************/
 
-/**
- * Main constructor
- * @input: columns, rows,
- *         cols by x, rows by y,
- *         processes by x, processes by y
- */
 Grid::Grid(int cols, int rows, int nx, int ny, int px, int py) : 
     cols_(cols), rows_(rows), nx_(nx), ny_(ny), px_(px), py_(py), alive_(py * px)
 {
@@ -57,7 +51,7 @@ Grid::Grid(int cols, int rows, int nx, int ny, int px, int py) :
 
             this->setNeighbors_(task, i, j);
 
-            this->setMpiRank_(task, rank++);
+            task.setMpiRank(rank++);
 
             this->setTags_(task, tags, layer);
 
@@ -79,23 +73,15 @@ Grid::Grid(int cols, int rows, int nx, int ny, int px, int py) :
     }
 }
 
-/**
- * Destructor
- */
 Grid::~Grid()
 {
-    // TODO: memory free
+    ;
 }
 
 /*****************************************************************************/
 /* Public methods                                                            */
 /*****************************************************************************/
 
-/**
- * Get task by MPI-rank
- * @input: MPI-rank
- * @return: pointer to task
- */
 Task* Grid::getTask(int rank)
 {
     for (int i = 0; i < this->py_; ++i)
@@ -113,10 +99,6 @@ Task* Grid::getTask(int rank)
     return NULL; // depricated, change to nullptr
 }
 
-/**
- * Mark task as 'dead'
- * @input: MPI-rank
- */
 void Grid::kill(int rank)
 {
     this->alive_--; // Reduce alive processes
@@ -140,9 +122,6 @@ void Grid::kill(int rank)
     this->shiftLeftMpiRank_(rank);
 }
 
-/**
- * Repair grid-tasks
- */
 void Grid::repair()
 {
     // TODO: ?
@@ -159,9 +138,6 @@ void Grid::repair()
     }
 }
 
-/**
- * Show grid-tasks
- */
 void Grid::print()
 {
     for (int i = 0; i < this->py_; i++)
@@ -183,10 +159,6 @@ void Grid::print()
 /* Private methods                                                           */
 /*****************************************************************************/
 
-/**
- * Set neighbors for task
- * @input: reference to task, coordinates 'i' and 'j'
- */
 void Grid::setNeighbors_(Task& task, int i, int j)
 {
     // Safe assing neighbors
@@ -232,21 +204,6 @@ void Grid::setNeighbors_(Task& task, int i, int j)
     }
 }
 
-/**
- * Set MPI-rank for task
- * @input: MPI-rank
- */
-void Grid::setMpiRank_(Task& task, int rank)
-{
-    task.setMpiRank(rank);
-}
-
-/**
- * Set MPI-tags for task
- * @input: reference to task,
- *         reference to tag,
- *         redundancy layer
- */
 void Grid::setTags_(Task& task, int& tag, int layer)
 {
     // Safe assing tags
@@ -324,10 +281,6 @@ void Grid::setTags_(Task& task, int& tag, int layer)
     }
 }
 
-/**
- * Compute next cordiantes for task (where task will be migrate)
- * @input: coordinates 'i' and 'j'
- */
 void Grid::computeNextCoordinates_(int& i, int& j)
 {
     int halfGrid = (this->py_ * this->px_ / 2);
@@ -356,10 +309,6 @@ void Grid::computeNextCoordinates_(int& i, int& j)
     } 
 }
 
-/**
- * Link MPI-ranks, migrating tasks with task
- * @input: pointer to task, coordinates 'i' and 'j'
- */
 void Grid::linkRanksTasks_(Task* task, int i, int j)
 {
     // Safe assing
@@ -399,7 +348,7 @@ void Grid::shiftLeftMpiRank_(int rank)
             int taskRank = this->tasks_[i][j].getMpiRank();
             if (rank < taskRank)
             {
-                this->tasks_[i][j].setMpiRank(taskRank - 1); // Shit left
+                this->tasks_[i][j].setMpiRank(taskRank - 1); // Shift left
             }
         }
     }
