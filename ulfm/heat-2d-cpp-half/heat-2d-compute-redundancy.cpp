@@ -453,6 +453,9 @@ static int solveEquation(int argc, char* argv[])
 
     while (1)
     {
+        MPI_Comm_size(comm, &commsize);
+        MPI_Comm_rank(comm, &rank);
+
         niters++;
 
 restart_step:
@@ -493,6 +496,17 @@ restart_step:
         }
 
 #ifdef KILLING_TEST
+        if (niters == 2 && rank == 1)
+        {
+            raise(SIGKILL);
+        }
+
+        if (niters == 3 && rank == 2)
+        {
+            raise(SIGKILL);
+        }
+
+/*
         if (niters == 2 && rank == 15)
         {
             raise(SIGKILL);
@@ -532,6 +546,7 @@ restart_step:
         {
             raise(SIGKILL);
         }
+*/
 #endif /* KILLING_TEST */
 
         /*
@@ -554,6 +569,11 @@ restart_step:
             for (int i = 0; i < myTask->getLayersNumber(); ++i)
             {
                 myTask->swapLocalGrids(i);
+            }
+
+            if (rank == 0)
+            {
+                gridTask.print();
             }
 
             goto restart_step;

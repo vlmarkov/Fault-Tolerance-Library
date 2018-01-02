@@ -136,6 +136,8 @@ void Grid::kill(int rank)
             }
         }
     }
+
+    this->shiftLeftMpiRank_(rank);
 }
 
 /**
@@ -381,4 +383,24 @@ void Grid::linkRanksTasks_(Task* task, int i, int j)
 
     task->addRtask(task);
     task->addRtask(&this->tasks_[i][j]);
+}
+
+void Grid::shiftLeftMpiRank_(int rank)
+{
+    if (rank == this->alive_ - 1)
+    {
+        return;
+    }
+
+    for (int i = 0; i < this->py_; i++)
+    {
+        for (int j = 0; j < this->px_; j++)
+        {
+            int taskRank = this->tasks_[i][j].getMpiRank();
+            if (rank < taskRank)
+            {
+                this->tasks_[i][j].setMpiRank(taskRank - 1); // Shit left
+            }
+        }
+    }
 }

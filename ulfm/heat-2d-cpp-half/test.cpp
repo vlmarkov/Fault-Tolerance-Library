@@ -14,9 +14,9 @@ int main(int argc, char const *argv[])
 
 		//testGrid.repair();
 
-		//testGrid.kill(7);
+		testGrid.kill(1);
 
-		//testGrid.repair();
+		testGrid.repair();
 
 		testGrid.print();
 
