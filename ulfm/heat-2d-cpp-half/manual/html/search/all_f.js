@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['upneighbor_5f',['upNeighbor_',['../classTask.html#afb2ba19e810d01148e7a125e14ce755c',1,'Task']]],
-  ['upneighbortags_5f',['upNeighborTags_',['../classTask.html#ac143013d3e48eddf3aab992077c5d05a',1,'Task']]]
+  ['task',['Task',['../classTask.html',1,'Task'],['../classTask.html#a0ca53354bdc006762a0fda68c64f7608',1,'Task::Task()'],['../classTask.html#a18dc52e0d2bc784c2947142f04e92609',1,'Task::Task(int i, int j, int nx, int ny, int repair)'],['../classTask.html#af99394b6a5a7e57d9d5c12d45dd06133',1,'Task::Task(const Task &amp;rhs)']]],
+  ['task_2eh',['Task.h',['../Task_8h.html',1,'']]],
+  ['tasks_5f',['tasks_',['../classGrid.html#a352418004dcff916bfa9b3cdbd8cf0a4',1,'Grid']]]
 ];

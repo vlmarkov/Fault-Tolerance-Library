@@ -7,5 +7,6 @@ var searchData=
   ['addrrank',['addRrank',['../classTask.html#a1e6121b88342e745c95a5299b4d97ffd',1,'Task']]],
   ['addrtask',['addRtask',['../classTask.html#aa6908a92f145c47dd0d36fb898d4365b',1,'Task']]],
   ['adduptag',['addUpTag',['../classTask.html#a85e6a3c8d0661623f2595144b0d4353d',1,'Task']]],
-  ['alive_5f',['alive_',['../classGrid.html#a878bac705a4a7e23d87bf74332a0c59a',1,'Grid']]]
+  ['alive_5f',['alive_',['../classGrid.html#a878bac705a4a7e23d87bf74332a0c59a',1,'Grid::alive_()'],['../classFailureSimulation.html#af6c72fef61f03896df170bf262cab03e',1,'FailureSimulation::alive_()']]],
+  ['alive_5ftask',['ALIVE_TASK',['../Task_8h.html#a06fc87d81c62e9abb8790b6e5713c55baf606665bfcc26e00ee17fe938ca21143',1,'Task.h']]]
 ];

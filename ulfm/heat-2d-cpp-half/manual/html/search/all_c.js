@@ -1,12 +1,9 @@
 var searchData=
 [
-  ['reducerepairability_5f',['reduceRepairAbility_',['../classTask.html#aba992256623e8504401f1b8f897c3fc2',1,'Task']]],
-  ['repair',['repair',['../classGrid.html#a45bca1a92d2e19536c7d7c23db9fe665',1,'Grid::repair()'],['../classTask.html#ac84383a9682166e1b92d2b7f29c77aae',1,'Task::repair()']]],
-  ['repair_5f',['repair_',['../classTask.html#a7c5c4a8e56053d8358ba46a756deab3e',1,'Task']]],
-  ['replacements_5f',['replacements_',['../classTask.html#a308c2c8b24a94d163fc95b3e0951132b',1,'Task']]],
-  ['rightneighbor_5f',['rightNeighbor_',['../classTask.html#aa6d859faf14ed3e950923562dba9d848',1,'Task']]],
-  ['rightneighbortags_5f',['rightNeighborTags_',['../classTask.html#a3a426a21f7ba4c4f91479207f96d6a66',1,'Task']]],
-  ['rows_5f',['rows_',['../classGrid.html#abb5a6798827020c44faeb1730cdb52fd',1,'Grid']]],
-  ['rranks_5f',['rRanks_',['../classTask.html#a0770f08a9273b858cdcc8c4555fa0291',1,'Task']]],
-  ['rtasks_5f',['rTasks_',['../classTask.html#a4a6d7ba7f0f194053af5ff7ca236f761',1,'Task']]]
+  ['policy_5f',['policy_',['../classFailureSimulation.html#a59f1e391b8056b83f2bde5450d3f95c2',1,'FailureSimulation']]],
+  ['print',['print',['../classGrid.html#a8f86511ed049044225a4116dd1c2a2e2',1,'Grid::print()'],['../classTask.html#a94c213a940fe0e9516c9098d153366fc',1,'Task::print()']]],
+  ['printbylayers',['printByLayers',['../classTask.html#ab6d8dbb773a59f5eb135daa0310d3ffd',1,'Task']]],
+  ['procsize_5f',['procSize_',['../classFailureSimulation.html#a1f1cd48b5fe41eed41be69c20d6fe150',1,'FailureSimulation']]],
+  ['px_5f',['px_',['../classGrid.html#a1f71da29e1b573e02fe09300cf676267',1,'Grid']]],
+  ['py_5f',['py_',['../classGrid.html#aaf0567036eb876642fcd38eb3eb83181',1,'Grid']]]
 ];

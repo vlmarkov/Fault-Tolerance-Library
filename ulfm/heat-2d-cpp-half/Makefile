@@ -37,6 +37,7 @@ heat-2d-kill:
 	Utils.cpp \
 	Grid.cpp \
 	Task.cpp \
+	FailureSimulation.cpp \
 	-o $(BUILD_DIR)/$@ heat-2d-compute-redundancy.cpp; \
 	RESULT=$$?; \
 	if [ $$RESULT -ne 0 ]; then \

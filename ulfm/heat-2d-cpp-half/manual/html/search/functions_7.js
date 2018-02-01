@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['reducerepairability_5f',['reduceRepairAbility_',['../classTask.html#aba992256623e8504401f1b8f897c3fc2',1,'Task']]],
-  ['repair',['repair',['../classGrid.html#a45bca1a92d2e19536c7d7c23db9fe665',1,'Grid::repair()'],['../classTask.html#ac84383a9682166e1b92d2b7f29c77aae',1,'Task::repair()']]]
+  ['print',['print',['../classGrid.html#a8f86511ed049044225a4116dd1c2a2e2',1,'Grid::print()'],['../classTask.html#a94c213a940fe0e9516c9098d153366fc',1,'Task::print()']]],
+  ['printbylayers',['printByLayers',['../classTask.html#ab6d8dbb773a59f5eb135daa0310d3ffd',1,'Task']]]
 ];

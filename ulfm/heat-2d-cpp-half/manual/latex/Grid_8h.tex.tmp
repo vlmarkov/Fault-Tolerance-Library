@@ -1,0 +1,11 @@
+\hypertarget{Grid_8h}{}\section{/home/randy/\+Fault-\/\+Tolerance-\/\+Library/ulfm/heat-\/2d-\/cpp-\/half/\+Grid.h File Reference}
+\label{Grid_8h}\index{/home/randy/\+Fault-\/\+Tolerance-\/\+Library/ulfm/heat-\/2d-\/cpp-\/half/\+Grid.\+h@{/home/randy/\+Fault-\/\+Tolerance-\/\+Library/ulfm/heat-\/2d-\/cpp-\/half/\+Grid.\+h}}
+{\ttfamily \#include \char`\"{}Task.\+h\char`\"{}}\\*
+{\ttfamily \#include $<$vector$>$}\\*
+Include dependency graph for Grid.\+h\+:
+% FIG 0
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classGrid}{Grid}
+\begin{DoxyCompactList}\small\item\em High-\/level abstraction of the 2D calculation grid. \end{DoxyCompactList}\end{DoxyCompactItemize}
