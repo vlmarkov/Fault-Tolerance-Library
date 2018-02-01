@@ -54,7 +54,7 @@ class Grid {
         Task* getTask(int rank);
 
         /**
-         * @brief Sets Task object status - 'DEAD_TASK'
+         * @brief Sets Task instance status - 'DEAD_TASK'
          * @param rank an integer argument, MPI-rank
          * @return nothing
          * @throw std:string If reached the limit of reducibility

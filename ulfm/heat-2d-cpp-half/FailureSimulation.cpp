@@ -5,9 +5,8 @@
 #include <csignal>
 #include <iostream>
 
-FailureSimulation::FailureSimulation(const int rank, const int size, const double rate, const int policy)
+FailureSimulation::FailureSimulation(const int size, const double rate, const int policy)
 {
-    this->selfRank_    = rank;
     this->policy_      = policy;
     this->alive_       = size - 1;
     this->procSize_    = size;
@@ -19,7 +18,7 @@ FailureSimulation::FailureSimulation(const int rank, const int size, const doubl
 
 FailureSimulation::~FailureSimulation() { }
 
-void FailureSimulation::generateFailure()
+void FailureSimulation::generateFailure(const int mpiRank)
 {
     int rankToKill = 0;
 
@@ -64,7 +63,7 @@ void FailureSimulation::generateFailure()
 
     if (++this->invokeCnt_ == this->failureRate_)
     {
-        if (rankToKill == this->selfRank_)
+        if (rankToKill == mpiRank)
         {
             std::cerr << "Failure acquired for " << rankToKill << " rank" << std::endl;
             raise(SIGKILL);

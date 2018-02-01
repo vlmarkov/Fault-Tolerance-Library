@@ -338,7 +338,7 @@ void Grid::shiftLeftMpiRank_(int rank)
 {
     if (rank == this->alive_ - 1)
     {
-        return;
+        return; // There is nothing to shift
     }
 
     for (int i = 0; i < this->py_; i++)
@@ -348,7 +348,7 @@ void Grid::shiftLeftMpiRank_(int rank)
             int taskRank = this->tasks_[i][j].getMpiRank();
             if (rank < taskRank)
             {
-                this->tasks_[i][j].setMpiRank(taskRank - 1); // Shift left
+                this->tasks_[i][j].setMpiRank(taskRank - 1); // Shifts left
             }
         }
     }

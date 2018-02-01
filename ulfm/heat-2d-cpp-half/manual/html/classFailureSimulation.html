@@ -97,21 +97,19 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa563bc2ff6ae789416157dc606cfe369"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFailureSimulation.html#aa563bc2ff6ae789416157dc606cfe369">FailureSimulation</a> (const int rank, const int size, const double rate, const int policy)</td></tr>
-<tr class="memdesc:aa563bc2ff6ae789416157dc606cfe369"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main constructor.  <a href="#aa563bc2ff6ae789416157dc606cfe369">More...</a><br /></td></tr>
-<tr class="separator:aa563bc2ff6ae789416157dc606cfe369"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a276f5e62633c5b27dbafc77f611de2f1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFailureSimulation.html#a276f5e62633c5b27dbafc77f611de2f1">FailureSimulation</a> (const int size, const double rate, const int policy)</td></tr>
+<tr class="memdesc:a276f5e62633c5b27dbafc77f611de2f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main constructor.  <a href="#a276f5e62633c5b27dbafc77f611de2f1">More...</a><br /></td></tr>
+<tr class="separator:a276f5e62633c5b27dbafc77f611de2f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a182f88052d30fad7b4e839f9fe6023fe"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a182f88052d30fad7b4e839f9fe6023fe"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFailureSimulation.html#a182f88052d30fad7b4e839f9fe6023fe">~FailureSimulation</a> ()</td></tr>
 <tr class="memdesc:a182f88052d30fad7b4e839f9fe6023fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor. <br /></td></tr>
 <tr class="separator:a182f88052d30fad7b4e839f9fe6023fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5200e2f8a5ec5f6d4ce7f11d14085f82"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFailureSimulation.html#a5200e2f8a5ec5f6d4ce7f11d14085f82">generateFailure</a> ()</td></tr>
-<tr class="memdesc:a5200e2f8a5ec5f6d4ce7f11d14085f82"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main failure generate method.  <a href="#a5200e2f8a5ec5f6d4ce7f11d14085f82">More...</a><br /></td></tr>
-<tr class="separator:a5200e2f8a5ec5f6d4ce7f11d14085f82"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa20776c9bdcbce6654246221f8fd0d1a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFailureSimulation.html#aa20776c9bdcbce6654246221f8fd0d1a">generateFailure</a> (const int mpiRank)</td></tr>
+<tr class="memdesc:aa20776c9bdcbce6654246221f8fd0d1a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main failure generate method.  <a href="#aa20776c9bdcbce6654246221f8fd0d1a">More...</a><br /></td></tr>
+<tr class="separator:aa20776c9bdcbce6654246221f8fd0d1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a37dba780d7b6177b01e369f1c2ed3466"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFailureSimulation.html#a37dba780d7b6177b01e369f1c2ed3466">selfRank_</a></td></tr>
-<tr class="separator:a37dba780d7b6177b01e369f1c2ed3466"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59f1e391b8056b83f2bde5450d3f95c2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFailureSimulation.html#a59f1e391b8056b83f2bde5450d3f95c2">policy_</a></td></tr>
 <tr class="separator:a59f1e391b8056b83f2bde5450d3f95c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6c72fef61f03896df170bf262cab03e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFailureSimulation.html#af6c72fef61f03896df170bf262cab03e">alive_</a></td></tr>
@@ -130,19 +128,13 @@ Private Attributes</h2></td></tr>
 <dl class="section version"><dt>Version</dt><dd>0.1 </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Work In Progress </dd></dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a class="anchor" id="aa563bc2ff6ae789416157dc606cfe369"></a>
+<a class="anchor" id="a276f5e62633c5b27dbafc77f611de2f1"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
           <td class="memname">FailureSimulation::FailureSimulation </td>
           <td>(</td>
-          <td class="paramtype">const int&#160;</td>
-          <td class="paramname"><em>rank</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">const int&#160;</td>
           <td class="paramname"><em>size</em>, </td>
         </tr>
@@ -169,7 +161,6 @@ Private Attributes</h2></td></tr>
 <p>Main constructor. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">rank</td><td>an integer argument self MPI-rank </td></tr>
     <tr><td class="paramname">size</td><td>an integer argument MPI-comm-world size </td></tr>
     <tr><td class="paramname">rate</td><td>an real argument failure rate </td></tr>
     <tr><td class="paramname">policy</td><td>an integer argument failure simulation policy</td></tr>
@@ -181,22 +172,28 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a class="anchor" id="a5200e2f8a5ec5f6d4ce7f11d14085f82"></a>
+<a class="anchor" id="aa20776c9bdcbce6654246221f8fd0d1a"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
           <td class="memname">void FailureSimulation::generateFailure </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">const int&#160;</td>
+          <td class="paramname"><em>mpiRank</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Main failure generate method. </p>
-<p>Generates MPI-process failure (raise SIGKILL) </p>
-
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">mpiRank</td><td>an integer argument self MPI-rank</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Generates MPI-process failure </p><div class="fragment"><div class="line"><span class="keywordflow">if</span> ((invokeCounter == failureRate) &amp;&amp; (generateRank == mpiRank))</div><div class="line">{</div><div class="line">    <span class="keyword">raise</span>(SIGKILL);</div><div class="line">}</div></div><!-- fragment --> 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
@@ -302,27 +299,6 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <p>How many processes we have </p>
-
-</div>
-</div>
-<a class="anchor" id="a37dba780d7b6177b01e369f1c2ed3466"></a>
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int FailureSimulation::selfRank_</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>Self MPI-rank </p>
 
 </div>
 </div>

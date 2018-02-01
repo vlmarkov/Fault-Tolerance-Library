@@ -55,31 +55,31 @@
  * Shadow values exchange wrapper
  */
 class WrapperHalo {
-public:
-    /**
-     * Main constructor
-     */
-    WrapperHalo(Task*        _task,
-                int          _count,
-                int          _nx,
-                int          _ny,
-                MPI_Datatype _row,
-                MPI_Datatype _col,
-                MPI_Comm     _comm);
+    public:
+        /**
+         * Main constructor
+         */
+        WrapperHalo(Task*        _task,
+                    int          _count,
+                    int          _nx,
+                    int          _ny,
+                    MPI_Datatype _row,
+                    MPI_Datatype _col,
+                    MPI_Comm     _comm);
 
-    /**
-     * Destructor
-     */
-    ~WrapperHalo();
+        /**
+         * Destructor
+         */
+        ~WrapperHalo();
 
-    Task*        task;
-    int          count;
-    int          nx;
-    int          ny;
-    MPI_Datatype row;
-    MPI_Datatype col;
-    MPI_Comm     comm;
-    MPI_Request* reqs;
+        Task*        task;
+        int          count;
+        int          nx;
+        int          ny;
+        MPI_Datatype row;
+        MPI_Datatype col;
+        MPI_Comm     comm;
+        MPI_Request* reqs;
 };
 
 WrapperHalo::WrapperHalo(Task*        _task,

@@ -25,13 +25,12 @@ class FailureSimulation
     public:
         /**
          * @brief Main constructor
-         * @param rank an integer argument self MPI-rank
          * @param size an integer argument MPI-comm-world size
          * @param rate an real argument failure rate
          * @param policy an integer argument failure simulation policy
          * @details Creates failure simulation object with specific rate and policy
          */
-        FailureSimulation(const int rank, const int size, const double rate, const int policy);
+        FailureSimulation(const int size, const double rate, const int policy);
 
         /**
          * @brief Destructor
@@ -40,12 +39,18 @@ class FailureSimulation
 
         /**
          * @brief Main failure generate method
-         * @details Generates MPI-process failure (raise SIGKILL)
+         * @param mpiRank an integer argument self MPI-rank
+         * @details Generates MPI-process failure
+         * @code
+         * if ((invokeCounter == failureRate) && (generateRank == mpiRank))
+         * {
+         *     raise(SIGKILL);
+         * }
+         * @endcode
          */
-        void generateFailure();
+        void generateFailure(const int mpiRank);
 
     private:
-        int    selfRank_;    /**< Self MPI-rank */
         int    policy_;      /**< Failure policy */
         int    alive_;       /**< How many processes are alive */
         int    procSize_;    /**< How many processes we have */

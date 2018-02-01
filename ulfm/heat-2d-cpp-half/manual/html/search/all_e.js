@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['selfrank_5f',['selfRank_',['../classFailureSimulation.html#a37dba780d7b6177b01e369f1c2ed3466',1,'FailureSimulation']]],
   ['setdownneighbor',['setDownNeighbor',['../classTask.html#a37b2f9e5a854fd3f863c2456d6ddaf9d',1,'Task']]],
   ['setleftneighbor',['setLeftNeighbor',['../classTask.html#a6bd437a671ffc49d1b3a8cb1bec26029',1,'Task']]],
   ['setlocalgrid',['setLocalGrid',['../classTask.html#a27f98878370d88af464d77e7ba17eda0',1,'Task']]],

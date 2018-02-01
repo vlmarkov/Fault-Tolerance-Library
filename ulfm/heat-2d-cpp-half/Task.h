@@ -388,7 +388,7 @@ class Task {
         int getNextRightTag_(int layer);
 
         /**
-         * @brief Reduces repair ability of Task
+         * @brief Reduces repair ability of Task instance
          */
         void reduceRepairAbility_();
 };
