@@ -15,7 +15,7 @@ CXX          := g++
 MPICXX       := mpicxx
 CFLAGS       := -g -Wall -O2
 LDFLAGS      := -lm
-STDFLAGS     := -std=c++0x
+STDFLAGS     := -std=c++11
 DMPI         := -D MPI_SUPPORT
 DULFM        := -D ULFM_SUPPORT
 DKILL        := -D KILLING_TEST
@@ -33,11 +33,12 @@ heat-2d-kill:
 		printf "%-60b%b" "$(COM_COLOR)$(CREAT_STRING)$(OBJ_COLOR) $(BUILD_DIR)" "$(OK_COLOR)$(OK_STRING)$(NO_COLOR)\n"; \
 	fi;
 	@cp slurm-kill.job $(BUILD_DIR)/slurm-kill.job
+	@cp torque-kill.job $(BUILD_DIR)/torque-kill.job
 	@$(MPICXX) $(CFLAGS) $(LDFLAGS) $(STDFLAGS) $(DMPI) $(DULFM) $(DKILL) \
 	Utils.cpp \
 	Grid.cpp \
 	Task.cpp \
-	FailureSimulation.cpp \
+	FailureSimulator.cpp \
 	-o $(BUILD_DIR)/$@ heat-2d-compute-redundancy.cpp; \
 	RESULT=$$?; \
 	if [ $$RESULT -ne 0 ]; then \
@@ -55,6 +56,7 @@ heat-2d:
 		printf "%-60b%b" "$(COM_COLOR)$(CREAT_STRING)$(OBJ_COLOR) $(BUILD_DIR)" "$(OK_COLOR)$(OK_STRING)$(NO_COLOR)\n"; \
 	fi;
 	@cp slurm.job $(BUILD_DIR)/slurm.job
+	@cp torque.job $(BUILD_DIR)/torque.job
 	@$(MPICXX) $(CFLAGS) $(LDFLAGS) $(STDFLAGS) $(DMPI) $(DULFM) \
 	Utils.cpp \
 	Grid.cpp \

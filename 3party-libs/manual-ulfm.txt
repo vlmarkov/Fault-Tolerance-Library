@@ -1,13 +1,15 @@
-./configure --prefix=/home/students/mg165/markov/ulfm_src \
-       --enable-mpi-ext=ftmpi --with-ft=mpi \
-       --disable-io-romio --enable-contrib-no-build=vt \
-       --with-platform=optimized \
-       CC=gcc CXX=g++
+./autogen.pl
 
+./configure --prefix=/home/students/mg165/markov/ulfm_src/ulfm_1_0 \
+--enable-mpi-ext=ftmpi \
+--with-ft=mpi \
+--disable-io-romio \
+--enable-contrib-no-build=vt \
+--with-platform=optimized \
+-with-tm=/opt/torque-6.1.1.1 \
+CC=gcc CXX=g++
 
-./configure --prefix=/home/user/Рабочий стол/Fault-Tolerance-Library/3party-libs/ulfm_src \
-       --enable-mpi-ext=ftmpi --with-ft=mpi \
-       --disable-io-romio --enable-contrib-no-build=vt \
-       --with-platform=optimized \
-       CC=gcc CXX=g++
+make -j16 all
+
+make install
 

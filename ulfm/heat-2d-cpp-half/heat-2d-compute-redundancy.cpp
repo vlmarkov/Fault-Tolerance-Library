@@ -39,12 +39,15 @@
 #include <mpi.h>
 #include <mpi-ext.h>
 
+#include <iostream>
+#include <algorithm>
+
 #include "Utils.h"
 #include "Grid.h"
 #include "Task.h"
-
-#include <algorithm>
-
+#ifdef KILLING_TEST
+#include "FailureSimulator.h"
+#endif /* KILLING_TEST */
 
 #define EPS       0.001
 #define PI        3.14159265358979323846
@@ -106,9 +109,9 @@ static void updateInteriorPoints(double    *newGrid,
                                  const int  ny,
                                  const int  nx)
 {
-    for (int i = 1; i <= ny; i++)
+    for (int i = 1; i <= ny; ++i)
     {
-        for (int j = 1; j <= nx; j++)
+        for (int j = 1; j <= nx; ++j)
         {
             newGrid[IND(i, j)] = (oldGrid[IND(i - 1, j)] +
                                   oldGrid[IND(i + 1, j)] +
@@ -125,9 +128,9 @@ static double checkTerminationCondition(double    *newGrid,
 {
     double maxdiff = 0;
 
-    for (int i = 1; i <= ny; i++)
+    for (int i = 1; i <= ny; ++i)
     {
-        for (int j = 1; j <= nx; j++)
+        for (int j = 1; j <= nx; ++j)
         {
             int ind = IND(i, j);
             maxdiff = fmax(maxdiff, fabs(oldGrid[ind] - newGrid[ind]));
@@ -254,22 +257,27 @@ static void errorHandler(MPI_Comm* pcomm, Grid* gridTask, int err)
 
     MPI_Group_translate_ranks(groupF, nf, ranksGf, groupC, ranksGc);
 
+#ifdef DEBUG
     std::cout << "Rank " << rank << "/" << size - 1
-            << ": Notified of error " << errStr << ". "
-            << nf << " found dead: [ ";
+              << ": Notified of error " << errStr << ". "
+              << nf << " found dead: [ ";
+#endif /* DEBUG */
 
-    for (int i = 0; i < nf; i++)
+    for (int i = 0; i < nf; ++i)
     {
+#ifdef DEBUG
         std::cout << ranksGc[i] << " ";
+#endif /* DEBUG */
         gridTask->kill(ranksGc[i]);
         gridTask->repair();
     }
+#ifdef DEBUG
     std::cout << "]" << std::endl;
+#endif /* DEBUG */
 
     free(ranksGc);
     free(ranksGf);
 }
-
 
 static MPI_Comm repairCommunicator(MPI_Comm comm, int err)
 {
@@ -292,7 +300,6 @@ static MPI_Comm repairCommunicator(MPI_Comm comm, int err)
 
     return comm;
 }
-
 
 static int solveEquation(int argc, char* argv[])
 {
@@ -379,7 +386,13 @@ static int solveEquation(int argc, char* argv[])
     int ny = getBlockSize(rows, ranky, py);
     int nx = getBlockSize(cols, rankx, px);
 
-    Grid gridTask(cols, rows, nx, ny, 4, 4); // TODO
+    Grid gridTask(cols, rows, nx, ny, atoi(argv[3]), atoi(argv[4]));
+
+#ifdef KILLING_TEST
+    FailureSimulator failureSimulator(commsize,
+                                      0.5,
+                                      FAILURE_POLICY_SERIAL_HALF_TAIL);
+#endif /* KILLING_TEST */
 
     Task* myTask = gridTask.getTask(rank);
 
@@ -404,7 +417,7 @@ static int solveEquation(int argc, char* argv[])
         if (ranky == 0)
         {
             // Initialize top border: u(x, 0) = sin(pi * x)
-            for (int j = 1; j <= nx; j++)
+            for (int j = 1; j <= nx; ++j)
             {
                 // Translate col index to x coord in [0, 1]
                 double x     = dx * (sj + j - 1);
@@ -416,7 +429,7 @@ static int solveEquation(int argc, char* argv[])
         if (ranky == py - 1)
         {
             // Initialize bottom border: u(x, 1) = sin(pi * x) * exp(-pi)
-            for (int j = 1; j <= nx; j++)
+            for (int j = 1; j <= nx; ++j)
             {
                 // Translate col index to x coord in [0, 1]
                 double x     = dx * (sj + j - 1);
@@ -460,10 +473,12 @@ static int solveEquation(int argc, char* argv[])
 
 restart_step:
 
+#ifdef DEBUG
         if (niters > 1000)
         {
             throw std::string("Overflow accepted iterations");
         }
+#endif /* DEBUG */
 
         maxdiff = 0.0;
 
@@ -474,14 +489,17 @@ restart_step:
              * Step 1: Update interior points
              */
             updateInteriorPoints(myTask->getLocalNewGrid(i),
-                                 myTask->getLocalGrid(i), ny, nx);
+                                 myTask->getLocalGrid(i),
+                                 ny,
+                                 nx);
 
             /*
              * Step 2: Check termination condition
              */
-            double tmp  = checkTerminationCondition(
-                myTask->getLocalNewGrid(i),
-                myTask->getLocalGrid(i), ny, nx);
+            double tmp = checkTerminationCondition(myTask->getLocalNewGrid(i),
+                                                   myTask->getLocalGrid(i),
+                                                   ny,
+                                                   nx);
 
             if (tmp > maxdiff)
             {
@@ -496,57 +514,7 @@ restart_step:
         }
 
 #ifdef KILLING_TEST
-        if (niters == 2 && rank == 1)
-        {
-            raise(SIGKILL);
-        }
-
-        if (niters == 3 && rank == 2)
-        {
-            raise(SIGKILL);
-        }
-
-/*
-        if (niters == 2 && rank == 15)
-        {
-            raise(SIGKILL);
-        }
-
-        if (niters == 4 && rank == 14)
-        {
-            raise(SIGKILL);
-        }
-
-        if (niters == 7 && rank == 13)
-        {
-            raise(SIGKILL);
-        }
-
-        if (niters == 9 && rank == 12)
-        {
-            raise(SIGKILL);
-        }
-
-        if (niters == 11 && rank == 11)
-        {
-            raise(SIGKILL);
-        }
-
-        if (niters == 13 && rank == 10)
-        {
-            raise(SIGKILL);
-        }
-
-        if (niters == 15 && rank == 9)
-        {
-            raise(SIGKILL);
-        }
-
-        if (niters == 17 && rank == 8)
-        {
-            raise(SIGKILL);
-        }
-*/
+        failureSimulator.generateFailure(rank);
 #endif /* KILLING_TEST */
 
         /*
@@ -562,26 +530,28 @@ restart_step:
         if (MPI_ERR_PROC_FAILED == rc)
         {
             errorHandler(&comm, &gridTask, rc);
-
             comm = repairCommunicator(comm, rc);
-
-            // Swaps grids (after repair)
             for (int i = 0; i < myTask->getLayersNumber(); ++i)
             {
                 myTask->swapLocalGrids(i);
             }
 
+#ifdef DEBUG
             if (rank == 0)
             {
                 gridTask.print();
             }
+#endif /* DEBUG */
 
             goto restart_step;
         }
 
+        /*
+         * Root exit point
+         */
         if (maxdiff < EPS)
         {
-            break; // Root exit point
+            break;
         }
 
         /*
@@ -600,11 +570,16 @@ restart_step:
         if (MPI_ERR_PROC_FAILED == rc)
         {
             errorHandler(&comm, &gridTask, rc);
-            goto exit; // TODO
+            comm = repairCommunicator(comm, rc);
+            for (int i = 0; i < myTask->getLayersNumber(); ++i)
+            {
+                myTask->swapLocalGrids(i);
+            }
+
+            goto restart_step;
         }
     }
 
-exit:
     MPI_Type_free(&row);
     MPI_Type_free(&col);
 
@@ -653,10 +628,20 @@ exit:
     return 0;
 }
 
+static void usage(char *argv[])
+{
+    std::cerr << "Usage: "  << argv[0] << " nx ny px py" << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
     try
     {
+        if (argc != 5)
+        {
+            usage(argv);
+            throw "";
+        }
         solveEquation(argc, argv);
     }
     catch (std::string err)
