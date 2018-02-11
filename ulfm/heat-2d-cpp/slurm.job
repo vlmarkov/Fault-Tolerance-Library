@@ -1,6 +1,0 @@
-#!/bin/bash
-
-#SBATCH --nodes=2 --ntasks-per-node=8
-
-/home/students/mg165/markov/ulfm_src/ulfm_install/bin/mpiexec -am ft-enable-mpi ./heat-2d-compute-redundancy 1024 1024
-#/home/students/mg165/markov/ulfm_src/ulfm_install/bin/mpiexec -am ft-enable-mpi ./heat-2d-data-redundancy 1024 1024
