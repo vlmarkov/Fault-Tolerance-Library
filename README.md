@@ -30,3 +30,7 @@
 + **Expanding test sample base**
 + **Reducing overhead**
 + **Improving impementation**
+
+## This project has been implemented as a part of my graduate thesis in Computing Systems department of Siberian State University of Telecommunications and Information Scienses.
++ **Graduate student: Vladislav Markov**
++ **Supervisor: Mikhail Kurnosov**
