@@ -3,7 +3,7 @@
 + **C/C++**
 + **MPI 3.0**
 + [**User-level checkpoint library**](https://github.com/54markov/Fault-Tolerance-Library/tree/master/user-level-checkpoint "link to source files")
-+ [**ULFM**](http://fault-tolerance.org/category/ulfm/ "official site ULFM") ver 1.0
++ [**ULFM**](http://fault-tolerance.org/category/ulfm/ "official site ULFM") (ver 1.0 support)
 * **GNU/Linux**
 
 ## Test Samples
