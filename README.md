@@ -5,6 +5,7 @@
 + [**User-level checkpoint library**](https://github.com/54markov/Fault-Tolerance-Library/tree/master/user-level-checkpoint "link to source files")
 + [**ULFM**](http://fault-tolerance.org/category/ulfm/ "official site ULFM") (ver 1.0 support)
 * **GNU/Linux**
+* **Unit test (cxxtest framework)**
 
 ## Test Samples
 + **head-2d** - [Laplace equation](https://en.wikipedia.org/wiki/Laplace%27s_equation "wiki Laplace equation") solver by [Jacobi iteration method](https://en.wikipedia.org/wiki/Jacobi_method "wiki Jacobi iteration method")
