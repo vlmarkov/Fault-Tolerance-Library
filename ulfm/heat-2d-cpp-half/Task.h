@@ -300,7 +300,7 @@ class Task {
         /**
          * @brief Repairs task
          */
-        void repair();
+        int repair(void);
 
         /**
          * @brief Shows whole infomation about Task object

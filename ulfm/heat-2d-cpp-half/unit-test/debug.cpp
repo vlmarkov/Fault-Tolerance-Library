@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
 
-#include "Grid.h"
-#include "Task.h"
+#include "../Grid.h"
+#include "../Task.h"
 
 int main(int argc, char const *argv[])
 {
@@ -12,14 +12,19 @@ int main(int argc, char const *argv[])
 
         //testGrid.kill(15);
 
-        //testGrid.repair();
+        testGrid.print();
+/*
+        testGrid.kill(0);
+        testGrid.repair();
+
+
+        //testGrid.print();
 
         testGrid.kill(1);
-
         testGrid.repair();
 
         testGrid.print();
-
+*/
         //Task *t = testGrid.getTask(5);
 
         //std::cout << t->getUpNeighborRank(0) << std::endl;

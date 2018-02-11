@@ -99,13 +99,17 @@ Task* Grid::getTask(int rank)
     return NULL; // depricated, change to nullptr
 }
 
-void Grid::kill(int rank)
+int Grid::kill(int rank)
 {
     this->alive_--; // Reduce alive processes
 
     if (this->alive_ < ((this->px_ * this->py_) * 0.5))
     {
-        throw std::string("Reached the limit of reducibility"); // TODO: ?
+#ifdef MPI_SUPPORT
+        throw std::string("Reached the limit of reducibility");
+#else
+        return -1;
+#endif /* MPI_SUPPORT */
     }
 
     for (int i = 0; i < this->py_; ++i)
@@ -119,23 +123,30 @@ void Grid::kill(int rank)
         }
     }
 
+#ifdef MPI_SUPPORT
     this->shiftLeftMpiRank_(rank);
+#endif /* MPI_SUPPORT */
+
+    return 0;
 }
 
-void Grid::repair()
+int Grid::repair(void)
 {
-    // TODO: ?
-
     for (int i = 0; i < this->py_; ++i)
     {
         for (int j = 0; j < this->px_; ++j)
         {
             if (this->tasks_[i][j].getStatus() == DEAD_TASK)
             {
-                this->tasks_[i][j].repair();
+                if (this->tasks_[i][j].repair() != 0)
+                {
+                    return -1;
+                }
             }
         }
     }
+
+    return 0;
 }
 
 void Grid::print()

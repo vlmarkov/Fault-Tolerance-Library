@@ -64,7 +64,7 @@ class Grid {
          * Grid::shiftLeftMpiRank_(int rank);
          * @endcode
          */
-        void kill(int rank);
+        int kill(int rank);
 
         /**
          * @brief Repairs grid-tasks
@@ -77,14 +77,14 @@ class Grid {
          * for it
          * @throw std::string If reached repair limit
          */
-        void repair();
+        int repair(void);
 
         /**
          * @brief Shows information about each Task in Grid
          * @param nothing
          * @return nothing
          */
-        void print();
+        void print(void);
 
     private:
         const int cols_;                        /**< Number of columns in calculation Grid */

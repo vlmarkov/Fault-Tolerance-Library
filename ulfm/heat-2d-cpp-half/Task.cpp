@@ -497,11 +497,15 @@ int Task::getY(int layer)
     }
 }
 
-void Task::repair()
+int Task::repair(void)
 {
     if  (!this->repair_)
     {
+#ifdef MPI_SUPPORT
         throw std::string("Can't repair task (reached repair limit)");
+#else
+        return -1;
+#endif /* MPI_SUPPORT */
     }
 
     Task* replacement = this->getNextReplacement_();
@@ -516,6 +520,8 @@ void Task::repair()
     replacement->addReplacement_(this);
 
     this->status_ = ALIVE_TASK;
+
+    return 0;
 }
 
 void Task::print()

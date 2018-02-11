@@ -1,5 +1,0 @@
-#!/bin/bash
-
-#SBATCH --nodes=2 --ntasks-per-node=8
-
-mpiexec ./midpoint_rule 8192 8192

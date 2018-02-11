@@ -70,7 +70,7 @@ heat-2d:
 	fi;
 
 debug:
-	@mkdir -p $(BUILD_DIR)
+	@mkdir -p $(BUILD_DIR)/$@
 	@RESULT=$$?; \
 	if [ $$RESULT -ne 0 ]; then \
 		printf "%-60b%b" "$(COM_COLOR)$(CREAT_STRING)$(OBJ_COLOR) $(BUILD_DIR)" "$(ERROR_COLOR)$(ERROR_STRING)$(NO_COLOR)\n"; \
@@ -80,7 +80,27 @@ debug:
 	@$(CXX) $(CFLAGS) $(LDFLAGS) $(STDFLAGS) \
 	Grid.cpp \
 	Task.cpp \
-	-o $(BUILD_DIR)/$@ test.cpp; \
+	-o $(BUILD_DIR)/$@/$@ unit-test/$@.cpp -I$CXXTEST; \
+	RESULT=$$?; \
+	if [ $$RESULT -ne 0 ]; then \
+		printf "%-60b%b" "$(COM_COLOR)$(COM_STRING)$(OBJ_COLOR) $@" "$(ERROR_COLOR)$(ERROR_STRING)$(NO_COLOR)\n"; \
+	else  \
+		printf "%-60b%b" "$(COM_COLOR)$(COM_STRING)$(OBJ_COLOR) $(@F)" "$(OK_COLOR)$(OK_STRING)$(NO_COLOR)\n"; \
+	fi;
+
+test:
+	@mkdir -p $(BUILD_DIR)/unit-$@
+	@RESULT=$$?; \
+	if [ $$RESULT -ne 0 ]; then \
+		printf "%-60b%b" "$(COM_COLOR)$(CREAT_STRING)$(OBJ_COLOR) $(BUILD_DIR)" "$(ERROR_COLOR)$(ERROR_STRING)$(NO_COLOR)\n"; \
+	else  \
+		printf "%-60b%b" "$(COM_COLOR)$(CREAT_STRING)$(OBJ_COLOR) $(BUILD_DIR)" "$(OK_COLOR)$(OK_STRING)$(NO_COLOR)\n"; \
+	fi;
+	@cxxtestgen --error-printer -o $(BUILD_DIR)/unit-$@/runner.cpp unit-$@/GridTaskTestSuite.h;
+	@$(CXX) $(CFLAGS) $(LDFLAGS) $(STDFLAGS) \
+	Grid.cpp \
+	Task.cpp \
+	-o $(BUILD_DIR)/unit-$@/unit-$@ $(BUILD_DIR)/unit-$@/runner.cpp -I$CXXTEST; \
 	RESULT=$$?; \
 	if [ $$RESULT -ne 0 ]; then \
 		printf "%-60b%b" "$(COM_COLOR)$(COM_STRING)$(OBJ_COLOR) $@" "$(ERROR_COLOR)$(ERROR_STRING)$(NO_COLOR)\n"; \
