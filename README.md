@@ -22,6 +22,7 @@
 ## ULFM
 + **Survivability**
 + **Fault-tollerance**
++ **Compute redundancy**
 
 ## WIP
 + **Implementing alternative recovery fault tolerance methods**
