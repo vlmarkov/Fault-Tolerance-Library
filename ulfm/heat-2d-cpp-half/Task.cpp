@@ -173,6 +173,25 @@ int Task::getMpiRank()
     return this->mpiRank_;
 }
 
+int Task::getMpiRank(int layer)
+{
+    if (layer < (int)this->rTasks_.size())
+    {
+        return this->rTasks_[layer]->getMpiRank();
+    }
+    else
+    {
+        throw std::string("Can't get mpi rank by layer");
+    }
+
+#ifdef MPI_SUPPORT
+        return MPI_PROC_NULL;
+#else
+        return -1;
+#endif /* MPI_SUPPORT */
+
+}
+
 int Task::getStatus()
 {
     return this->status_;

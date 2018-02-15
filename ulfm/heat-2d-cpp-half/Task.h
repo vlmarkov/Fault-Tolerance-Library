@@ -91,6 +91,13 @@ class Task {
         int* getMpiRankPtr();
 
         /**
+         * @brief Gets MPI-rank by redundancy layer
+         * @param layer an integer argument redundancy layer
+         * @return MPI-rank
+         */
+        int getMpiRank(int layer);
+
+        /**
          * @brief Sets Task status
          * @param status an integer argument new Task status
          */
