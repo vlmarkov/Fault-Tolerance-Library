@@ -7,9 +7,10 @@ Features:
  ✔ failure simulaion feature @done (18-02-10 21:23)
  ✔ unit tests feature @done (18-02-11 18:09)
  ✔ full scale tests @done (18-02-15 17:28)
+ ✔ fixed memory allocation, only for self and repair grid and newgrid @done (18-02-17 18:22)
 
 Bugs:
- ☐ Unknown
+ ☐ 144 nodes 8192 8192 (freze)
 
 Other:
  ✔ fixed task intializer list @done (18-01-01 17:13)

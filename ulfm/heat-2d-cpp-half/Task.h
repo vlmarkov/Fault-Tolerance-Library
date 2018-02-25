@@ -46,6 +46,7 @@ class Task {
          * @param nx an integer argument, number of columns in one Grid cell
          * @param ny an integer argument, number of columns in one Grid cell
          * @param repair an integer argument, number of avialable repairs
+         * @param rank an integer argument, MPI-rank
          */
         Task(int i, int j, int nx, int ny, int repair);
 
@@ -211,6 +212,18 @@ class Task {
         double* getLocalNewGrid(int layer);
 
         /**
+         * @brief Allocates local grid
+         * @param layer an integer argument redundancy layer
+         */
+        void allocateLocalGrid(int layer);
+
+        /**
+         * @brief Allocates new local grid
+         * @param layer an integer argument redundancy layer
+         */
+        void allocateLocalNewGrid(int layer);
+
+        /**
          * @brief Adds redundancy MPI-rank
          * @param rank a pointer argument new redundancy MPI-rank
          */
@@ -303,6 +316,11 @@ class Task {
          * @throw std::string If can't get Y
          */
         int getY(int layer);
+
+        /**
+         * @brief Gets repair status
+         */
+        int getRepairStatus(void);
 
         /**
          * @brief Repairs task

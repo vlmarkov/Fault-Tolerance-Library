@@ -8,9 +8,10 @@ int main(int argc, char const *argv[])
 {
     try
     {
-        Grid testGrid(1024, 1024, 256, 256, 2, 2);
+        Grid testGrid(1024, 1024, 256, 256, 4, 4);
 
-        testGrid.print();
+        testGrid.printPretyTags();
+        testGrid.printPretyNeighbors();
 /*
         testGrid.kill(3);
         testGrid.repair();
@@ -20,6 +21,12 @@ int main(int argc, char const *argv[])
 
         testGrid.print();
 */
+        for (int i = 0; i < 72; i++)
+        {
+            testGrid.kill(143 - i);
+            testGrid.repair();
+        }
+
     }
     catch (std::string err)
     {

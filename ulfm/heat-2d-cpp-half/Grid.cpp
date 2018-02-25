@@ -39,7 +39,7 @@ Grid::Grid(int cols, int rows, int nx, int ny, int px, int py) :
 
     int rank   = 0;
     int tags   = 1;
-    int repair = 1;
+    int repair = 1; // only one repair
     int layer  = 0;
 
     // Init each task
@@ -163,6 +163,128 @@ void Grid::print()
 #endif /* MPI_SUPPORT */
 
         }
+    }
+}
+
+void Grid::printPretyTags(void)
+{
+    for (int i = 0; i < this->py_; ++i)
+    {
+        // First line: up tag
+        for (int j = 0; j < this->px_; ++j)
+        {
+            printf("         ");
+            for (int l = 0; l < this->tasks_[i][j].getLayersNumber(); ++l)
+            {
+                printf("%s", "\033[0;32m");
+                printf("%03d", this->tasks_[i][j].getUpTag(l));
+                printf("%s", "\033[m");
+                printf("%s", (l == 0) ? "/" : "           ");
+            }
+        }
+        printf("\n");
+
+        // Third line: left tag + MPI rank + right tag
+        for (int j = 0; j < this->px_; ++j)
+        {
+            for (int l = 0; l < this->tasks_[i][j].getLayersNumber(); ++l)
+            {
+                printf("%s", "\033[0;32m");
+                printf("%03d", this->tasks_[i][j].getLeftTag(l));
+                printf("%s", "\033[m");
+                printf("%s", (l == 0) ? "/" : "<-");
+            }
+
+            for (int l = 0; l < this->tasks_[i][j].getLayersNumber(); ++l)
+            {
+                printf("%s", "\033[0;31m");
+                printf("%03d", this->tasks_[i][j].getMpiRank(l));
+                printf("%s", "\033[m");
+                printf("%s", (l == 0) ? "/" : "->");
+            }
+
+            for (int l = 0; l < this->tasks_[i][j].getLayersNumber(); ++l)
+            {
+                printf("%s", "\033[0;32m");
+                printf("%03d", this->tasks_[i][j].getRightTag(l));
+                printf("%s", "\033[m");
+                printf("%s", (l == 0) ? "/" : "  ");
+            }
+        }
+        printf("\n");
+
+        for (int j = 0; j < this->px_; ++j)
+        {
+            printf("         ");
+            for (int l = 0; l < this->tasks_[i][j].getLayersNumber(); ++l)
+            {
+                printf("%s", "\033[0;32m");
+                printf("%03d", this->tasks_[i][j].getDownTag(l));
+                printf("%s", "\033[m");
+                printf("%s", (l == 0) ? "/" : "           ");
+            }
+        }
+        printf("\n\n");
+    }
+}
+
+void Grid::printPretyNeighbors(void)
+{
+    for (int i = 0; i < this->py_; ++i)
+    {
+        for (int j = 0; j < this->px_; ++j)
+        {
+            printf("         ");
+            for (int l = 0; l < this->tasks_[i][j].getLayersNumber(); ++l)
+            {
+                printf("%s", "\033[0;36m");
+                printf("%03d", this->tasks_[i][j].getUpNeighborRank(l));
+                printf("%s", "\033[m");
+                printf("%s", (l == 0) ? "/" : "           ");
+            }
+        }
+        printf("\n");
+
+        for (int j = 0; j < this->px_; ++j)
+        {
+            for (int l = 0; l < this->tasks_[i][j].getLayersNumber(); ++l)
+            {
+                printf("%s", "\033[0;36m");
+                printf("%03d", this->tasks_[i][j].getLeftNeighborRank(l));
+                printf("%s", "\033[m");
+                printf("%s", (l == 0) ? "/" : "<-");
+            }
+
+            for (int l = 0; l < this->tasks_[i][j].getLayersNumber(); ++l)
+            {
+                printf("%s", "\033[0;31m");
+                printf("%03d", this->tasks_[i][j].getMpiRank(l));
+                printf("%s", "\033[m");
+                printf("%s", (l == 0) ? "/" : "->");
+            }
+
+            for (int l = 0; l < this->tasks_[i][j].getLayersNumber(); ++l)
+            {
+                printf("%s", "\033[0;36m");
+                printf("%03d", this->tasks_[i][j].getRightNeighborRank(l));
+                printf("%s", "\033[m");
+                printf("%s", (l == 0) ? "/" : "  ");
+            }
+        }
+        printf("\n");
+
+        for (int j = 0; j < this->px_; ++j)
+        {
+            printf("         ");
+            for (int l = 0; l < this->tasks_[i][j].getLayersNumber(); ++l)
+            {
+                printf("%s", "\033[0;36m");
+                printf("%03d", this->tasks_[i][j].getDownNeighborRank(l));
+                printf("%s", "\033[m");
+                printf("%s", (l == 0) ? "/" : "           ");
+            }
+        }
+        printf("\n\n");
     }
 }
 

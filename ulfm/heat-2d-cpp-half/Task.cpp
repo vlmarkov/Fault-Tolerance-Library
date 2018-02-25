@@ -4,6 +4,7 @@
 
 #include "Task.h"
 
+
 Task::Task() : i_(-1), j_(-1), nx_(-1), ny_(-1)
 {
     this->upNeighbor_    = NULL;
@@ -15,6 +16,8 @@ Task::Task() : i_(-1), j_(-1), nx_(-1), ny_(-1)
     this->mpiRank_       = -1;
     this->status_        = UNKNOWN_TASK;
     this->repair_        = -1;
+    this->grid_          = NULL;
+    this->newGrid_       = NULL;
 }
 
 Task::Task(int i, int j, int nx, int ny, int repair) : i_(i), j_(j), nx_(nx), ny_(ny)
@@ -28,33 +31,21 @@ Task::Task(int i, int j, int nx, int ny, int repair) : i_(i), j_(j), nx_(nx), ny
     this->mpiRank_       = -1;
     this->status_        = UNKNOWN_TASK;
     this->repair_        = repair;
-
-    this->grid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
-    if (!this->grid_)
-    {
-        throw std::string("Can't allocate memory for grid");
-    }
-
-    this->newGrid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
-    if (!this->newGrid_)
-    {
-        throw std::string("Can't allocate memory for new grid");
-    }
-
-    // TODO
+    this->grid_          = NULL;
+    this->newGrid_       = NULL;
 }
 
 Task::Task(const Task& rhs) : i_(rhs.i_), j_(rhs.j_), nx_(rhs.nx_), ny_(rhs.ny_)
 {
-    this->upNeighbor_    = rhs.upNeighbor_;
-    this->downNeighbor_  = rhs.downNeighbor_;
-    this->leftNeighbor_  = rhs.leftNeighbor_;
-    this->rightNeighbor_ = rhs.rightNeighbor_;
-    this->grid_          = NULL;
-    this->newGrid_       = NULL;
-    this->mpiRank_       = rhs.mpiRank_;
-    this->status_        = rhs.status_;
-    this->repair_        = rhs.repair_;
+    this->upNeighbor_        = rhs.upNeighbor_;
+    this->downNeighbor_      = rhs.downNeighbor_;
+    this->leftNeighbor_      = rhs.leftNeighbor_;
+    this->rightNeighbor_     = rhs.rightNeighbor_;
+    this->grid_              = NULL;
+    this->newGrid_           = NULL;
+    this->mpiRank_           = rhs.mpiRank_;
+    this->status_            = rhs.status_;
+    this->repair_            = rhs.repair_;
 
     this->upNeighborTags_    = rhs.upNeighborTags_;
     this->downNeighborTags_  = rhs.downNeighborTags_;
@@ -156,7 +147,6 @@ Task& Task::operator=(const Task& rhs)
 /*****************************************************************************/
 /* Public methods                                                            */
 /*****************************************************************************/
-
 void Task::setMpiRank(int rank)
 {
     this->mpiRank_ = rank;
@@ -419,6 +409,42 @@ double* Task::getLocalNewGrid(int layer)
     return NULL;
 }
 
+void Task::allocateLocalGrid(int layer)
+{
+    if (layer < (int)this->rTasks_.size())
+    {
+        this->rTasks_[layer]->grid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
+        if (!this->grid_)
+        {
+            throw std::string("Rank " +
+                            std::to_string(this->mpiRank_) +
+                            " Can't allocate memory for grid");
+        }
+    }
+    else
+    {
+        throw std::string("Can't get local grid");
+    }
+}
+
+void Task::allocateLocalNewGrid(int layer)
+{
+    if (layer < (int)this->rTasks_.size())
+    {
+        this->rTasks_[layer]->newGrid_ = new double [((this->ny_ + 2) * (this->nx_ + 2))];
+        if (!this->newGrid_)
+        {
+            throw std::string("Rank " +
+                              std::to_string(this->mpiRank_) +
+                              " Can't allocate memory for new grid");
+        }
+    }
+    else
+    {
+        throw std::string("Can't get local new-grid");
+    }
+}
+
 void Task::addRrank(int* rank)
 {
     this->rRanks_.push_back(rank);
@@ -514,6 +540,11 @@ int Task::getY(int layer)
     {
         throw std::string("Can't get y");
     }
+}
+
+int Task::getRepairStatus(void)
+{
+    return this->repair_;
 }
 
 int Task::repair(void)

@@ -80,7 +80,7 @@ debug:
 	@$(CXX) $(CFLAGS) $(LDFLAGS) $(STDFLAGS) \
 	Grid.cpp \
 	Task.cpp \
-	-o $(BUILD_DIR)/$@/$@ unit-test/$@.cpp -I$CXXTEST; \
+	-o $(BUILD_DIR)/$@/$@ unit-test/$@.cpp -D DEBUG; \
 	RESULT=$$?; \
 	if [ $$RESULT -ne 0 ]; then \
 		printf "%-60b%b" "$(COM_COLOR)$(COM_STRING)$(OBJ_COLOR) $@" "$(ERROR_COLOR)$(ERROR_STRING)$(NO_COLOR)\n"; \

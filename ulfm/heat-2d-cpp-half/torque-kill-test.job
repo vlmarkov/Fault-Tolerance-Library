@@ -1,17 +1,23 @@
-#PBS -N heat
+#PBS -N h2d-ulfm-kill-test
 #PBS -l nodes=18:ppn=8
 #PBS -j oe
 
 cd $PBS_O_WORKDIR
 
-/home/students/mg165/markov/ulfm_src/ulfm_1_0/bin/mpiexec -am ft-enable-mpi ./heat-2d-kill 1024 1024 12 12
+echo "Runnig 1024*1024 test"
+/home/students/mg165/markov/ulfm_src/ulfm_1_0/bin/mpirun -am ft-enable-mpi ./heat-2d-kill 1024 1024 12 12
 
-/home/students/mg165/markov/ulfm_src/ulfm_1_0/bin/mpiexec -am ft-enable-mpi ./heat-2d-kill 2048 2048 12 12
+echo "Runnig 2048*2048 test"
+/home/students/mg165/markov/ulfm_src/ulfm_1_0/bin/mpirun -am ft-enable-mpi ./heat-2d-kill 2048 2048 12 12
 
-/home/students/mg165/markov/ulfm_src/ulfm_1_0/bin/mpiexec -am ft-enable-mpi ./heat-2d-kill 4096 4096 12 12
+echo "Runnig 4096*4096 test"
+/home/students/mg165/markov/ulfm_src/ulfm_1_0/bin/mpirun -am ft-enable-mpi ./heat-2d-kill 4096 4096 12 12
 
-/home/students/mg165/markov/ulfm_src/ulfm_1_0/bin/mpiexec -am ft-enable-mpi ./heat-2d-kill 8192 8192 12 12
+echo "Runnig 8192*8192 test"
+/home/students/mg165/markov/ulfm_src/ulfm_1_0/bin/mpirun -am ft-enable-mpi ./heat-2d-kill 8192 8192 12 12
 
-/home/students/mg165/markov/ulfm_src/ulfm_1_0/bin/mpiexec -am ft-enable-mpi ./heat-2d-kill 16384 16384 12 12
+echo "Runnig 16384*16384 test"
+/home/students/mg165/markov/ulfm_src/ulfm_1_0/bin/mpirun -am ft-enable-mpi ./heat-2d-kill 16384 16384 12 12
 
-/home/students/mg165/markov/ulfm_src/ulfm_1_0/bin/mpiexec -am ft-enable-mpi ./heat-2d-kill 32768 32768 12 12
+echo "Runnig 32768*32768 test"
+/home/students/mg165/markov/ulfm_src/ulfm_1_0/bin/mpirun -am ft-enable-mpi ./heat-2d-kill 32768 32768 12 12

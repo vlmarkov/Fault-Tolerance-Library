@@ -86,6 +86,9 @@ class Grid {
          */
         void print(void);
 
+        void printPretyTags(void);
+        void printPretyNeighbors(void);
+
     private:
         const int cols_;                        /**< Number of columns in calculation Grid */
         const int rows_;                        /**< Number of rows in calculation Grid */

@@ -126,14 +126,14 @@ static double checkTerminationCondition(double    *newGrid,
                                         const int  ny,
                                         const int  nx)
 {
-    double maxdiff = 0;
+    double maxdiff = 0.0;
 
     for (int i = 1; i <= ny; ++i)
     {
         for (int j = 1; j <= nx; ++j)
         {
             int ind = IND(i, j);
-            maxdiff = fmax(maxdiff, fabs(oldGrid[ind] - newGrid[ind]));
+            maxdiff = std::fmax(maxdiff, std::fabs(oldGrid[ind] - newGrid[ind]));
         }
     }
 
@@ -210,6 +210,13 @@ static int doHaloExchange(WrapperHalo& wrapper)
 
 static void errorHandler(MPI_Comm* pcomm, Grid* gridTask, int err)
 {
+    if (MPI_ERR_PROC_FAILED != err ||
+        MPI_ERR_REVOKED != err)
+    {
+        std::cerr << "Not handled error!" << std::endl;
+        MPI_Abort(*pcomm, err);
+    }
+
     MPI_Comm comm = *pcomm;
 
     char errStr[MPI_MAX_ERROR_STRING] = { 0 };
@@ -294,7 +301,12 @@ static MPI_Comm repairCommunicator(MPI_Comm comm, int err)
     }
     else
     {
-        std::cerr << "Can't repair communicator" << std::endl;
+        int rank;
+        MPI_Comm_rank(comm, &rank);
+        std::cerr << "Rank "
+                  << rank
+                  << " Can't repair communicator"
+                  << std::endl;
         MPI_Abort(comm, err);
     }
 
@@ -303,12 +315,12 @@ static MPI_Comm repairCommunicator(MPI_Comm comm, int err)
 
 static int solveEquation(int argc, char* argv[])
 {
-    int rank = 0;
-    int commsize = 0;
+    int rank             = 0;
+    int commsize         = 0;
+    int originalCommsize = 0;
+    double ttotal        = -MPI_Wtime();
 
     MPI_Init(&argc, &argv);
-
-    double ttotal = -MPI_Wtime();
 
     /*
      * Create a new error handler for MPI_COMM_WORLD
@@ -319,6 +331,7 @@ static int solveEquation(int argc, char* argv[])
     MPI_Comm comm = MPI_COMM_WORLD;
     MPI_Comm_set_errhandler(comm, MPI_ERRORS_RETURN);
 
+    MPI_Comm_size(comm, &originalCommsize);
     MPI_Comm_size(comm, &commsize);
     MPI_Comm_rank(comm, &rank);
 
@@ -400,6 +413,9 @@ static int solveEquation(int argc, char* argv[])
 
     for (int i = 0; i < myTask->getLayersNumber(); ++i)
     {
+        myTask->allocateLocalGrid(i);
+        myTask->allocateLocalNewGrid(i);
+
         double* grid    = myTask->getLocalGrid(i);
         double* newgrid = myTask->getLocalNewGrid(i);
         rankx           = myTask->getX(i);
@@ -464,12 +480,12 @@ static int solveEquation(int argc, char* argv[])
     double maxdiff = 0.0;
     int rc = 0;
 
-    while (1)
+    // Main loop
+    //while (1)
+    for (niters = 0; niters < 241; ++niters)
     {
         MPI_Comm_size(comm, &commsize);
         MPI_Comm_rank(comm, &rank);
-
-        niters++;
 
 restart_step:
 
@@ -527,7 +543,8 @@ restart_step:
         /*
          * Collective operation may fail - ULFM provide repair operation
          */
-        if (MPI_ERR_PROC_FAILED == rc)
+        //if (MPI_ERR_PROC_FAILED == rc)
+        if (MPI_SUCCESS != rc)
         {
             errorHandler(&comm, &gridTask, rc);
             comm = repairCommunicator(comm, rc);
@@ -551,7 +568,7 @@ restart_step:
          */
         if (maxdiff < EPS)
         {
-            break;
+            //break;
         }
 
         /*
@@ -588,11 +605,7 @@ restart_step:
     if (rank == 0)
     {
         printf("# Heat 2D (mpi): grid: rows %d, cols %d, procs %d (px %d, py %d)\n",
-               rows, cols, commsize, px, py);
-    }
-    else
-    {
-        sleep(1); // Small delay to print
+               rows, cols, originalCommsize, px, py);
     }
 
     int namelen;
@@ -610,9 +623,7 @@ restart_step:
 
     if (rank == 0)
     {
-        MPI_Reduce(MPI_IN_PLACE, prof, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-
-        sleep(1); // Small delay to print last
+        MPI_Reduce(MPI_IN_PLACE, prof, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, comm);
 
         printf("# procs %d : grid %d %d : niters %d : total time %.6f :"
                " mpi time %.6f : allred %.6f : halo %.6f\n", 
@@ -621,7 +632,7 @@ restart_step:
     }
     else
     {
-        MPI_Reduce(prof, NULL, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+        MPI_Reduce(prof, NULL, NELEMS(prof), MPI_DOUBLE, MPI_MAX, 0, comm);
     }
 
     MPI_Finalize();

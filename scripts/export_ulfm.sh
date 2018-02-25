@@ -20,3 +20,7 @@ export LD_LIBRARY_PATH=/home/students/mg165/markov/ulfm_target/lib:$LD_LIBRARY_P
 
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/students/mg165/markov/ulfm_target/lib/
 export LD_LIBRARY_PATH
+
+./configure --prefix=/home/students/mg165/markov/ulfm_src/ulfm_2_0 \
+--with-ft=mpi \
+--with-tm=/opt/torque-6.1.1.1
