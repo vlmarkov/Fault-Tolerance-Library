@@ -8,7 +8,7 @@ int main(int argc, char const *argv[])
 {
     try
     {
-        Grid testGrid(1024, 1024, 256, 256, 4, 4);
+        Grid testGrid(1024, 1024, 256, 256, 8, 8);
 
         testGrid.printPretyTags();
         testGrid.printPretyNeighbors();
@@ -20,13 +20,13 @@ int main(int argc, char const *argv[])
         testGrid.repair();
 
         testGrid.print();
-*/
+
         for (int i = 0; i < 72; i++)
         {
             testGrid.kill(143 - i);
             testGrid.repair();
         }
-
+*/
     }
     catch (std::string err)
     {

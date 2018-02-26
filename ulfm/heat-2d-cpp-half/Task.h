@@ -338,6 +338,8 @@ class Task {
          */
         void printByLayers();
 
+        std::vector<Task*> getRedundancyTasks(void);
+
     private:
         const int i_;                        /**< Coordinate in Grid */
         const int j_;                        /**< Coordinate in Grid */

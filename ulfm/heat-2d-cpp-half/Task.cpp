@@ -810,6 +810,11 @@ void Task::printByLayers()
     std::cout << std::endl;
 }
 
+std::vector<Task*> Task::getRedundancyTasks(void)
+{
+    return this->rTasks_;
+}
+
 /*****************************************************************************/
 /* Private methods                                                           */
 /*****************************************************************************/
