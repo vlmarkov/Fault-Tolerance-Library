@@ -239,6 +239,44 @@ TEST(CheckRedundancyTasksTest, ExpectTrue)
     }
 }
 
+/**
+ * @brief This test checks repair (kill, repair, repair-mpi-rank, repair-status)
+ */
+TEST(CheckMpiRanksAfterFail, ExpectTrue)
+{
+    const auto x  = 8192;
+    const auto y  = 8192;
+    const auto px = 12;
+    const auto py = 12;
+    const auto nx = x / px;
+    const auto ny = y / py;
+
+    Grid grid(x, y, nx, ny, px, py);
+
+    // From last to 1/2
+    for (auto i = (px * py) - 1; i > (px * py) / 2; --i)
+    {
+        ASSERT_EQ(grid.kill(i), 0);
+        ASSERT_EQ(grid.repair(), 0);
+
+        if (i > ((px * py) / 2))
+        {
+            auto repairRank = i - (px * py) / 2;
+            auto* task = grid.getTask(repairRank);
+
+            EXPECT_TRUE(task);
+
+            ASSERT_EQ(task->getLayersNumber(), 2);
+
+            for (auto l = 0; l < task->getLayersNumber(); l++)
+            {
+                ASSERT_EQ(task->getMpiRank(l), repairRank);
+                ASSERT_EQ(grid.getTask(task->getMpiRank(l))->getRepairStatus(), 0);
+            }
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);
